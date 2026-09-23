@@ -261,11 +261,61 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-vi
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ---------- Landing ---------- */
-.hero { min-height: calc(100dvh - 60px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 24px 8px; }
+body.landing .view { max-width: 1040px; }
+.hero {
+  min-height: min(88dvh, 760px); display: grid; align-items: center; justify-items: center;
+  gap: 40px; padding: 32px 0 24px; text-align: center;
+}
+.hero-copy { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 34rem; }
 .hero-logo { border-radius: 22px; box-shadow: var(--shadow); }
-.hero h1 { font-size: clamp(1.8rem, 7vw, 2.6rem); color: var(--accent); }
-.lead { font-size: 1.15rem; max-width: 30ch; margin: 0; }
-.hero-points { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 8px; text-align: left; font-size: .98rem; }
+.hero h1 { font-size: clamp(2rem, 7vw, 3.1rem); color: var(--accent); }
+.lead { font-size: clamp(1.05rem, 2.6vw, 1.25rem); margin: 0 0 6px; text-wrap: pretty; }
+@media (min-width: 820px) {
+  .hero { grid-template-columns: 1.1fr .9fr; text-align: left; justify-items: stretch; }
+  .hero-copy { align-items: flex-start; }
+}
+
+/* Maqueta de la app (decorativa) */
+.mock { width: min(320px, 86vw); justify-self: center; }
+.mock-screen {
+  aspect-ratio: 9 / 16; border-radius: 34px; padding: 18px 14px; display: flex; flex-direction: column; gap: 14px;
+  background: var(--bg); border: 8px solid var(--ink); box-shadow: 0 24px 60px rgb(43 26 18 / .25);
+  transform: rotate(2deg);
+}
+.mock-scan {
+  flex: 0 0 34%; border-radius: 14px; background: linear-gradient(160deg, #2a221c, #0e0b09);
+  display: grid; place-items: center; position: relative; overflow: hidden;
+}
+.mock-scan span { width: 74%; height: 44%; border: 2px solid rgb(255 255 255 / .85); border-radius: 10px; position: relative; }
+.mock-scan span::after {
+  content: ''; position: absolute; left: 6%; right: 6%; top: 50%; height: 2px;
+  background: #ff5a4a; box-shadow: 0 0 10px #ff5a4a; animation: sweep 1.8s ease-in-out infinite alternate;
+}
+.mock-card {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; text-align: left;
+  background: color-mix(in srgb, var(--ok-soft) 45%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line));
+}
+.mock-card p { margin: 0 0 4px; }
+.mock-cover { width: 46px; flex: none; }
+.mock-cover span { font-size: 1.1rem; }
+.mock-title { font: 700 .95rem var(--font-display); }
+.mock-text { font-size: .8rem; }
+.mock-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; text-align: left; }
+.mock-bars li { display: grid; grid-template-columns: 1fr 70px auto; gap: 8px; align-items: center; font: .72rem var(--font-ui); color: var(--muted); }
+.mock-bars b { height: 7px; border-radius: 99px; background: linear-gradient(90deg, var(--gold) var(--p), var(--surface-2) var(--p)); }
+.mock-bars em { font-style: normal; font-variant-numeric: tabular-nums; }
+
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0 8px; }
+.features article { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.features h2 { font-size: 1.02rem; margin: 10px 0 6px; }
+.features p { margin: 0; font-size: .95rem; color: var(--muted); }
+.feature-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); font-size: 1.25rem; }
+
+.landing-panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin: 24px 0; text-align: center; }
+.landing-panel p { max-width: 38rem; margin: 8px auto 16px; }
+.landing-cta { text-align: center; padding: 28px 0 8px; display: grid; justify-items: center; gap: 14px; }
+.landing-footer { text-align: center; padding: 24px 0 8px; border-top: 1px solid var(--line); margin-top: 24px; }
+.landing-footer p { margin: 6px 0; }
 
 /* ---------- Profile / Mecenas ---------- */
 .profile { display: flex; gap: 16px; align-items: center; }

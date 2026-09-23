@@ -3,3 +3,10 @@ supabase/.temp/
 .env
 MEJORAS.md
 __pycache__/
+
+# Copias de seguridad (nunca al repositorio: contienen datos de usuarios)
+backup/
+backup*.tar.gz
+backup*.gpg
+backup*.zip
+*.dump

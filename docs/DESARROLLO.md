@@ -89,7 +89,10 @@ Como admin puedes crear/editar/borrar libros, aprobar propuestas (libros y códi
    - URL: `https://fuhchwedoxopzcybccrj.supabase.co/functions/v1/bmc-webhook`
    - Eventos: `donation.created` (y, si los usas, `membership.started`, `recurring_donation.started`, `extra_purchase.created`).
    - Copia el **signing secret** de la página del webhook.
-3. Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`): `BMC_WEBHOOK_SECRET=<secret>` y, opcional, `SUPPORTER_MIN_AMOUNT=5`. Nunca lo subas a git.
+3. Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`): `BMC_WEBHOOK_SECRET=<secret>`. Nunca lo subas a git.
+   El umbral de Mecenas es 5 € por defecto en el código; **no crees** `SUPPORTER_MIN_AMOUNT` salvo que quieras cambiarlo
+   (los secretos no muestran su valor, así que es fácil olvidar qué pusiste). Si lo cambias, cambia también `js/config.js`
+   y `public.supporter_min_amount()`.
 4. En BMC envía un evento de prueba y revisa la tabla `donations` (columna `raw`). Los eventos de prueba (`live_mode = false`) se registran pero no activan Mecenas.
 
 ## Catálogo

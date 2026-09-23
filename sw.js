@@ -6,7 +6,7 @@ const SHELL = [
   './js/app.js', './js/config.js', './js/supabase.js', './js/auth.js', './js/router.js', './js/api.js',
   './js/store.js', './js/util.js', './js/ui.js', './js/isbn.js', './js/scanner.js', './js/theme.js',
   './js/views/library.js', './js/views/scan.js', './js/views/catalog.js', './js/views/book.js',
-  './js/views/profile.js', './js/views/supporter.js', './js/views/review.js', './js/nav.js', './js/version.js', './js/views/finder.js', './js/views/wishlist-public.js', './js/views/admin.js', './js/track.js', './js/update.js',
+  './js/views/profile.js', './js/views/supporter.js', './js/views/review.js', './js/nav.js', './js/version.js', './js/views/finder.js', './js/views/wishlist-public.js', './js/views/admin.js', './js/track.js', './js/update.js', './js/navlist.js',
   './assets/icons/icon.svg', './assets/icons/seal.svg', './privacidad.html',
 ];
 
@@ -29,7 +29,9 @@ self.addEventListener('fetch', (e) => {
 
   // Mismo origen: red primero (para recibir actualizaciones), caché si no hay conexión.
   if (url.origin === location.origin) {
-    e.respondWith(fetch(req).then((res) => {
+    // cache: 'no-cache' → siempre revalida con el servidor (ETag). Evita mezclar módulos JS de versiones distintas
+    // durante los 10 minutos que GitHub Pages deja en la caché HTTP del navegador tras publicar.
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req).then((r) => r || caches.match('./index.html'))));

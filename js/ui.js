@@ -178,3 +178,7 @@ export function showWhatsNewIfUpdated() {
   const fresh = RELEASES.filter((r) => cmpVersion(r.version, seen) > 0);
   if (fresh.length) releaseNotesDialog({ releases: fresh, heading: `Novedades de la versión ${APP_VERSION}` });
 }
+
+/** Etiqueta para funciones de Mecenas y para acciones de administración. */
+export const PERK_TAG = '<span class="perk-tag" title="Extra de Mecenas">★ Mecenas</span>';
+export const ADMIN_TAG = '<span class="admin-tag" title="Solo administradores">🛡 Admin</span>';

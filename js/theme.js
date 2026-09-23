@@ -6,6 +6,7 @@ export const THEMES = [
   { id: 'light', label: 'Claro' },
   { id: 'dark', label: 'Oscuro' },
   { id: 'parchment', label: 'Pergamino', supporter: true },
+  { id: 'retro', label: 'Retro EGA', supporter: true },
 ];
 
 export function getTheme() {

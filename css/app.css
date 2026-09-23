@@ -728,3 +728,240 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 }
 .update-banner span { flex: 1; }
 .update-close { background: none; border: 0; color: inherit; font-size: 1.3rem; line-height: 1; padding: 4px 8px; cursor: pointer; opacity: .7; }
+
+/* ---------- Formularios: iOS Safari da ancho mínimo propio a date/time y desborda columnas ---------- */
+input, select, textarea { min-width: 0; max-width: 100%; }
+.row2 > *, .finder-grid > * { min-width: 0; }
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%;
+  min-height: 44px; line-height: 1.2; text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { opacity: .6; }
+
+/* Perfil: acerca de */
+.about-version { display: flex; align-items: center; gap: 8px; margin: 0; }
+.about-version .badge { margin: 0; }
+
+/* ---------- Ficha: anterior / siguiente ---------- */
+.book-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.book-nav { display: flex; align-items: center; gap: 6px; }
+.book-nav-btn {
+  display: inline-flex; align-items: center; min-height: 36px; min-width: 36px; padding: 0 10px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none;
+  font: 700 .8rem var(--font-ui); white-space: nowrap;
+}
+.book-nav-btn span { max-width: 7em; overflow: hidden; text-overflow: ellipsis; }
+span.book-nav-btn { visibility: hidden; }
+.book-nav-pos { font: .75rem var(--font-ui); color: var(--muted); font-variant-numeric: tabular-nums; }
+.book-page { touch-action: pan-y; }
+
+/* ---------- Marcas de Mecenas y de administración ---------- */
+:root { --admin: #2563a8; }
+:root[data-theme="dark"] { --admin: #7fb3ea; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]):not([data-theme="parchment"]) { --admin: #7fb3ea; } }
+:root[data-theme="parchment"] { --admin: #2f5a86; }
+
+.perk-tag, .admin-tag {
+  display: inline-block; vertical-align: middle; margin-left: 6px; padding: 2px 8px; border-radius: 99px;
+  font: 700 .64rem var(--font-ui); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+}
+.perk-tag { color: var(--gold); background: var(--gold-soft); }
+.admin-tag { color: var(--admin); background: color-mix(in srgb, var(--admin) 14%, transparent); }
+.panel.perk {
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 9%, var(--surface)), var(--surface) 70%);
+}
+.btn-perk { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.panel.admin-zone {
+  border: 1px solid color-mix(in srgb, var(--admin) 40%, var(--line));
+  background: color-mix(in srgb, var(--admin) 8%, var(--surface));
+}
+.btn-admin { background: var(--admin); color: #fff; }
+.badge-admin { background: color-mix(in srgb, var(--admin) 16%, transparent); color: var(--admin); }
+.admin-inline { background: color-mix(in srgb, var(--admin) 8%, transparent); border-radius: 8px; padding: 6px 10px; }
+#nav a[data-admin-tab].active { color: var(--admin); }
+
+/* Estrella de Mecenas en la pestaña Perfil */
+#nav a.is-supporter::after {
+  content: '★'; position: absolute; top: 3px; left: calc(50% + 7px);
+  font-size: .62rem; line-height: 1; color: var(--gold);
+}
+
+/* Perfil: «Salir» dentro de la tarjeta, lejos de las zonas de peligro */
+.profile { align-items: flex-start; }
+.profile-main { flex: 1; min-width: 0; }
+.profile-main h2 { overflow-wrap: anywhere; }
+.btn-logout {
+  flex: none; align-self: center; gap: 6px; min-height: 40px; padding: 0 14px;
+  background: var(--purple-soft); color: var(--purple); border: 1px solid color-mix(in srgb, var(--purple) 30%, transparent);
+}
+.btn-logout:hover, .btn-logout:focus-visible { background: color-mix(in srgb, var(--purple) 18%, var(--surface)); }
+.btn-logout svg { flex: none; }
+/* En pantallas estrechas el botón baja debajo de los datos del perfil, a todo el ancho */
+@media (max-width: 480px) {
+  .profile { flex-wrap: wrap; }
+  .btn-logout { flex: 1 1 100%; }
+}
+
+/* Safari no respeta la altura de los <select> con su estilo nativo: estilo propio con flecha */
+select {
+  -webkit-appearance: none; appearance: none; min-height: 44px; padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
+}
+
+/* ---------- Ribetes de esquina: Mecenas y Admin ---------- */
+.panel.perk, .panel.admin-zone { position: relative; overflow: hidden; }
+.panel.perk > h2, .panel.admin-zone > h2 { padding-right: 64px; }
+.panel.perk::after, .panel.admin-zone::after {
+  position: absolute; top: 14px; right: -34px; width: 124px; transform: rotate(45deg);
+  padding: 3px 0; text-align: center; pointer-events: none;
+  font: 800 .58rem var(--font-ui); letter-spacing: .12em; text-transform: uppercase;
+  box-shadow: 0 2px 6px rgb(0 0 0 / .25);
+}
+.panel.perk::after { content: '★ Mecenas'; background: linear-gradient(180deg, #f6cf4a, #d9a514); color: #3b2a05; }
+.panel.admin-zone::after { content: '🛡 Admin'; background: var(--admin); color: #fff; }
+
+/* ---------- Pestaña Perfil de un Mecenas: icono dorado con estrella ---------- */
+#nav a.is-supporter svg { color: var(--gold); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--gold) 55%, transparent)); }
+#nav a.is-supporter::after {
+  content: '★'; position: absolute; top: 1px; left: calc(50% + 6px);
+  width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%;
+  font-size: .56rem; line-height: 1; color: #3b2a05; background: var(--gold);
+}
+
+/* =============================================================
+   Tema Retro EGA (Mecenas) — inspirado en OSR Manager
+   ============================================================= */
+:root[data-theme="retro"] {
+  --bg: #0000a8; --surface: #0000a8; --surface-2: #000080; --ink: #ffffff; --muted: #aaaaaa;
+  --line: #aaaaaa; --accent: #ffff55; --accent-ink: #000000; --accent-soft: #000080;
+  --purple: #55ffff; --purple-soft: #000080; --gold: #ffff55; --gold-soft: #000080;
+  --ok: #55ff55; --ok-soft: #005500; --warn: #ffff55; --warn-soft: #555500; --danger: #ff5555;
+  --admin: #55ffff;
+  --shadow: none; --radius: 2px;
+  --font-display: "Lucida Console", "Courier New", monospace;
+  --font-body: "Lucida Console", "Courier New", monospace;
+  --font-ui: "Lucida Console", "Courier New", monospace;
+  color-scheme: dark;
+}
+:root[data-theme="retro"] body {
+  background-color: #05060c;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(70,90,140,.06) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(70,90,140,.06) 0 1px, transparent 1px 4px);
+}
+/* Scanlines suaves sobre toda la pantalla */
+:root[data-theme="retro"] body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.06) 0 1px, transparent 1px 4px);
+}
+@media (prefers-reduced-motion: reduce) { :root[data-theme="retro"] body::after { opacity: .5; } }
+:root[data-theme="retro"] .view { background: #0000a8; min-height: 100dvh; }
+:root[data-theme="retro"] h1, :root[data-theme="retro"] h2 { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+:root[data-theme="retro"] h1 { color: #ffff55; }
+:root[data-theme="retro"] .panel,
+:root[data-theme="retro"] .result-card,
+:root[data-theme="retro"] .finder-card,
+:root[data-theme="retro"] .kpi,
+:root[data-theme="retro"] dialog { background: #0000a8; border: 1px solid #aaaaaa; border-radius: 2px; box-shadow: none; }
+:root[data-theme="retro"] .btn { border-radius: 2px; box-shadow: 3px 3px 0 #000; }
+:root[data-theme="retro"] .btn:active { box-shadow: none; transform: translate(2px, 2px); }
+:root[data-theme="retro"] .btn-primary { background: #aaaaaa; color: #000; border: 1px solid #ffff55; }
+:root[data-theme="retro"] .btn-ghost { background: #000080; color: #fff; border: 1px solid #aaaaaa; }
+:root[data-theme="retro"] .btn-danger { background: #aa0000; color: #fff; }
+:root[data-theme="retro"] input,
+:root[data-theme="retro"] select,
+:root[data-theme="retro"] textarea { background-color: #000080; color: #fff; border: 1px solid #aaaaaa; border-radius: 0; }
+:root[data-theme="retro"] input:focus-visible,
+:root[data-theme="retro"] select:focus-visible,
+:root[data-theme="retro"] textarea:focus-visible { outline: 2px solid #ffff55; }
+:root[data-theme="retro"] .tabbar { background: #0000a8; border-top: 1px solid #aaaaaa; backdrop-filter: none; }
+:root[data-theme="retro"] .tabbar a.active { color: #ffff55; background: #000080; }
+@media (min-width: 760px) { :root[data-theme="retro"] .tabbar { border: 1px solid #aaaaaa; border-radius: 2px; } }
+:root[data-theme="retro"] .badge, :root[data-theme="retro"] .count, :root[data-theme="retro"] .tag, :root[data-theme="retro"] .chip { border-radius: 0; }
+:root[data-theme="retro"] .chip.on, :root[data-theme="retro"] .admin-tabs a.active, :root[data-theme="retro"] .seg input:checked + span { background: #aaaaaa; color: #000; border-color: #ffff55; }
+:root[data-theme="retro"] .cover, :root[data-theme="retro"] .tile { border-radius: 0; }
+:root[data-theme="retro"] .cover-ph { background: #000080; border-left: 6px solid #55ffff; }
+:root[data-theme="retro"] .cover-ph span { color: #ffff55; text-shadow: none; font-family: var(--font-display); }
+:root[data-theme="retro"] .tile.owned { background: #aaaaaa; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .bar > span, :root[data-theme="retro"] .wchart-bar { background: #55ffff; border-radius: 0; }
+:root[data-theme="retro"] .toast { border-radius: 2px; box-shadow: 3px 3px 0 #000; font-family: var(--font-ui); }
+:root[data-theme="retro"] .group summary::before { color: #ffff55; }
+:root[data-theme="retro"] a:not(.btn) { color: #55ffff; }
+:root[data-theme="retro"] .panel.perk::after { background: #ffff55; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .panel.admin-zone::after { background: #55ffff; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .panel.perk, :root[data-theme="retro"] .panel.admin-zone { background: #0000a8; }
+
+/* ---------- Selector de tema (estilo Ajustes de iOS) ---------- */
+.theme-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.theme-sub { margin: 18px 0 8px; font: 700 .78rem var(--font-ui); color: var(--gold); text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; gap: 8px; }
+.theme-sub a { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.theme-opt { display: grid; justify-items: center; gap: 6px; cursor: pointer; position: relative; }
+.theme-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-preview {
+  width: 100%; max-width: 104px; aspect-ratio: 4 / 3; border-radius: 10px; display: grid; place-items: center;
+  border: 2px solid var(--line); transition: border-color .15s, box-shadow .15s;
+}
+.theme-preview svg { width: 26px; height: 26px; }
+.theme-name { font: 600 .78rem var(--font-ui); color: var(--ink); text-align: center; line-height: 1.2; }
+.theme-opt input:checked + .theme-preview { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.theme-opt input:checked ~ .theme-name { color: var(--accent); }
+.theme-opt input:focus-visible + .theme-preview { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-opt.locked { cursor: not-allowed; opacity: .6; }
+/* Miniaturas con colores fijos: muestran el tema, no el actual */
+.tp-auto { background: linear-gradient(135deg, #f8f3ea 0 50%, #150f1a 50% 100%); color: #74398a; }
+.tp-light { background: #f8f3ea; color: #b9820e; }
+.tp-dark { background: #150f1a; color: #c79be0; }
+.tp-parchment { background: radial-gradient(ellipse at 50% 30%, #efe0bb, #cdb27f); color: #8e2a10; }
+.tp-retro {
+  background: #0000a8 repeating-linear-gradient(to bottom, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  color: #ffff55; border-radius: 4px;
+}
+.tp-glyph { font-size: 1.25rem; line-height: 1; }
+.tp-uncial { font-family: 'Uncial Antiqua', Georgia, serif; }
+.tp-mono { font-family: "Lucida Console", "Courier New", monospace; font-weight: 700; }
+
+/* ---------- Zonas de peligro ---------- */
+.danger-zone { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+.danger-zone h2 { color: var(--danger); }
+.danger-icon { font-size: .95em; }
+.btn-danger-outline { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+.btn-danger-outline:hover, .btn-danger-outline:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.btn-danger-outline:disabled { opacity: .45; }
+:root[data-theme="retro"] .panel.danger-zone { border-color: #ff5555; background: #0000a8; }
+:root[data-theme="retro"] .btn.btn-danger-outline { background: #000080; color: #ff5555; border: 1px solid #ff5555; }
+:root[data-theme="retro"] .btn.btn-coffee { background: #ffff55; color: #000; border: 1px solid #000; }
+:root[data-theme="parchment"] .panel.danger-zone { border-color: #9b2414; }
+
+/* ---------- Extras de Mecenas: accesos y navegación ---------- */
+.hub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 4px; }
+@media (min-width: 560px) { .hub-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hub-tile {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center;
+  padding: 12px; border-radius: 12px; text-decoration: none; color: var(--ink);
+  background: var(--surface); border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--line));
+}
+.hub-tile:hover, .hub-tile:focus-visible { border-color: var(--gold); }
+.hub-icon {
+  grid-row: 1 / span 2; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px;
+  background: var(--gold-soft); color: var(--gold); font-size: 1.1rem;
+}
+.hub-title { font: 700 .88rem var(--font-ui); }
+.hub-sub { font: .74rem var(--font-ui); color: var(--muted); }
+.btn-perk-cta { background: var(--gold-soft); color: var(--gold); border: 1.5px solid var(--gold); font-weight: 700; }
+.perk-index {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 6px; overflow-x: auto;
+  padding: 8px 0; margin: -4px 0 6px; background: var(--bg);
+}
+.perk-index a {
+  flex: none; padding: 7px 14px; border-radius: 99px; text-decoration: none; white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line)); color: var(--ink); background: var(--surface);
+  font: 600 .82rem var(--font-ui);
+}
+.perk-index a.active { background: var(--gold); border-color: var(--gold); color: #2b1d02; }
+[id^="sec-"] { scroll-margin-top: 64px; }
+.how { margin: -2px 0 10px; }
+:root[data-theme="retro"] .btn.btn-perk-cta { background: #000080; color: #ffff55; border: 1px solid #ffff55; }
+:root[data-theme="retro"] .hub-tile { border-radius: 2px; background: #000080; }

@@ -1,6 +1,7 @@
 import { html, raw, $, cover, fmtShort } from '../util.js';
 import { state, groupByCategory, matches, compareBooks, categoryName } from '../store.js';
 import { viewHeader } from '../ui.js';
+import { setNavList } from '../navlist.js';
 
 const LS_KEY = 'edm.showMissing';
 const VIEW_KEY = 'edm.libView';
@@ -50,6 +51,7 @@ export function renderLibrary(root) {
 
     const groups = groupByCategory(pool).filter((g) => g.books.length);
     if (!groups.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
+    setNavList(groups.flatMap((g) => g.books.map((b) => b.id)), 'Mi biblioteca');
 
     list.innerHTML = groups.map((g) => {
       const total = approved.filter((b) => b.category_id === g.category.id).length;
@@ -104,6 +106,7 @@ export function renderLibrary(root) {
     };
 
     if (!multi.length && !singles.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
+    setNavList([...multi.flatMap((sr) => sr.books), ...singles].map((b) => b.id), 'Series');
     list.innerHTML = html`
       <p class="muted small legend"><span class="tile owned sample">B1</span> lo tienes
         <span class="tile missing sample">B2</span> te falta

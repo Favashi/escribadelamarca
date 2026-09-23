@@ -3,9 +3,22 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.2.1';
+export const APP_VERSION = '1.2.2';
 
 export const RELEASES = [
+  {
+    version: '1.2.2',
+    date: '2026-09-24',
+    notes: [
+      'En la ficha de un libro, desliza a izquierda o derecha (o usa las flechas de arriba) para pasar al anterior o al siguiente de la lista de la que vienes.',
+      'Perfil: nuevo apartado «Acerca de» con botones para ver las novedades y buscar actualizaciones.',
+      'Arreglado el campo de fecha del diario de partidas, que se salía de la pantalla en iPhone.',
+      'Los extras de Mecenas llevan un ribete dorado en la esquina, y si eres Mecenas la pestaña Perfil se ve en dorado con una estrella.',
+      'Nuevo tema Retro EGA para Mecenas, con aire de terminal de los 80 (como OSR Manager).',
+      'Los Mecenas tienen en Perfil accesos directos a cada extra, y la pantalla de Mecenas un índice para saltar a cada sección.',
+      '«Cerrar sesión» pasa a la tarjeta de tu perfil, lejos de las opciones de borrar datos.',
+    ],
+  },
   {
     version: '1.2.1',
     date: '2026-09-24',

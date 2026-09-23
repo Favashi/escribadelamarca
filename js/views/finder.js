@@ -1,8 +1,9 @@
 import { html, raw, $, cover } from '../util.js';
 import { state, user, isSupporter, matches, compareBooks, categoryName } from '../store.js';
-import { viewHeader } from '../ui.js';
+import { viewHeader, PERK_TAG } from '../ui.js';
 import * as api from '../api.js';
 import { track } from '../track.js';
+import { setNavList } from '../navlist.js';
 
 const KEY = 'edm.finder2';
 const EMPTY = { scope: 'mine', text: '', level: '', players: '', duration: '', tags: [], fresh: false, nodata: false };
@@ -61,7 +62,7 @@ export async function renderFinder(root) {
       </div>`) : ''}
       <div class="finder-foot">
         <div class="finder-switches">
-          ${supporter ? raw(html`<label class="switch"><input type="checkbox" name="fresh" ${f.fresh ? 'checked' : ''}> <span>Solo las que no he dirigido</span></label>`) : ''}
+          ${supporter ? raw(html`<label class="switch"><input type="checkbox" name="fresh" ${f.fresh ? 'checked' : ''}> <span>Solo las que no he dirigido</span> ${raw(PERK_TAG)}</label>`) : ''}
           <label class="switch"><input type="checkbox" name="nodata" ${f.nodata ? 'checked' : ''}> <span>Incluir libros sin datos de juego</span></label>
         </div>
         <button type="button" class="link" data-clear>Limpiar filtros</button>
@@ -101,6 +102,7 @@ export async function renderFinder(root) {
       return compareBooks(a, b);
     });
 
+    setNavList(res.map((b) => b.id), 'Buscador');
     count.textContent = `${res.length} ${res.length === 1 ? 'resultado' : 'resultados'} en ${f.scope === 'mine' ? 'tu biblioteca' : 'todo el catálogo'}`;
     list.innerHTML = res.length ? res.map((b) => {
       const have = state.library.has(b.id);

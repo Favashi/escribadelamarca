@@ -1,9 +1,10 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast } from '../util.js';
 import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, personName, refreshCatalog, refreshLibrary } from '../store.js';
-import { bookFormDialog, confirmDialog, errMsg, CONDITIONS } from '../ui.js';
+import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG } from '../ui.js';
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { gameInfo } from './finder.js';
+import { neighbors, onSwipe } from '../navlist.js';
 import * as api from '../api.js';
 
 export async function renderBook(root, { id }) {
@@ -29,8 +30,24 @@ export async function renderBook(root, { id }) {
   const wished = state.wishlist.has(book.id);
   const codes = barcodesOf(book.id);
 
-  root.innerHTML = html`
-    <button class="back" onclick="history.length > 1 ? history.back() : (location.hash = '#/biblioteca')">← Volver</button>
+  const nav = neighbors(book.id);
+  const navBtn = (id, dir) => {
+    const b = id && bookById(id);
+    if (!b) return html`<span class="book-nav-btn" aria-hidden="true"></span>`;
+    const label = b.code || b.title;
+    return html`<a class="book-nav-btn ${dir}" href="#/libro/${b.id}" data-nav="${b.id}" aria-label="${dir === 'prev' ? 'Anterior' : 'Siguiente'}: ${b.title}">
+      ${dir === 'prev' ? '‹ ' : ''}<span>${label}</span>${dir === 'next' ? ' ›' : ''}</a>`;
+  };
+
+  root.innerHTML = html`<div class="book-page">
+    <div class="book-top">
+      <button class="back" onclick="history.length > 1 ? history.back() : (location.hash = '#/biblioteca')">← Volver</button>
+      ${nav ? raw(html`<nav class="book-nav" aria-label="Navegar por ${nav.label}">
+        ${raw(navBtn(nav.prev, 'prev'))}
+        <span class="book-nav-pos">${nav.index + 1} / ${nav.total}</span>
+        ${raw(navBtn(nav.next, 'next'))}
+      </nav>`) : ''}
+    </div>
     <article class="book">
       ${raw(cover(book, 'cover-lg'))}
       <div class="book-info">
@@ -68,7 +85,7 @@ export async function renderBook(root, { id }) {
             </select>
           </label>
           <label>Notas <textarea name="notes" rows="3" placeholder="Edición, firmas, dónde lo compré…">${entry.notes ?? ''}</textarea></label>
-          ${supporter ? raw(html`<label>Ejemplares repetidos (para intercambio)
+          ${supporter ? raw(html`<label>Ejemplares repetidos (para intercambio) ${raw(PERK_TAG)}
             <input name="spares" type="number" inputmode="numeric" min="0" max="99" value="${entry.spares ?? 0}">
           </label>`) : ''}
           <div class="actions">
@@ -80,13 +97,13 @@ export async function renderBook(root, { id }) {
       <section class="panel">
         <p>No tienes este libro.</p>
         <div class="actions">
-          ${supporter ? raw(html`<button class="btn btn-ghost" data-wish>${wished ? '★ En deseos' : '☆ Lo quiero'}</button>`) : ''}
+          ${supporter ? raw(html`<button class="btn btn-ghost btn-perk" data-wish title="Extra de Mecenas">${wished ? '★ En deseos' : '☆ Lo quiero'}</button>`) : ''}
           <button class="btn btn-primary" data-add>Añadir a mi biblioteca</button>
         </div>
       </section>`)}
 
     ${supporter ? raw(html`
-      <section class="panel">
+      <section class="panel perk">
         <h2>Diario de partidas</h2>
         ${plays.length ? raw(html`<ul class="plays">${plays.map((p) => raw(html`<li data-play="${p.id}">
           <span><strong>${p.role === 'dirigido' ? 'Dirigido' : 'Jugado'}</strong> el ${fmtShort(p.played_on)}${p.group_name ? ` · ${p.group_name}` : ''}
@@ -105,7 +122,7 @@ export async function renderBook(root, { id }) {
       </section>`) : ''}
 
     ${entry ? raw(supporter ? html`
-      <section class="panel">
+      <section class="panel perk">
         <h2>Préstamos</h2>
         ${activeLoan
           ? raw(html`<p>Prestado a <strong>${activeLoan.lent_to}</strong> desde el ${fmtShort(activeLoan.lent_at)}.</p>
@@ -117,7 +134,7 @@ export async function renderBook(root, { id }) {
       <a class="panel teaser" href="#/mecenas">🔒 Diario de partidas, préstamos y repetidos: <strong>hazte Mecenas</strong></a>`) : ''}
 
     ${admin ? raw(html`
-      <section class="panel admin">
+      <section class="panel admin-zone">
         <h2>Administración</h2>
         <dl class="meta audit">${raw(provenance(book))}</dl>
         ${codes.length ? raw(html`<ul class="rows">${codes.map((c) => raw(html`<li class="row" data-code="${c.code}">
@@ -131,9 +148,21 @@ export async function renderBook(root, { id }) {
           ${book.status === 'pending' ? raw('<button class="btn btn-ghost" data-approve>Aprobar</button>') : ''}
           <button class="btn btn-primary" data-edit>Editar</button>
         </div>
-      </section>`) : ''}`;
+      </section>`) : ''}</div>`;
 
   const rerender = () => renderBook(root, { id });
+
+  // Anterior / siguiente: sustituye la entrada del historial para que «Volver» regrese a la lista
+  const go = (target) => { if (target) location.replace(`#/libro/${target}`); };
+  root.querySelectorAll('[data-nav]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.dataset.nav); }));
+  if (nav) {
+    onSwipe($('.book-page', root), { left: () => go(nav.next), right: () => go(nav.prev) });
+    setKeyNav((e) => {
+      if (e.target.closest('input, textarea, select') || document.getElementById('dialog')?.open) return;
+      if (e.key === 'ArrowLeft') go(nav.prev);
+      if (e.key === 'ArrowRight') go(nav.next);
+    });
+  } else setKeyNav(null);
   const run = (fn) => async (e) => {
     e?.preventDefault?.();
     try { await fn(e); } catch (err) { toast(errMsg(err), 'error'); }
@@ -257,4 +286,18 @@ function barcodeInfo(c) {
     : `${personName(c.created_by) ?? SOURCE_LABEL[c.source]} · ${fmtShort(c.created_at)}`;
   const approved = c.approved_at ? ` · validado por ${personName(c.approved_by) ?? 'desconocido'} ${fmtShort(c.approved_at)}` : '';
   return `${status} · ${who}${approved}`;
+}
+
+// Un único listener de teclado global para las flechas; la ficha activa decide qué hacen
+let keyHandler = null;
+let keyBound = false;
+function setKeyNav(fn) {
+  keyHandler = fn;
+  if (!keyBound) {
+    keyBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (!location.hash.startsWith('#/libro/')) return;
+      keyHandler?.(e);
+    });
+  }
 }

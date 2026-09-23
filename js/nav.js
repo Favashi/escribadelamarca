@@ -1,6 +1,6 @@
 // Barra de pestañas: pestaña «Revisión» solo para admin, con contador de pendientes.
 import { $ } from './util.js';
-import { isAdmin, pendingCount } from './store.js';
+import { isAdmin, isSupporter, pendingCount } from './store.js';
 
 export function updateAdminBadge() {
   const nav = $('#nav');
@@ -14,4 +14,11 @@ export function updateAdminBadge() {
   badge.textContent = n > 99 ? '99+' : String(n);
   badge.hidden = n === 0;
   tab.setAttribute('aria-label', n ? `Admin, ${n} pendientes de revisar` : 'Admin');
+
+  // Estrella discreta en la pestaña Perfil para los Mecenas
+  const profile = $('#nav a[href="#/perfil"]');
+  if (profile) {
+    profile.classList.toggle('is-supporter', isSupporter());
+    profile.setAttribute('aria-label', isSupporter() ? 'Perfil (Mecenas)' : 'Perfil');
+  }
 }

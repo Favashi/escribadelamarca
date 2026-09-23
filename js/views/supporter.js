@@ -14,10 +14,10 @@ const PERKS = [
   ['↔', 'Registro de préstamos', 'Apunta a quién prestas cada libro y cuándo vuelve.'],
   ['▤', 'Estadísticas y valor', 'Porcentaje de colección completa y valor según el precio de catálogo.'],
   ['⤓', 'Exportar biblioteca', 'Descarga tu colección en CSV o JSON cuando quieras.'],
-  ['❦', 'Tema Pergamino', 'Un aspecto extra con sabor a viejo manuscrito.'],
+  ['❦', 'Temas Pergamino y Retro EGA', 'Papel envejecido y tinta sepia, o una terminal de los 80 como OSR Manager.'],
 ];
 
-export async function renderSupporter(root) {
+export async function renderSupporter(root, params = {}) {
   if (!isSupporter()) return renderPitch(root);
 
   const uid = user().id;
@@ -41,8 +41,12 @@ export async function renderSupporter(root) {
 
   root.innerHTML = html`
     ${raw(viewHeader('Mecenas', `Gracias por apoyar el proyecto desde el ${fmtDate(state.profile.supporter_since) || 'principio'} ✦`))}
+    <nav class="perk-index" aria-label="Extras de Mecenas">
+      ${[['coleccion', 'Estadísticas'], ['diario', 'Diario'], ['deseos', 'Deseos'], ['intercambio', 'Intercambio'], ['prestamos', 'Préstamos'], ['exportar', 'Exportar']]
+        .map(([id, label]) => raw(html`<a href="#/mecenas/${id}" class="${params.section === id ? 'active' : ''}">${label}</a>`))}
+    </nav>
 
-    <section class="panel">
+    <section class="panel" id="sec-coleccion">
       <h2>Tu colección</h2>
       <div class="big-stat"><span>${pct}%</span><small>${ownedApproved.length} de ${approved.length} libros del catálogo</small></div>
       <ul class="bars">
@@ -56,7 +60,7 @@ export async function renderSupporter(root) {
       </ul>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-valor">
       <h2>Valor de la colección</h2>
       <div class="value-stats">
         <div><span>${eur(ownedValue)}</span><small>lo que tienes, a precio de catálogo</small></div>
@@ -65,8 +69,9 @@ export async function renderSupporter(root) {
       <p class="muted small">Según el PVP del catálogo de Distribuciones Sombra; los libros sin precio no cuentan.</p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-diario">
       <h2>Diario de partidas</h2>
+      <p class="muted small how">Se apunta desde la ficha de cada libro: «Diario de partidas» → «Añadir al diario».</p>
       ${plays.length ? raw(html`<ul class="rows">${plays.slice(0, 8).map((p) => {
         const b = bookById(p.catalog_id);
         return raw(html`<li class="row"><a class="row-title" href="#/libro/${p.catalog_id}">${b?.code ? `${b.code} · ` : ''}${b?.title ?? '—'}
@@ -74,8 +79,9 @@ export async function renderSupporter(root) {
       })}</ul>`) : raw('<p class="muted">Aún vacío. Desde la ficha de un libro puedes apuntar cuándo lo dirigiste o jugaste.</p>')}
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-deseos">
       <h2>Lista de deseos</h2>
+      <p class="muted small how">Añade libros desde su ficha con «☆ Lo quiero». Puedes compartir la lista con un enlace.</p>
       ${wishes.length ? raw(html`<ul class="rows">${wishes.map((b) => raw(html`<li class="row">${raw(cover(b, 'cover-xs'))}<a class="row-title" href="#/libro/${b.id}">${b.title}<small>${categoryName(b.category_id)}</small></a></li>`))}</ul>`)
         : raw('<p class="muted">Vacía. Abre un libro que te falte y pulsa «☆ Lo quiero».</p>')}
       <div class="share-box">
@@ -86,7 +92,7 @@ export async function renderSupporter(root) {
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-intercambio">
       <h2>Repetidos e intercambio</h2>
       <p class="muted small">Indica tus repetidos en la ficha de cada libro. Si activas el intercambio, otros Mecenas que también lo
         tengan activado verán tu nombre y tu contacto cuando tengas algo de su lista de deseos, y tú verás los suyos.</p>
@@ -101,16 +107,18 @@ export async function renderSupporter(root) {
         : html`<p class="muted small">Por ahora ningún Mecenas tiene repetido nada de tu lista de deseos.</p>`) : ''}
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-prestamos">
       <h2>Prestados ahora</h2>
+      <p class="muted small how">Se registran desde la ficha de un libro que tengas: «Préstamos» → «Prestar».</p>
       ${active.length ? raw(html`<ul class="rows">${active.map((l) => {
         const b = bookById(l.catalog_id);
         return raw(html`<li class="row"><a class="row-title" href="#/libro/${l.catalog_id}">${b?.title ?? '—'}<small>A ${l.lent_to} desde el ${fmtShort(l.lent_at)}</small></a></li>`);
       })}</ul>`) : raw('<p class="muted">Ningún libro prestado.</p>')}
     </section>
 
-    <section class="panel">
+    <section class="panel" id="sec-exportar">
       <h2>Exportar</h2>
+      <p class="muted small how">Descarga tu biblioteca con estado, notas y fecha de registro.</p>
       <div class="actions">
         <button class="btn btn-ghost" data-csv>Descargar CSV</button>
         <button class="btn btn-ghost" data-json>Descargar JSON</button>
@@ -121,6 +129,11 @@ export async function renderSupporter(root) {
       <p>¿Quieres volver a invitar a un café? Siempre se agradece.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
     </section>`;
+
+  if (params.section) {
+    const target = $(`#sec-${params.section}`, root);
+    if (target) requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 
   const rows = () => [...state.library.values()]
     .map((e) => ({ e, b: bookById(e.catalog_id) ?? { title: '' } }))

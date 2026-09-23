@@ -5,7 +5,7 @@ import {
 } from '../store.js';
 import { startScanner, cameraAvailable } from '../scanner.js';
 import { normalizeCode, formatCode, isPubCode } from '../isbn.js';
-import { bookFormDialog, errMsg } from '../ui.js';
+import { bookFormDialog, errMsg, ADMIN_TAG } from '../ui.js';
 import * as api from '../api.js';
 import { track } from '../track.js';
 
@@ -160,7 +160,7 @@ export function renderScan(root) {
         ${entry
           ? raw(html`<p>Lo añadiste a tu biblioteca el <strong>${fmtDate(entry.added_at)}</strong>.</p>`)
           : raw('<p>¿Quieres añadirlo a tu biblioteca?</p>')}
-        ${adminVerify ? raw(html`<p class="small muted">Código ${formatCode(code)} sin verificar.
+        ${adminVerify ? raw(html`<p class="small muted admin-inline">${raw(ADMIN_TAG)} Código ${formatCode(code)} sin verificar.
           <button class="link" data-verify>Marcar como verificado</button></p>`) : ''}
         <div class="actions">
           ${entry
@@ -225,7 +225,7 @@ export function renderScan(root) {
           : 'Si sabes qué libro es, elígelo: se añadirá a tu biblioteca y el código quedará propuesto para revisión.'}</p>
         <div class="actions">
           <button class="btn btn-ghost" data-again>Cancelar</button>
-          <button class="btn btn-ghost" data-new>No está: ${admin ? 'crear libro' : 'proponer libro'}</button>
+          <button class="btn btn-ghost ${admin ? 'btn-admin' : ''}" data-new>No está: ${admin ? 'crear libro' : 'proponer libro'}</button>
         </div>
         <input type="search" class="search pick-search" placeholder="¿Qué libro es? Busca por título o código (B19)…" aria-label="Buscar libro">
         <ul class="pick-list"></ul>

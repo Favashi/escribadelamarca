@@ -31,7 +31,7 @@ Escanea el código de barras y **Escriba de la Marca** te dice al momento si est
 La app es gratuita. Si te resulta útil, puedes invitarme a un café en
 **[Buy Me a Coffee](https://buymeacoffee.com/toniruiz)**. Con un café (5 €) te conviertes en **Mecenas**
 y desbloqueas: diario de partidas, lista de deseos compartible, repetidos e intercambio entre Mecenas, registro de préstamos,
-estadísticas y valor de tu colección, exportación a CSV/JSON y el tema Pergamino.
+estadísticas y valor de tu colección, exportación a CSV/JSON y los temas Pergamino y Retro EGA.
 
 ## De dónde salen los datos
 

@@ -112,7 +112,7 @@ function renderLanding() {
     <section class="landing-panel coffee">
       <h2>Gratis, y con extras para Mecenas</h2>
       <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
-        desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y el tema Pergamino.</p>
+        desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
     </section>
 
@@ -216,6 +216,7 @@ route('/catalogo', mount(renderCatalog));
 route('/libro/:id', mount(renderBook));
 route('/perfil', mount(renderProfile));
 route('/mecenas', mount(renderSupporter));
+route('/mecenas/:section', mount(renderSupporter));
 route('/revision', mount(renderReview));
 route('/buscar', mount(renderFinder));
 route('/admin', mount(renderAdmin));

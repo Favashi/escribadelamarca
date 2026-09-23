@@ -2,6 +2,7 @@ import { html, raw, $, cover, toast } from '../util.js';
 import { state, user, isAdmin, groupByCategory, refreshCatalog, refreshLibrary, bookById, matches, pendingCount } from '../store.js';
 import { bookFormDialog, confirmDialog, viewHeader, errMsg } from '../ui.js';
 import * as api from '../api.js';
+import { setNavList } from '../navlist.js';
 
 export function renderCatalog(root) {
   let query = '';
@@ -15,6 +16,7 @@ export function renderCatalog(root) {
   function draw() {
     const pool = state.catalog.filter((b) => (admin || b.status === 'approved' || b.created_by === user().id) && matches(b, query));
     const groups = groupByCategory(pool).filter((g) => g.books.length);
+    setNavList(groups.flatMap((g) => g.books.map((b) => b.id)), 'Catálogo');
 
     root.querySelector('.groups').innerHTML = html`
       ${raw(pendingSection())}
@@ -36,7 +38,7 @@ export function renderCatalog(root) {
   }
 
   root.innerHTML = html`
-    ${raw(viewHeader('Catálogo', `${state.catalog.filter((b) => b.status === 'approved').length} publicaciones de la Marca del Este`, `<button class="btn btn-sm btn-primary" data-new>${admin ? '+ Nuevo' : '+ Proponer'}</button>`))}
+    ${raw(viewHeader('Catálogo', `${state.catalog.filter((b) => b.status === 'approved').length} publicaciones de la Marca del Este`, `<button class="btn btn-sm ${admin ? 'btn-admin' : 'btn-primary'}" data-new>${admin ? '🛡 + Nuevo' : '+ Proponer'}</button>`))}
     <div class="toolbar"><input type="search" class="search" placeholder="Buscar título, código (B19) o autor…" aria-label="Buscar"></div>
     <div class="groups"></div>`;
 

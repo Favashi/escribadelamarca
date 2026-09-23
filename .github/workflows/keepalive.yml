@@ -1,0 +1,34 @@
+# Ping semanal a Supabase para que el plan gratuito no pause el proyecto por inactividad
+# (se pausa tras ~7 días sin peticiones). Hace una consulta pública de solo lectura
+# con la clave publishable que ya está en js/config.js.
+#
+# Nota: GitHub desactiva los workflows programados si el repositorio pasa 60 días sin commits;
+# en ese caso reactívalo desde la pestaña Actions.
+
+name: Mantener Supabase activo
+
+on:
+  schedule:
+    - cron: '17 6 * * 1,4'   # lunes y jueves a las 06:17 UTC (dos veces por semana, con margen)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: js/config.js
+          sparse-checkout-cone-mode: false
+
+      - name: Consultar la API de Supabase
+        run: |
+          URL=$(grep -oE "SUPABASE_URL = '[^']+'" js/config.js | cut -d"'" -f2)
+          KEY=$(grep -oE "SUPABASE_ANON_KEY = '[^']+'" js/config.js | cut -d"'" -f2)
+          test -n "$URL" -a -n "$KEY" || { echo "No se encontró la configuración de Supabase"; exit 1; }
+          CODE=$(curl -s -o /tmp/resp.json -w '%{http_code}' "$URL/rest/v1/categories?select=slug&limit=1" -H "apikey: $KEY")
+          echo "HTTP $CODE: $(cat /tmp/resp.json)"
+          test "$CODE" = "200" || { echo "Supabase no respondió bien (¿proyecto pausado?)"; exit 1; }

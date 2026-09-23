@@ -77,8 +77,8 @@
 :root[data-theme="retro"] .toast { border-radius: 2px; box-shadow: 3px 3px 0 #000; font-family: var(--font-ui); }
 :root[data-theme="retro"] .group summary::before { color: #ffff55; }
 :root[data-theme="retro"] a:not(.btn) { color: #55ffff; }
-:root[data-theme="retro"] .panel.perk::after { background: #ffff55; color: #000; box-shadow: none; }
-:root[data-theme="retro"] .panel.admin-zone::after { background: #55ffff; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .ribbon-perk { background: #ffff55; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .ribbon-admin { background: #55ffff; color: #000; box-shadow: none; }
 :root[data-theme="retro"] .panel.perk, :root[data-theme="retro"] .panel.admin-zone { background: #0000a8; }
 :root[data-theme="retro"] .panel.danger-zone { border-color: #ff5555; background: #0000a8; }
 :root[data-theme="retro"] .btn.btn-danger-outline { background: #000080; color: #ff5555; border: 1px solid #ff5555; }
@@ -90,3 +90,4 @@
 /* ---------- Retro EGA ---------- */
 :root[data-theme="retro"] .btn.btn-perk-cta { background: #000080; color: #ffff55; border: 1px solid #ffff55; }
 :root[data-theme="retro"] .hub-tile { border-radius: 2px; background: #000080; }
+:root[data-theme="retro"] .ribbon-admin { --icon-cut: #55ffff; }

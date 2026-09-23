@@ -1,8 +1,9 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast } from '../util.js';
-import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, personName, refreshCatalog, refreshLibrary } from '../store.js';
-import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG } from '../ui.js';
+import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, personName, refreshCatalog, refreshLibrary, refreshSuggestions } from '../store.js';
+import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG, suggestDialog, diffFields, FIELD_LABELS } from '../ui.js';
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
+import { icon, ribbon } from '../icons.js';
 import { gameInfo } from './finder.js';
 import { neighbors, onSwipe } from '../navlist.js';
 import * as api from '../api.js';
@@ -73,6 +74,8 @@ export async function renderBook(root, { id }) {
       </div>
     </article>
 
+    ${!admin ? raw(suggestBlock(book, uid)) : ''}
+
     ${entry ? raw(html`
       <section class="panel owned">
         <p class="badge badge-ok">En tu biblioteca</p>
@@ -103,7 +106,7 @@ export async function renderBook(root, { id }) {
       </section>`)}
 
     ${supporter ? raw(html`
-      <section class="panel perk">
+      <section class="panel perk">${raw(ribbon('perk'))}
         <h2>Diario de partidas</h2>
         ${plays.length ? raw(html`<ul class="plays">${plays.map((p) => raw(html`<li data-play="${p.id}">
           <span><strong>${p.role === 'dirigido' ? 'Dirigido' : 'Jugado'}</strong> el ${fmtShort(p.played_on)}${p.group_name ? ` · ${p.group_name}` : ''}
@@ -122,7 +125,7 @@ export async function renderBook(root, { id }) {
       </section>`) : ''}
 
     ${entry ? raw(supporter ? html`
-      <section class="panel perk">
+      <section class="panel perk">${raw(ribbon('perk'))}
         <h2>Préstamos</h2>
         ${activeLoan
           ? raw(html`<p>Prestado a <strong>${activeLoan.lent_to}</strong> desde el ${fmtShort(activeLoan.lent_at)}.</p>
@@ -131,10 +134,10 @@ export async function renderBook(root, { id }) {
         ${loans.filter((l) => l.returned_at).length ? raw(html`<ul class="history">${loans.filter((l) => l.returned_at).map((l) =>
           raw(html`<li>${l.lent_to}: ${fmtShort(l.lent_at)} → ${fmtShort(l.returned_at)}</li>`))}</ul>`) : ''}
       </section>` : html`
-      <a class="panel teaser" href="#/mecenas">🔒 Diario de partidas, préstamos y repetidos: <strong>hazte Mecenas</strong></a>`) : ''}
+      <a class="panel teaser" href="#/mecenas">${raw(icon('lock'))} Diario de partidas, préstamos y repetidos: <strong>hazte Mecenas</strong></a>`) : ''}
 
     ${admin ? raw(html`
-      <section class="panel admin-zone">
+      <section class="panel admin-zone">${raw(ribbon('admin'))}
         <h2>Administración</h2>
         <dl class="meta audit">${raw(provenance(book))}</dl>
         ${codes.length ? raw(html`<ul class="rows">${codes.map((c) => raw(html`<li class="row" data-code="${c.code}">
@@ -143,6 +146,10 @@ export async function renderBook(root, { id }) {
           <button class="btn btn-sm btn-ghost btn-danger-text" data-code-del aria-label="Quitar código">Quitar</button>
         </li>`))}</ul>`) : ''}
         <form class="inline-form barcode-form"><input name="barcode" inputmode="numeric" placeholder="Añadir código de barras"><button class="btn btn-ghost">Añadir</button></form>
+        <details class="history-box">
+          <summary>Historial de cambios</summary>
+          <div class="history-list"><p class="muted small">Cargando…</p></div>
+        </details>
         <div class="actions">
           <button class="btn btn-ghost btn-danger-text" data-delete>Borrar del catálogo</button>
           ${book.status === 'pending' ? raw('<button class="btn btn-ghost" data-approve>Aprobar</button>') : ''}
@@ -249,6 +256,46 @@ export async function renderBook(root, { id }) {
     rerender();
   }));
 
+  // --- Sugerir cambios (usuarios) ---
+  $('[data-suggest]', root)?.addEventListener('click', run(async () => {
+    const res = await suggestDialog(book);
+    if (!res) return;
+    await api.createSuggestion(book.id, res.changes, res.note);
+    await refreshSuggestions();
+    toast('Gracias: tu sugerencia se revisará pronto', 'ok');
+    rerender();
+  }));
+  $('[data-suggest-del]', root)?.addEventListener('click', run(async (e) => {
+    await api.deleteSuggestion(Number(e.target.dataset.suggestDel));
+    await refreshSuggestions();
+    toast('Sugerencia retirada');
+    rerender();
+  }));
+
+  // --- Historial (admin): se carga al abrirlo ---
+  const hbox = $('.history-box', root);
+  hbox?.addEventListener('toggle', async () => {
+    if (!hbox.open || hbox.dataset.loaded) return;
+    hbox.dataset.loaded = '1';
+    const list = $('.history-list', hbox);
+    try {
+      const rows = await api.getHistory(book.id);
+      list.innerHTML = rows.length ? rows.map(historyItem).join('') : html`<p class="muted small">Sin cambios registrados desde que existe el historial.</p>`;
+    } catch (err) { list.innerHTML = html`<p class="muted small">${errMsg(err)}</p>`; }
+  });
+  // Sin run(): su preventDefault impediría abrir/cerrar el <details> al pulsar el resumen
+  hbox?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-restore]');
+    if (!btn) return;
+    try {
+    if (!(await confirmDialog('¿Restaurar esta versión? Los datos volverán a como estaban antes de ese cambio (el cambio actual quedará también en el historial).', { ok: 'Restaurar' }))) return;
+    await api.adminRestoreVersion(Number(btn.dataset.restore));
+    await refreshCatalog();
+    toast('Versión restaurada', 'ok');
+    if (bookById(book.id)) rerender(); else navigate('/catalogo');
+    } catch (err) { toast(errMsg(err), 'error'); }
+  });
+
   $('[data-approve]', root)?.addEventListener('click', run(async () => {
     await api.updateBook(book.id, { status: 'approved' });
     await refreshCatalog();
@@ -300,4 +347,36 @@ function setKeyNav(fn) {
       keyHandler?.(e);
     });
   }
+}
+
+/** Bloque «Sugerir cambios» para usuarios, con el estado de sus sugerencias sobre este libro. */
+function suggestBlock(book, uid) {
+  const mine = state.suggestions.filter((sg) => sg.catalog_id === book.id && sg.created_by === uid);
+  const pending = mine.find((sg) => sg.status === 'pending');
+  const last = mine.find((sg) => sg.status !== 'pending');
+  return html`<section class="suggest-box">
+    ${pending ? raw(html`<p class="small"><span class="badge badge-warn">Pendiente</span> Enviaste una sugerencia el ${fmtShort(pending.created_at)}
+      (${Object.keys(pending.changes).map((k) => FIELD_LABELS[k] || k).join(', ')}).
+      <button class="link" data-suggest-del="${pending.id}">Retirar</button></p>`)
+    : raw(html`<p class="small muted">¿Falta algún dato o hay algo mal?
+      <button class="btn btn-sm btn-ghost" data-suggest>✎ Sugerir cambios</button></p>`)}
+    ${last ? raw(html`<p class="small muted">Tu última sugerencia fue ${last.status === 'approved' ? 'aceptada ✓' : 'rechazada'}${last.review_note ? `: «${last.review_note}»` : ''}.</p>`) : ''}
+  </section>`;
+}
+
+const OP_LABEL = { insert: 'Alta', update: 'Cambio', delete: 'Borrado', restore: 'Restauración' };
+
+/** Una entrada del historial con sus diferencias y el botón para volver a la versión anterior. */
+function historyItem(h) {
+  const who = h.changed_by ? personName(h.changed_by) : 'sincronización del CSV';
+  const isCode = h.table_name === 'catalog_barcodes';
+  const code = (h.new_data || h.old_data || {}).code;
+  const diffs = h.op === 'update' || h.op === 'restore' ? diffFields(h.old_data, h.new_data) : [];
+  return html`<div class="history-item">
+    <p class="history-head"><strong>${OP_LABEL[h.op] || h.op}${isCode ? ` de código ${code}` : ''}</strong>
+      <small>${fmtDate(h.created_at)} · ${who}</small></p>
+    ${diffs.length ? raw(html`<ul class="diff">${diffs.map((d) => raw(html`<li><span>${d.label}</span> <del>${d.from}</del> → <ins>${d.to}</ins></li>`))}</ul>`) : ''}
+    ${h.old_data ? raw(html`<button class="btn btn-sm btn-ghost" data-restore="${h.id}">↶ Restaurar la versión anterior</button>`)
+      : raw(html`<button class="btn btn-sm btn-ghost btn-danger-text" data-restore="${h.id}">↶ Deshacer el alta</button>`)}
+  </div>`;
 }

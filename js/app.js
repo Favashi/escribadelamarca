@@ -16,7 +16,7 @@ import { renderFinder } from './views/finder.js';
 import { renderPublicWishlist } from './views/wishlist-public.js';
 import { renderAdmin } from './views/admin.js';
 import { updateAdminBadge } from './nav.js';
-import { showWhatsNewIfUpdated } from './ui.js';
+import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
 import { trackOpen } from './track.js';
 import { watchForUpdates } from './update.js';
 
@@ -194,6 +194,7 @@ async function enterApp(session) {
   updateAdminBadge();
   showWhatsNewIfUpdated();
   trackOpen(session.user.id);
+  maybeOnboard();
   if (!routerStarted) {
     routerStarted = true;
     window.addEventListener('hashchange', setActiveNav);
@@ -202,6 +203,19 @@ async function enterApp(session) {
     await resolve();
   }
   setActiveNav();
+}
+
+/** Bienvenida la primera vez que entra alguien sin libros en su biblioteca. */
+function maybeOnboard() {
+  let done = false;
+  try { done = localStorage.getItem('edm.onboarded') === '1'; } catch { /* sin storage */ }
+  if (done || state.library.size) return;
+  setTimeout(async () => {
+    const choice = await onboardingDialog();
+    try { localStorage.setItem('edm.onboarded', '1'); } catch { /* sin storage */ }
+    if (choice === 'scan') location.hash = '#/escanear';
+    if (choice === 'catalog') location.hash = '#/catalogo';
+  }, 400);
 }
 
 // Cada vista recibe el contenedor; puede devolver { cleanup }.

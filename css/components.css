@@ -87,15 +87,16 @@
 
 /* ---------- Ribetes de esquina: Mecenas y Admin ---------- */
 .panel.perk, .panel.admin-zone { position: relative; overflow: hidden; }
-.panel.perk > h2, .panel.admin-zone > h2 { padding-right: 64px; }
-.panel.perk::after, .panel.admin-zone::after {
-  position: absolute; top: 14px; right: -34px; width: 124px; transform: rotate(45deg);
-  padding: 3px 0; text-align: center; pointer-events: none;
-  font: 800 .58rem var(--font-ui); letter-spacing: .12em; text-transform: uppercase;
+.panel.perk > h2, .panel.admin-zone > h2 { padding-right: 84px; }
+.ribbon {
+  position: absolute; top: 22px; right: -46px; width: 170px; transform: rotate(45deg); pointer-events: none;
+  display: flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 0;
+  font: 800 .64rem var(--font-ui); letter-spacing: .12em; text-transform: uppercase;
   box-shadow: 0 2px 6px rgb(0 0 0 / .25);
 }
-.panel.perk::after { content: '★ Mecenas'; background: linear-gradient(180deg, #f6cf4a, #d9a514); color: #3b2a05; }
-.panel.admin-zone::after { content: '🛡 Admin'; background: var(--admin); color: #fff; }
+.ribbon .i { width: 12px; height: 12px; }
+.ribbon-perk { background: linear-gradient(180deg, #f6cf4a, #d9a514); color: #3b2a05; }
+.ribbon-admin { background: var(--admin); color: #fff; --icon-cut: var(--admin); }
 
 /* ---------- Selector de tema (estilo Ajustes de iOS) ---------- */
 .theme-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -132,3 +133,61 @@
 .btn-danger-outline { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
 .btn-danger-outline:hover, .btn-danger-outline:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .btn-danger-outline:disabled { opacity: .45; }
+
+/* ---------- Diferencias (sugerencias e historial) ---------- */
+.diff { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 3px; font: .82rem var(--font-ui); }
+.diff li { overflow-wrap: anywhere; }
+.diff span { color: var(--muted); font-weight: 600; margin-right: 4px; }
+.diff del { color: var(--danger); text-decoration: line-through; opacity: .85; }
+.diff ins { color: var(--ok); text-decoration: none; font-weight: 600; }
+
+/* ---------- Bienvenida ---------- */
+.onboarding {
+  text-align: center; position: relative;
+  padding: 44px 26px calc(26px + env(safe-area-inset-bottom, 0px));
+  min-height: min(520px, 78dvh); display: flex; flex-direction: column; justify-content: center;
+}
+.onboarding .sheet-title { font-size: 1.35rem; margin: 6px 0 0; }
+.ob-art {
+  width: 116px; height: 116px; margin: 0 auto 22px; display: grid; place-items: center; border-radius: 24px;
+  background: radial-gradient(ellipse at 50% 35%, #8a4aa3, #5e2c72 80%);
+  border-left: 7px solid #45205a; box-shadow: 0 10px 26px rgb(43 26 18 / .28);
+}
+.ob-art svg { width: 76px; height: 76px; }
+.onboarding p { margin: 14px auto 22px; max-width: 24rem; line-height: 1.6; }
+.ob-dots { display: flex; justify-content: center; gap: 8px; margin: 0 0 22px; }
+.ob-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--line); transition: width .2s, background .2s; }
+.ob-dots span.on { background: var(--accent); width: 22px; border-radius: 99px; }
+.onboarding .actions { margin-top: 0; }
+.ob-close {
+  position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: transparent; color: var(--muted); font-size: 1.6rem; line-height: 1; cursor: pointer;
+}
+.ob-close:hover, .ob-close:focus-visible { background: var(--surface-2); color: var(--ink); }
+
+/* ---------- Iconos propios ---------- */
+.i { width: 1.05em; height: 1.05em; flex: none; vertical-align: -0.16em; }
+.btn .i { width: 18px; height: 18px; }
+.perk-tag, .admin-tag { display: inline-flex; align-items: center; gap: 4px; }
+.perk-tag .i, .admin-tag .i { width: 11px; height: 11px; }
+.admin-tag { --icon-cut: var(--surface); }
+.badge .i { width: 12px; height: 12px; vertical-align: -2px; }
+.badge-admin { --icon-cut: var(--surface); }
+.teaser .i { color: var(--gold); margin-right: 4px; }
+.theme-name .i { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; color: var(--muted); }
+.btn-admin .i { --icon-cut: var(--admin); }
+
+/* ---------- Zona de peligro plegable ---------- */
+details.danger-zone > summary {
+  list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-items: center;
+}
+details.danger-zone > summary::-webkit-details-marker { display: none; }
+details.danger-zone > summary h2 { margin: 0; display: flex; align-items: center; gap: 8px; }
+details.danger-zone > summary .muted { grid-column: 1; margin-top: 2px; }
+.dz-chevron { grid-row: 1 / span 2; grid-column: 2; width: 20px; height: 20px; color: var(--muted); transition: transform .2s; }
+details.danger-zone[open] .dz-chevron { transform: rotate(90deg); }
+.dz-item { padding-top: 14px; margin-top: 14px; border-top: 1px solid color-mix(in srgb, var(--danger) 25%, var(--line)); }
+.dz-item h3 { margin: 0 0 4px; font: 700 .95rem var(--font-ui); color: var(--danger); }
+.dz-item p { margin: 0 0 10px; }
+.btn-danger-outline { gap: 8px; }
+.danger-title { display: flex; align-items: center; gap: 8px; color: var(--danger); }

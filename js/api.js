@@ -113,3 +113,26 @@ export const adminSetSupporter = async (userId, value) =>
   ok(await supabase.rpc('admin_set_supporter', { p_user: userId, p_value: value }));
 export const adminMatchDonation = async (donationId, userId) =>
   ok(await supabase.rpc('admin_match_donation', { p_donation: donationId, p_user: userId }));
+
+// --- Sugerencias de cambios e historial del catálogo ---
+export const getSuggestions = async () =>
+  ok(await supabase.from('catalog_suggestions').select('*').order('created_at', { ascending: false }));
+
+export const createSuggestion = async (catalogId, changes, note) =>
+  ok(await supabase.from('catalog_suggestions').insert({ catalog_id: catalogId, changes, note: note || null }));
+
+export const deleteSuggestion = async (id) =>
+  ok(await supabase.from('catalog_suggestions').delete().eq('id', id));
+
+export const adminApplySuggestion = async (id, changes = null) =>
+  ok(await supabase.rpc('admin_apply_suggestion', { p_id: id, p_changes: changes }));
+
+export const adminRejectSuggestion = async (id, note = null) =>
+  ok(await supabase.rpc('admin_reject_suggestion', { p_id: id, p_note: note }));
+
+export const getHistory = async (catalogId) =>
+  ok(await supabase.from('catalog_history').select('*').eq('catalog_id', catalogId)
+    .order('created_at', { ascending: false }).limit(50));
+
+export const adminRestoreVersion = async (historyId) =>
+  ok(await supabase.rpc('admin_restore_version', { p_history: historyId }));

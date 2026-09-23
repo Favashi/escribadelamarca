@@ -13,8 +13,8 @@ Uso:
 Reglas de la sincronización (idempotente, se puede repetir):
   * Cada fila se identifica por `ref`: la clave de Sombra o, si no hay, `codex:<codigo_publicacion>`.
   * Filas nuevas → se insertan (categoría según SERIES_CATEGORY).
-  * Filas existentes con source='csv' → se actualizan sus datos, EXCEPTO la categoría y la portada
-    (se respetan los cambios hechos por el admin en la app).
+  * Filas existentes con source='csv' → se actualizan sus datos, EXCEPTO la categoría, la portada y
+    cualquier campo editado desde la app (catalog.locked_fields: ediciones del admin o sugerencias validadas).
   * Libros creados desde la app (source='app') no se tocan.
   * Códigos de barras: solo EAN-13 con checksum válido; se añaden como source='sombra', sin verificar.
     Nunca se borran códigos ni libros: eso se hace a mano (ver MEJORAS.md).
@@ -118,6 +118,30 @@ def codex_values(c):
     return [lo, hi, plo, phi, n(c["sesiones"]), q_array(c["tags"]), q(c["resumen"].strip()), q(c["url"])]
 
 
+# Columnas que la sincronización actualiza. La segunda parte indica el campo de locked_fields que las protege
+# (series y number van con code). Las de datos de juego solo se pisan si el Codex trae valor.
+SYNC_COLUMNS = [
+    ("code", "code"), ("series", "code"), ("number", "code"), ("title", "title"), ("author", "author"),
+    ("kind", None), ("pages", "pages"), ("binding", None), ("interior", None), ("price_eur", None),
+    ("catalog_date", None), ("isbn_published", None), ("sombra_key", None), ("tesoros_sku", None),
+]
+GAME_COLUMNS = ["min_level", "max_level", "min_players", "max_players", "sessions", "tags", "summary", "codex_url"]
+GAME_LOCK = {"codex_url": None}
+
+
+def update_assignments():
+    out = []
+    for col, lock in SYNC_COLUMNS:
+        val = f"excluded.{col}"
+        out.append(f"  {col} = " + (f"case when '{lock}' = any(c.locked_fields) then c.{col} else {val} end" if lock else val))
+    for col in GAME_COLUMNS:
+        lock = GAME_LOCK.get(col, col)
+        val = (f"case when cardinality(excluded.tags) > 0 then excluded.tags else c.tags end" if col == "tags"
+               else f"coalesce(excluded.{col}, c.{col})")
+        out.append(f"  {col} = " + (f"case when '{lock}' = any(c.locked_fields) then c.{col} else {val} end" if lock else val))
+    return out
+
+
 def build_sql(rows, codex):
     refs = [ref_of(r) for r in rows]
     dupes = {x for x in refs if refs.count(x) > 1}
@@ -163,18 +187,9 @@ def build_sql(rows, codex):
     out.append(",\n".join(values))
     out += [
         "on conflict (ref) do update set",
-        "  code = excluded.code, series = excluded.series, number = excluded.number,",
-        "  title = excluded.title, author = excluded.author, kind = excluded.kind,",
-        "  pages = excluded.pages, binding = excluded.binding, interior = excluded.interior,",
-        "  price_eur = excluded.price_eur, catalog_date = excluded.catalog_date,",
-        "  isbn_published = excluded.isbn_published, sombra_key = excluded.sombra_key,",
-        "  tesoros_sku = excluded.tesoros_sku, meta = excluded.meta,",
-        # Datos de juego: solo se sobrescriben si el Codex trae valor (se respeta lo editado a mano por el admin)
-        "  min_level = coalesce(excluded.min_level, c.min_level), max_level = coalesce(excluded.max_level, c.max_level),",
-        "  min_players = coalesce(excluded.min_players, c.min_players), max_players = coalesce(excluded.max_players, c.max_players),",
-        "  sessions = coalesce(excluded.sessions, c.sessions),",
-        "  tags = case when cardinality(excluded.tags) > 0 then excluded.tags else c.tags end,",
-        "  summary = coalesce(excluded.summary, c.summary), codex_url = coalesce(excluded.codex_url, c.codex_url)",
+        # Los campos editados desde la app (admin o sugerencia validada) están en c.locked_fields y no se pisan
+        ",\n".join(update_assignments()) + ",",
+        "  meta = excluded.meta",
         "where c.source = 'csv';",
         "",
     ]

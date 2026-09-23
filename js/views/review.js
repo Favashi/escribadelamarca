@@ -1,6 +1,6 @@
 import { html, raw, $, cover, fmtDate, toast } from '../util.js';
-import { state, isAdmin, bookById, categoryName, personName, refreshCatalog, refreshLibrary } from '../store.js';
-import { confirmDialog, viewHeader, errMsg } from '../ui.js';
+import { state, isAdmin, bookById, categoryName, personName, refreshCatalog, refreshLibrary, refreshSuggestions } from '../store.js';
+import { confirmDialog, viewHeader, errMsg, fieldText, FIELD_LABELS } from '../ui.js';
 import { formatCode } from '../isbn.js';
 import { updateAdminBadge } from '../nav.js';
 import { adminTabs } from './admin.js';
@@ -22,14 +22,36 @@ export function renderReview(root) {
       .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     const codes = state.barcodes.filter((c) => c.status === 'pending')
       .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    const suggestions = state.suggestions.filter((sg) => sg.status === 'pending')
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
     const by = (id, date) => `Propuesto por ${personName(id) ?? 'desconocido'} el ${fmtDate(date)}`;
 
     wrap.innerHTML = html`
       ${raw(viewHeader('Administración'))}
       ${raw(adminTabs('revision'))}
-      <p class="muted admin-sub">${books.length + codes.length
-        ? `${books.length + codes.length} propuestas pendientes de revisar`
+      <p class="muted admin-sub">${books.length + codes.length + suggestions.length
+        ? `${books.length + codes.length + suggestions.length} propuestas pendientes de revisar`
         : 'No hay nada pendiente de revisar'}</p>
+
+      <section class="panel">
+        <h2>Sugerencias de cambios <span class="count">${suggestions.length}</span></h2>
+        ${suggestions.length ? raw(html`<ul class="rows">${suggestions.map((sg) => {
+          const b = bookById(sg.catalog_id);
+          return raw(html`<li class="review-row suggestion-row" data-suggestion="${sg.id}">
+            <div class="review-info">
+              <a class="row-title" href="#/libro/${sg.catalog_id}">${b?.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b?.title ?? '—'}</a>
+              <small>${by(sg.created_by, sg.created_at)}</small>
+              <ul class="diff">${Object.entries(sg.changes).map(([k, v]) => raw(html`<li><span>${FIELD_LABELS[k] || k}</span>
+                <del>${fieldText(k, b?.[k])}</del> → <ins>${fieldText(k, v)}</ins></li>`))}</ul>
+              ${sg.note ? raw(html`<small class="suggestion-note">«${sg.note}»</small>`) : ''}
+            </div>
+            <div class="review-actions">
+              <button class="btn btn-sm btn-ghost btn-danger-text" data-sg-reject>Rechazar</button>
+              <button class="btn btn-sm btn-primary" data-sg-approve>Validar y aplicar</button>
+            </div>
+          </li>`);
+        })}</ul>`) : raw('<p class="muted">Ninguna sugerencia pendiente.</p>')}
+      </section>
 
       <section class="panel">
         <h2>Libros nuevos <span class="count">${books.length}</span></h2>
@@ -68,6 +90,21 @@ export function renderReview(root) {
   }
 
   wrap.addEventListener('click', async (e) => {
+    const sgBtn = e.target.closest('[data-sg-approve], [data-sg-reject]');
+    if (sgBtn) {
+      const id = Number(sgBtn.closest('[data-suggestion]').dataset.suggestion);
+      const approve = sgBtn.hasAttribute('data-sg-approve');
+      try {
+        if (approve) await api.adminApplySuggestion(id);
+        else if (await confirmDialog('¿Rechazar esta sugerencia? No se aplicará ningún cambio.', { ok: 'Rechazar', danger: true })) await api.adminRejectSuggestion(id);
+        else return;
+        await Promise.all([refreshSuggestions(), refreshCatalog()]);
+        toast(approve ? 'Cambios aplicados (quedan en el historial del libro)' : 'Sugerencia rechazada', approve ? 'ok' : 'info');
+        updateAdminBadge();
+        draw();
+      } catch (err) { toast(errMsg(err), 'error'); }
+      return;
+    }
     const btn = e.target.closest('[data-approve], [data-reject]');
     if (!btn) return;
     const row = btn.closest('.review-row');

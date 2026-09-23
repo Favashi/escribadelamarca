@@ -147,19 +147,8 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 /* ---------- Marcas de Mecenas y de administración ---------- */
 #nav a[data-admin-tab].active { color: var(--admin); }
 #nav a.is-supporter::after {
-  content: '★';
-  position: absolute;
-  top: 1px;
-  left: calc(50% + 6px);
-  font-size: .56rem;
-  line-height: 1;
-  color: #3b2a05;
-  width: 15px;
-  height: 15px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--gold);
+  content: ''; position: absolute; top: 1px; left: calc(50% + 6px); width: 15px; height: 15px; border-radius: 50%;
+  background: var(--gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z' fill='%233b2a05'/%3E%3C/svg%3E") center / 10px no-repeat;
 }
 
 /* ---------- Pestaña Perfil de un Mecenas: icono dorado con estrella ---------- */

@@ -430,3 +430,13 @@ span.book-nav-btn { visibility: hidden; }
 .perk-index a.active { background: var(--gold); border-color: var(--gold); color: #2b1d02; }
 [id^="sec-"] { scroll-margin-top: 64px; }
 .how { margin: -2px 0 10px; }
+
+/* ---------- Ficha: sugerir cambios e historial (admin) ---------- */
+.suggest-box { margin: 10px 0 4px; }
+.suggest-box p { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.history-box { margin: 12px 0 4px; }
+.history-box > summary { cursor: pointer; font: 700 .88rem var(--font-ui); color: var(--admin); padding: 6px 0; }
+.history-item { padding: 10px 0; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.history-head { margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font: .88rem var(--font-ui); }
+.history-head small { color: var(--muted); }
+.suggestion-note { font-style: italic; }

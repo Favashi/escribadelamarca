@@ -71,7 +71,7 @@ export async function renderFinder(root) {
     <p class="finder-count muted small"></p>
     <ul class="finder-results"></ul>
     <p class="muted small center pad">Datos de juego: <a href="https://github.com/diacritica/codexlmde" target="_blank" rel="noopener">Codex LMDE</a>.
-      ¿Falta o está mal algún dato? <a href="https://github.com/Favashi/escribadelamarca/issues" target="_blank" rel="noopener">Avísanos</a>.</p>`;
+      ¿Falta o está mal algún dato? Ábrelo y pulsa «✎ Sugerir cambios».</p>`;
 
   const form = $('.finder', root);
   const list = $('.finder-results', root);

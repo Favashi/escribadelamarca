@@ -151,6 +151,15 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 
 **Seguridad:** los extras están protegidos en la base de datos (RLS de `wishlist` y `loans` exige `is_supporter`) y el usuario no puede cambiarse `is_supporter` ni `is_admin` (solo puede actualizar las columnas `display_name` y `avatar_url`).
 
+## Historial y sugerencias
+- `catalog_history` guarda cada alta, cambio y borrado de libros y códigos (versión anterior y nueva, quién y cuándo),
+  mediante triggers. En la ficha, el admin abre «Historial de cambios» y puede **restaurar** cualquier versión
+  (`admin_restore_version`); la restauración también queda registrada.
+- `catalog_suggestions`: los usuarios proponen cambios (título, código, autor, páginas, datos de juego, resumen) con una
+  nota. El admin los ve en Revisión con el antes/después y los valida (`admin_apply_suggestion`) o rechaza.
+- `catalog.locked_fields`: campos editados desde la app. `catalog_sync.py` no los sobrescribe con el CSV, para que una
+  corrección validada no se pierda en la siguiente sincronización. Pásalos al CSV cuando actualices la fuente.
+
 ## Estilos
 - Cada tema es un bloque de **variables** en `css/tokens.css`; lo que un tema cambia de estructura (bordes, tipografía,
   sombras) va en `css/themes.css`, que se carga el último para prevalecer.

@@ -3,6 +3,7 @@ import { state, user, isSupporter, groupByCategory, bookById, categoryName, barc
 import { viewHeader } from '../ui.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import * as api from '../api.js';
+import { downloadAllJson, downloadLibraryCsv } from '../export.js';
 import { track } from '../track.js';
 
 const PERKS = [
@@ -135,15 +136,6 @@ export async function renderSupporter(root, params = {}) {
     if (target) requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
-  const rows = () => [...state.library.values()]
-    .map((e) => ({ e, b: bookById(e.catalog_id) ?? { title: '' } }))
-    .sort((x, y) => categoryName(x.b.category_id).localeCompare(categoryName(y.b.category_id), 'es') || compareBooks(x.b, y.b))
-    .map(({ e, b }) => ({
-      codigo: b.code ?? '', titulo: b.title, categoria: categoryName(b.category_id), autor: b.author ?? '',
-      codigos_barras: barcodesOf(b.id).filter((c) => c.status === 'approved').map((c) => c.code).join(' '),
-      registrado: e.added_at, estado: e.condition ?? '', notas: e.notes ?? '',
-    }));
-
   const setProfile = async (fields, msg) => {
     try {
       await api.updateProfile(uid, fields);
@@ -163,16 +155,8 @@ export async function renderSupporter(root, params = {}) {
     setProfile({ trade_opt_in: f.get('trade_opt_in') === 'on', trade_contact: f.get('trade_contact').trim() || null }, 'Guardado');
   });
 
-  const stamp = new Date().toISOString().slice(0, 10);
-  $('[data-json]', root).onclick = () =>
-    download(`biblioteca-marca-${stamp}.json`, JSON.stringify(rows(), null, 2), 'application/json');
-  $('[data-csv]', root).onclick = () => {
-    const data = rows();
-    const cols = Object.keys(data[0] ?? { titulo: '' });
-    const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = '\uFEFF' + [cols.join(';'), ...data.map((r) => cols.map((c) => cell(r[c])).join(';'))].join('\r\n');
-    download(`biblioteca-marca-${stamp}.csv`, csv, 'text/csv;charset=utf-8');
-  };
+  $('[data-json]', root).onclick = () => downloadAllJson();
+  $('[data-csv]', root).onclick = () => downloadLibraryCsv();
 }
 
 function renderPitch(root) {

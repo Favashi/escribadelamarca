@@ -3,6 +3,7 @@ import { html, raw, esc, $ } from './util.js';
 import { state } from './store.js';
 import { normalizeCode } from './isbn.js';
 import { APP_VERSION, RELEASES } from './version.js';
+import { icon } from './icons.js';
 
 const dialog = () => document.getElementById('dialog');
 
@@ -180,5 +181,165 @@ export function showWhatsNewIfUpdated() {
 }
 
 /** Etiqueta para funciones de Mecenas y para acciones de administración. */
-export const PERK_TAG = '<span class="perk-tag" title="Extra de Mecenas">★ Mecenas</span>';
-export const ADMIN_TAG = '<span class="admin-tag" title="Solo administradores">🛡 Admin</span>';
+export const PERK_TAG = `<span class="perk-tag" title="Extra de Mecenas">${icon('star')}Mecenas</span>`;
+export const ADMIN_TAG = `<span class="admin-tag" title="Solo administradores">${icon('shield')}Admin</span>`;
+
+/** Nombres legibles de los campos del catálogo (sugerencias, historial). */
+export const FIELD_LABELS = {
+  title: 'Título', code: 'Código', author: 'Autor', pages: 'Páginas', category_id: 'Categoría',
+  min_level: 'Nivel mínimo', max_level: 'Nivel máximo', min_players: 'Jugadores mín.', max_players: 'Jugadores máx.',
+  sessions: 'Sesiones', tags: 'Etiquetas', summary: 'Resumen', description: 'Descripción', cover_url: 'Portada',
+  status: 'Estado', verified: 'Verificado', price_eur: 'PVP', kind: 'Tipo', binding: 'Formato',
+};
+const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary'];
+const INT_FIELDS = new Set(['min_level', 'max_level', 'min_players', 'max_players', 'sessions']);
+
+/** Texto legible de un valor de campo. */
+export function fieldText(field, value) {
+  if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return '—';
+  if (Array.isArray(value)) return value.join(', ');
+  if (field === 'category_id') return state.categories.find((c) => c.id === value)?.name ?? String(value);
+  if (field === 'verified') return value ? 'sí' : 'no';
+  return String(value);
+}
+
+const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** Diferencias entre dos versiones de un registro: [{ field, label, from, to }] */
+export function diffFields(oldRow = {}, newRow = {}) {
+  return Object.keys(FIELD_LABELS)
+    .filter((f) => (f in (oldRow || {}) || f in (newRow || {})) && !same(oldRow?.[f], newRow?.[f]))
+    .map((f) => ({ field: f, label: FIELD_LABELS[f], from: fieldText(f, oldRow?.[f]), to: fieldText(f, newRow?.[f]) }));
+}
+
+/** Formulario «Sugerir cambios»: devuelve { changes, note } solo con lo que el usuario ha cambiado, o null. */
+export function suggestDialog(book) {
+  const v = (f) => (Array.isArray(book[f]) ? book[f].join(', ') : book[f] ?? '');
+  return openDialog(html`
+    <form class="sheet form" novalidate>
+      <h2 class="sheet-title">Sugerir cambios</h2>
+      <p class="muted small">Corrige lo que esté mal o falte. Un administrador lo revisará antes de aplicarlo.</p>
+      <label>Título <input name="title" maxlength="200" value="${v('title')}"></label>
+      <div class="row2">
+        <label>Código <input name="code" maxlength="12" value="${v('code')}" autocapitalize="characters"></label>
+        <label>Páginas <input name="pages" maxlength="80" value="${v('pages')}"></label>
+      </div>
+      <label>Autor <input name="author" maxlength="200" value="${v('author')}"></label>
+      <fieldset class="game-fields">
+        <legend>Datos de juego</legend>
+        <div class="row2">
+          <label>Nivel mín. <input name="min_level" type="number" inputmode="numeric" min="0" max="36" value="${v('min_level')}"></label>
+          <label>Nivel máx. <input name="max_level" type="number" inputmode="numeric" min="0" max="36" value="${v('max_level')}"></label>
+        </div>
+        <div class="row2">
+          <label>Jugadores mín. <input name="min_players" type="number" inputmode="numeric" min="1" max="12" value="${v('min_players')}"></label>
+          <label>Jugadores máx. <input name="max_players" type="number" inputmode="numeric" min="1" max="12" value="${v('max_players')}"></label>
+        </div>
+        <div class="row2">
+          <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${v('sessions')}"></label>
+          <label>Etiquetas <input name="tags" value="${v('tags')}" placeholder="Dungeon, Exploración"></label>
+        </div>
+        <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${v('summary')}</textarea></label>
+      </fieldset>
+      <label>¿De dónde sale el dato? (opcional) <input name="note" maxlength="500" placeholder="Lo pone en la contraportada, en la web de la editorial…"></label>
+      <p class="form-error" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-cancel>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Enviar sugerencia</button>
+      </div>
+    </form>`, (d, close) => {
+    const form = $('form', d);
+    const err = $('.form-error', d);
+    $('[data-cancel]', d).onclick = () => close(null);
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const f = Object.fromEntries(new FormData(form));
+      const changes = {};
+      for (const field of SUGGESTABLE) {
+        let val = (f[field] ?? '').trim();
+        if (field === 'code') val = val.toUpperCase();
+        if (INT_FIELDS.has(field)) val = val === '' ? null : parseInt(val, 10);
+        else if (field === 'tags') val = [...new Set(val.split(',').map((t) => t.trim()).filter(Boolean))];
+        else val = val || null;
+        if (!same(val, book[field] ?? (field === 'tags' ? [] : null))) changes[field] = val;
+      }
+      if (!Object.keys(changes).length) { err.textContent = 'No has cambiado ningún dato.'; err.hidden = false; return; }
+      if ('title' in changes && !changes.title) { err.textContent = 'El título no puede quedar vacío.'; err.hidden = false; return; }
+      close({ changes, note: f.note.trim() });
+    };
+  });
+}
+
+// Ilustraciones de la bienvenida: estilo «mini-portada» de módulo (morado + dorado), iguales en todos los temas
+const OB_GOLD = '#f3c02f';
+const OB_ART = {
+  // Código de barras dentro del visor, con la línea roja del escáner
+  scan: `<svg viewBox="0 0 64 64"><g fill="none" stroke="${OB_GOLD}" stroke-width="3" stroke-linecap="round">
+      <path d="M10 20v-8a2 2 0 0 1 2-2h8M44 10h8a2 2 0 0 1 2 2v8M54 44v8a2 2 0 0 1-2 2h-8M20 54h-8a2 2 0 0 1-2-2v-8"/>
+      <path d="M20 22v20M25 22v20M31 22v20M35 22v20M40 22v20M45 22v20" stroke-width="2.4"/></g>
+      <path d="M14 32h36" stroke="#ff5a4a" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  // Casillas de una serie: unas conseguidas (doradas) y otras por conseguir (discontinuas)
+  series: `<svg viewBox="0 0 64 64"><g stroke="${OB_GOLD}" stroke-width="2.2">
+      <rect x="9" y="12" width="13" height="17" rx="2" fill="${OB_GOLD}"/><rect x="25.5" y="12" width="13" height="17" rx="2" fill="${OB_GOLD}"/>
+      <rect x="42" y="12" width="13" height="17" rx="2" fill="none" stroke-dasharray="3 2.4"/>
+      <rect x="9" y="35" width="13" height="17" rx="2" fill="${OB_GOLD}"/><rect x="25.5" y="35" width="13" height="17" rx="2" fill="none" stroke-dasharray="3 2.4"/>
+      <rect x="42" y="35" width="13" height="17" rx="2" fill="${OB_GOLD}"/></g></svg>`,
+  // Dado de veinte caras: hexágono exterior, cara central con el 20 y aristas hacia los vértices
+  d20: `<svg viewBox="0 0 64 64"><g fill="none" stroke="${OB_GOLD}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M32 5l23 13.3v27.4L32 59 9 45.7V18.3z"/>
+      <path d="M32 17L15 44h34z"/>
+      <path d="M32 5v12M9 18.3L32 17l23 1.3M9 18.3L15 44M55 18.3L49 44M9 45.7L15 44M55 45.7L49 44M15 44l17 15 17-15"/></g>
+      <text x="32" y="38.5" text-anchor="middle" font-size="11" font-weight="700" fill="${OB_GOLD}" font-family="Cinzel, Georgia, serif">20</text></svg>`,
+};
+
+/** Bienvenida para usuarios nuevos (3 pasos). Resuelve con 'scan', 'catalog' o null. */
+export function onboardingDialog() {
+  const steps = [
+    [OB_ART.scan, 'Escanea tus libros', 'Apunta la cámara al código de barras de la contraportada y el libro se añade a tu biblioteca. Los módulos antiguos sin código se buscan por el de la portada (B1, X2…).'],
+    [OB_ART.series, 'Mira qué te falta', 'En «Mi biblioteca», la vista «Por series» te enseña los huecos de cada serie: «te faltan B7, B13…».'],
+    [OB_ART.d20, 'Busca tu próxima aventura', 'La pestaña «Aventuras» filtra por nivel del grupo, jugadores y tipo de partida, entre lo que tienes o en todo el catálogo.'],
+  ];
+  let i = 0;
+  return openDialog('<div class="sheet onboarding"></div>', (d, close) => {
+    const box = $('.onboarding', d);
+    const draw = () => {
+      const [icon, title, text] = steps[i];
+      const last = i === steps.length - 1;
+      box.innerHTML = html`
+        <button type="button" class="ob-close" data-v="skip" aria-label="Cerrar la bienvenida">×</button>
+        <div class="ob-art" aria-hidden="true">${raw(icon)}</div>
+        <h2 class="sheet-title">${title}</h2>
+        <p>${text}</p>
+        <div class="ob-dots" aria-label="Paso ${i + 1} de ${steps.length}">${steps.map((_, j) => raw(`<span class="${j === i ? 'on' : ''}"></span>`))}</div>
+        <div class="actions">
+          ${last ? raw('<button class="btn btn-ghost" data-v="catalog">Ver el catálogo</button><button class="btn btn-primary" data-v="scan">📷 Escanear mi primer libro</button>')
+            : raw('<button class="btn btn-ghost" data-v="skip">Saltar</button><button class="btn btn-primary" data-next>Siguiente</button>')}
+        </div>`;
+      box.querySelector('[data-next]')?.addEventListener('click', () => { i += 1; draw(); });
+      box.querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => close(b.dataset.v === 'skip' ? null : b.dataset.v)));
+    };
+    draw();
+  });
+}
+
+/** Confirmación fuerte para acciones irreversibles: hay que escribir `word` para habilitar el botón. */
+export function typeToConfirmDialog(message, { word = 'ELIMINAR', ok = 'Eliminar' } = {}) {
+  return openDialog(html`
+    <form class="sheet form" novalidate>
+      <h2 class="sheet-title danger-title">${raw(icon('warning'))} ¿Seguro?</h2>
+      <p class="sheet-msg">${message}</p>
+      <label>Escribe <strong>${word}</strong> para confirmar
+        <input name="word" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-cancel>Cancelar</button>
+        <button type="submit" class="btn btn-danger" disabled>${ok}</button>
+      </div>
+    </form>`, (d, close) => {
+    const form = $('form', d);
+    const submit = $('[type=submit]', d);
+    $('[data-cancel]', d).onclick = () => close(false);
+    form.word.addEventListener('input', () => { submit.disabled = form.word.value.trim().toUpperCase() !== word; });
+    form.onsubmit = (e) => { e.preventDefault(); if (!submit.disabled) close(true); };
+    setTimeout(() => form.word.focus(), 50);
+  });
+}

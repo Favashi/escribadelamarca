@@ -1,7 +1,9 @@
 import { html, raw, $, toast } from '../util.js';
 import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
-import { viewHeader, confirmDialog, errMsg, releaseNotesDialog } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog } from '../ui.js';
+import { icon, ribbon } from '../icons.js';
+import { downloadAllJson } from '../export.js';
 import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
 import { resetLibrary, deleteMyAccount } from '../api.js';
@@ -22,8 +24,8 @@ export function renderProfile(root) {
         <h2>${p.display_name ?? email}</h2>
         <p class="muted small">${email}</p>
         <p>
-          ${supporter ? raw('<span class="badge badge-gold">★ Mecenas</span>') : ''}
-          ${isAdmin() ? raw('<span class="badge badge-admin">🛡 Admin</span>') : ''}
+          ${supporter ? raw(`<span class="badge badge-gold">${icon('star')} Mecenas</span>`) : ''}
+          ${isAdmin() ? raw(`<span class="badge badge-admin">${icon('shield')} Admin</span>`) : ''}
         </p>
       </div>
       <button class="btn btn-sm btn-logout" data-logout>
@@ -33,7 +35,7 @@ export function renderProfile(root) {
     </section>
 
     ${supporter ? raw(html`
-    <section class="panel perk mecenas-hub">
+    <section class="panel perk mecenas-hub">${raw(ribbon('perk'))}
       <h2>Tus extras de Mecenas</h2>
       <div class="hub-grid">
         ${HUB.map(([sec, icon, title, sub]) => raw(html`<a class="hub-tile" href="#/mecenas/${sec}">
@@ -63,20 +65,30 @@ export function renderProfile(root) {
       </div>
     </section>
 
-    <section class="panel danger-zone">
-      <h2><span class="danger-icon" aria-hidden="true">⚠</span> Empezar de cero</h2>
-      <p class="muted small">Quita todos los libros de tu biblioteca${isSupporter() ? ', tu lista de deseos y tus préstamos' : ''}.
-        El catálogo general no se toca.</p>
-      <button class="btn btn-danger-outline" data-reset ${state.library.size ? '' : 'disabled'}>Vaciar mi biblioteca (${state.library.size})</button>
-    </section>
+    <details class="panel danger-zone">
+      <summary><h2>${raw(icon('warning'))} Zona de peligro</h2><span class="muted small">Vaciar la biblioteca o eliminar la cuenta</span>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
 
-    <section class="panel danger-zone">
-      <h2><span class="danger-icon" aria-hidden="true">⚠</span> Eliminar mi cuenta</h2>
-      <p class="muted small">Borra tu cuenta y todos tus datos: biblioteca, lista de deseos, préstamos, diario de partidas y
-        estadísticas de uso. Los libros o códigos que hayas propuesto se quedan en el catálogo común, sin tu nombre.
-        No se puede deshacer.</p>
-      <button class="btn btn-danger-outline" data-delete-account>Eliminar mi cuenta</button>
-    </section>
+      <div class="dz-item">
+        <p class="small">Antes de borrar nada, puedes <strong>descargar una copia de todos tus datos</strong>.</p>
+        <button class="btn btn-ghost btn-sm" data-export-all>${raw(icon('download'))} Descargar mis datos (JSON)</button>
+      </div>
+
+      <div class="dz-item">
+        <h3>Empezar de cero</h3>
+        <p class="muted small">Quita todos los libros de tu biblioteca${isSupporter() ? ', tu lista de deseos y tus préstamos' : ''}.
+          El catálogo general no se toca.</p>
+        <button class="btn btn-danger-outline" data-reset ${state.library.size ? '' : 'disabled'}>${raw(icon('trash'))}
+          Vaciar mi biblioteca (${state.library.size} ${state.library.size === 1 ? 'libro' : 'libros'})</button>
+      </div>
+
+      <div class="dz-item">
+        <h3>Eliminar mi cuenta</h3>
+        <p class="muted small">Borra tu cuenta y todos tus datos: biblioteca, lista de deseos, préstamos, diario de partidas y
+          estadísticas de uso. Los libros o códigos que hayas propuesto se quedan en el catálogo común, sin tu nombre.
+          <strong>No se puede deshacer.</strong></p>
+        <button class="btn btn-danger-outline" data-delete-account>${raw(icon('userX'))} Eliminar mi cuenta</button>
+      </div>
+    </details>
 
     <section class="panel about">
       <h2>Acerca de</h2>
@@ -91,7 +103,8 @@ export function renderProfile(root) {
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
       Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a> ·
-      <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>`;
+      <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
+    <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>👋 Ver la bienvenida otra vez</button></div>`;
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
   $('[data-reset]', root).onclick = async (e) => {
@@ -110,14 +123,10 @@ export function renderProfile(root) {
   };
 
   $('[data-delete-account]', root).onclick = async (e) => {
-    const ok = await confirmDialog(
-      'Se eliminarán tu cuenta y todos tus datos de forma permanente. ¿Seguro que quieres eliminar tu cuenta?',
-      { ok: 'Eliminar para siempre', danger: true });
+    const ok = await typeToConfirmDialog(
+      `Se eliminarán la cuenta ${email}, los ${state.library.size} libros de tu biblioteca y todos tus datos. No se puede deshacer.`,
+      { word: 'ELIMINAR', ok: 'Eliminar mi cuenta' });
     if (!ok) return;
-    const sure = await confirmDialog(
-      `Última confirmación: se borrará la cuenta ${email} y ${state.library.size} libros de tu biblioteca.`,
-      { ok: 'Sí, eliminar mi cuenta', danger: true });
-    if (!sure) return;
     e.target.disabled = true;
     try {
       await deleteMyAccount();
@@ -128,7 +137,13 @@ export function renderProfile(root) {
     } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
   };
 
+  $('[data-export-all]', root).onclick = () => downloadAllJson().catch((err) => toast(errMsg(err), 'error'));
   $('[data-changelog]', root).onclick = () => releaseNotesDialog();
+  $('[data-onboarding]', root).onclick = async () => {
+    const choice = await onboardingDialog();
+    if (choice === 'scan') location.hash = '#/escanear';
+    if (choice === 'catalog') location.hash = '#/catalogo';
+  };
   $('[data-update]', root).onclick = async (e) => {
     e.target.disabled = true;
     const v = await checkForUpdate({ force: true });
@@ -152,7 +167,7 @@ function themeOption(t, current, locked) {
   return html`<label class="theme-opt ${locked ? 'locked' : ''}">
     <input type="radio" name="theme" value="${t.id}" ${current === t.id ? 'checked' : ''} ${locked ? 'disabled' : ''}>
     <span class="theme-preview tp-${t.id}">${raw(THEME_ICONS[t.id] || '')}</span>
-    <span class="theme-name">${t.label}${locked ? ' 🔒' : ''}</span>
+    <span class="theme-name">${locked ? raw(icon('lock', { label: 'Bloqueado' })) : ''}${t.label}</span>
   </label>`;
 }
 

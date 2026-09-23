@@ -84,3 +84,20 @@ export const addLoan = async (uid, catalogId, lentTo) =>
 
 export const returnLoan = async (id) =>
   ok(await supabase.from('loans').update({ returned_at: new Date().toISOString() }).eq('id', id));
+
+// --- Diario de partidas (Mecenas) ---
+export const getPlays = async (uid) =>
+  ok(await supabase.from('plays').select('*').eq('user_id', uid).order('played_on', { ascending: false }));
+
+export const addPlay = async (uid, catalogId, fields) =>
+  ok(await supabase.from('plays').insert({ user_id: uid, catalog_id: catalogId, ...fields }));
+
+export const deletePlay = async (id) =>
+  ok(await supabase.from('plays').delete().eq('id', id));
+
+// --- Lista de deseos pública e intercambio ---
+export const publicWishlist = async (token) =>
+  ok(await supabase.rpc('public_wishlist', { p_token: token }));
+
+export const tradeMatches = async () =>
+  ok(await supabase.rpc('trade_matches'));

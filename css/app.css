@@ -126,7 +126,7 @@ body.landing .view { padding-bottom: 32px; }
 /* ---------- Tab bar ---------- */
 .tabbar {
   position: fixed; inset: auto 0 0 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -581,7 +581,8 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .legal li { margin-bottom: 8px; }
 
 /* ---------- Revisión (admin) ---------- */
-.tabbar.has-admin { grid-template-columns: repeat(5, 1fr); }
+.tabbar.has-admin { grid-template-columns: repeat(6, 1fr); }
+.tabbar.has-admin a span { font-size: .64rem; }
 .tabbar a { position: relative; }
 .tab-badge {
   position: absolute; top: 2px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px;
@@ -605,3 +606,53 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .release h3 { font: 700 1rem var(--font-display); margin: 0 0 6px; }
 .release h3 small { font: 400 .78rem var(--font-ui); color: var(--muted); margin-left: 6px; }
 .release ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* ---------- Buscador de aventuras ---------- */
+.finder { display: grid; gap: 12px; margin-top: 0; }
+.finder-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 640px) { .finder-grid { grid-template-columns: repeat(4, 1fr); } }
+.finder label { display: grid; gap: 4px; font: 600 .82rem var(--font-ui); color: var(--muted); }
+.finder-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  min-height: 32px; padding: 0 12px; border-radius: 99px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 .78rem var(--font-ui);
+}
+.chip.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.finder-count { margin: 4px 2px; }
+.finder-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.finder-card {
+  display: flex; gap: 14px; align-items: flex-start; padding: 12px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none;
+}
+.finder-card:active { transform: scale(.99); }
+.finder-body { min-width: 0; flex: 1; }
+.finder-body h3 { margin: 0 0 4px; font: 700 1rem var(--font-display); }
+.finder-meta { margin: 0 0 6px; font: 600 .8rem var(--font-ui); color: var(--purple); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.finder-meta .badge { margin: 0; }
+.finder-summary { margin: 0 0 6px; font-size: .9rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; }
+.tag { font: 600 .7rem var(--font-ui); padding: 2px 8px; border-radius: 99px; background: var(--purple-soft); color: var(--purple); }
+.game-info { margin: 8px 0 0; font: 700 .9rem var(--font-ui); color: var(--purple); }
+.book-info .links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+/* ---------- Extras de Mecenas ---------- */
+.plays { list-style: none; margin: 0 0 12px; padding: 0; }
+.plays li { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font: .9rem var(--font-ui); }
+.plays small { display: block; color: var(--muted); margin-top: 2px; }
+.value-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 6px 0; }
+.value-stats span { display: block; font: 700 1.6rem var(--font-display); color: var(--accent); }
+.value-stats small { font: .82rem var(--font-ui); color: var(--muted); }
+.share-box { margin-top: 12px; display: grid; gap: 8px; justify-items: start; }
+.share-box .inline-form { width: 100%; }
+.subhead { font: 700 .95rem var(--font-display); margin: 14px 0 4px; }
+.trade-form { margin-top: 8px; }
+
+/* ---------- Lista de deseos pública ---------- */
+.public-wishlist { max-width: 560px; margin: 24px auto; text-align: center; background: var(--surface); color: var(--ink); }
+.public-wishlist .rows { text-align: left; }
+.pw-seal { margin: 0 auto 8px; filter: drop-shadow(0 3px 6px rgb(0 0 0 / .35)); }
+.game-fields { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 12px; display: grid; gap: 10px; margin: 0; }
+.game-fields legend { font: 700 .8rem var(--font-ui); color: var(--purple); padding: 0 4px; }
+.finder .scope { grid-template-columns: repeat(2, 1fr); }
+.finder-switches { display: flex; flex-wrap: wrap; gap: 0 16px; }

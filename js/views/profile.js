@@ -58,7 +58,10 @@ export function renderProfile(root) {
 
     <button class="btn btn-ghost btn-block" data-logout>Cerrar sesión</button>
     <p class="muted small center pad">Escriba de la Marca <button class="link" data-changelog>v${APP_VERSION} · Novedades</button><br>
-      Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a></p>`;
+      Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
+      <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
+      Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a> ·
+      <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>`;
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
   $('[data-reset]', root).onclick = async (e) => {

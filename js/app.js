@@ -12,6 +12,8 @@ import { renderBook } from './views/book.js';
 import { renderProfile } from './views/profile.js';
 import { renderSupporter } from './views/supporter.js';
 import { renderReview } from './views/review.js';
+import { renderFinder } from './views/finder.js';
+import { renderPublicWishlist } from './views/wishlist-public.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated } from './ui.js';
 
@@ -105,8 +107,8 @@ function renderLanding() {
 
     <section class="landing-panel coffee">
       <h2>Gratis, y con extras para Mecenas</h2>
-      <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café: con ${SUPPORTER_MIN_AMOUNT} € o más
-        desbloqueas lista de deseos, préstamos, estadísticas, exportación y el tema Pergamino.</p>
+      <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
+        desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y el tema Pergamino.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
     </section>
 
@@ -119,6 +121,7 @@ function renderLanding() {
 
     <footer class="landing-footer">
       <p class="small">
+        Hecho por <a href="https://github.com/Favashi" rel="noopener">Toni Ruiz (Favashi)</a>, también autor de OSR Manager.<br>
         Proyecto de fans, no oficial. <em>Aventuras en la Marca del Este</em> pertenece a sus autores.<br>
         <a href="privacidad.html">Privacidad</a> ·
         <a href="https://github.com/Favashi/escribadelamarca" rel="noopener">Código (AGPL-3.0)</a>
@@ -203,10 +206,19 @@ route('/libro/:id', mount(renderBook));
 route('/perfil', mount(renderProfile));
 route('/mecenas', mount(renderSupporter));
 route('/revision', mount(renderReview));
+route('/buscar', mount(renderFinder));
 
 async function boot() {
   restoreTheme(false);
   if (!isConfigured) return renderSetup();
+
+  // Lista de deseos compartida: pública, sin login
+  const shared = location.hash.match(/^#\/deseos\/([0-9a-f-]{36})$/i);
+  if (shared) {
+    document.body.classList.add('landing');
+    nav.hidden = true;
+    return renderPublicWishlist(view, shared[1]);
+  }
 
   const session = await getSession();
   currentUid = session?.user?.id ?? null;

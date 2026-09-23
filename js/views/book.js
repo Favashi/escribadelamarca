@@ -3,6 +3,7 @@ import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, 
 import { bookFormDialog, confirmDialog, errMsg, CONDITIONS } from '../ui.js';
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
+import { gameInfo } from './finder.js';
 import * as api from '../api.js';
 
 export async function renderBook(root, { id }) {
@@ -16,8 +17,13 @@ export async function renderBook(root, { id }) {
   const supporter = isSupporter();
   const admin = isAdmin();
   let loans = [];
+  let plays = [];
   if (supporter) {
-    try { loans = (await api.getLoans(uid)).filter((l) => l.catalog_id === book.id); } catch { /* RLS */ }
+    try {
+      const [l, p] = await Promise.all([api.getLoans(uid), api.getPlays(uid)]);
+      loans = l.filter((x) => x.catalog_id === book.id);
+      plays = p.filter((x) => x.catalog_id === book.id);
+    } catch { /* RLS */ }
   }
   const activeLoan = loans.find((l) => !l.returned_at);
   const wished = state.wishlist.has(book.id);
@@ -39,8 +45,14 @@ export async function renderBook(root, { id }) {
           ${book.price_eur ? raw(html`<dt>PVP</dt><dd>${Number(book.price_eur).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}${book.catalog_date ? ` (catálogo ${fmtShort(book.catalog_date)})` : ''}</dd>`) : ''}
           ${codes.length ? raw(html`<dt>Código de barras</dt><dd>${codes.map((c) => raw(html`<span class="barcode">${formatCode(c.code)}${c.status === 'pending' ? raw(' <span class="badge badge-warn">propuesto</span>') : ''}${admin && c.status === 'approved' && !c.verified ? raw(' <span class="badge">sin verificar</span>') : ''}</span>`))}</dd>`) : ''}
         </dl>
+        ${gameInfo(book) ? raw(html`<p class="game-info">🎲 ${gameInfo(book)}</p>`) : ''}
+        ${(book.tags || []).length ? raw(html`<p class="tags">${book.tags.map((t) => raw(html`<span class="tag">${t}</span>`))}</p>`) : ''}
+        ${book.summary ? raw(html`<p class="desc">${book.summary}</p>`) : ''}
         ${book.description ? raw(html`<p class="desc">${book.description}</p>`) : ''}
-        ${book.meta?.fuente_sombra ? raw(html`<p class="small"><a href="${book.meta.fuente_sombra}" target="_blank" rel="noopener">Ficha en Distribuciones Sombra ↗</a></p>`) : ''}
+        <p class="small links">
+          ${book.meta?.fuente_sombra ? raw(html`<a href="${book.meta.fuente_sombra}" target="_blank" rel="noopener">Ficha en Distribuciones Sombra ↗</a>`) : ''}
+          ${book.codex_url ? raw(html`<a href="${book.codex_url}" target="_blank" rel="noopener">Ficha en Codex LMDE ↗</a>`) : ''}
+        </p>
       </div>
     </article>
 
@@ -56,6 +68,9 @@ export async function renderBook(root, { id }) {
             </select>
           </label>
           <label>Notas <textarea name="notes" rows="3" placeholder="Edición, firmas, dónde lo compré…">${entry.notes ?? ''}</textarea></label>
+          ${supporter ? raw(html`<label>Ejemplares repetidos (para intercambio)
+            <input name="spares" type="number" inputmode="numeric" min="0" max="99" value="${entry.spares ?? 0}">
+          </label>`) : ''}
           <div class="actions">
             <button type="button" class="btn btn-ghost btn-danger-text" data-remove>Quitar</button>
             <button class="btn btn-primary">Guardar</button>
@@ -70,6 +85,25 @@ export async function renderBook(root, { id }) {
         </div>
       </section>`)}
 
+    ${supporter ? raw(html`
+      <section class="panel">
+        <h2>Diario de partidas</h2>
+        ${plays.length ? raw(html`<ul class="plays">${plays.map((p) => raw(html`<li data-play="${p.id}">
+          <span><strong>${p.role === 'dirigido' ? 'Dirigido' : 'Jugado'}</strong> el ${fmtShort(p.played_on)}${p.group_name ? ` · ${p.group_name}` : ''}
+            ${p.notes ? raw(html`<small>${p.notes}</small>`) : ''}</span>
+          <button class="link btn-danger-text" data-play-del aria-label="Borrar entrada">Borrar</button>
+        </li>`))}</ul>`) : raw('<p class="muted small">Aún no lo has jugado ni dirigido.</p>')}
+        <form class="form play-form">
+          <div class="row2">
+            <label>Rol <select name="role"><option value="dirigido">Lo dirigí</option><option value="jugado">Lo jugué</option></select></label>
+            <label>Fecha <input name="played_on" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
+          </div>
+          <label>Grupo <input name="group_name" maxlength="80" placeholder="El grupo del jueves…"></label>
+          <label>Notas <input name="notes" maxlength="300" placeholder="Qué pasó, qué quedó pendiente…"></label>
+          <div class="actions"><button class="btn btn-ghost">Añadir al diario</button></div>
+        </form>
+      </section>`) : ''}
+
     ${entry ? raw(supporter ? html`
       <section class="panel">
         <h2>Préstamos</h2>
@@ -80,7 +114,7 @@ export async function renderBook(root, { id }) {
         ${loans.filter((l) => l.returned_at).length ? raw(html`<ul class="history">${loans.filter((l) => l.returned_at).map((l) =>
           raw(html`<li>${l.lent_to}: ${fmtShort(l.lent_at)} → ${fmtShort(l.returned_at)}</li>`))}</ul>`) : ''}
       </section>` : html`
-      <a class="panel teaser" href="#/mecenas">🔒 Registro de préstamos y lista de deseos: <strong>hazte Mecenas</strong></a>`) : ''}
+      <a class="panel teaser" href="#/mecenas">🔒 Diario de partidas, préstamos y repetidos: <strong>hazte Mecenas</strong></a>`) : ''}
 
     ${admin ? raw(html`
       <section class="panel admin">
@@ -121,7 +155,9 @@ export async function renderBook(root, { id }) {
 
   $('.entry-form', root)?.addEventListener('submit', run(async (e) => {
     const f = new FormData(e.target);
-    await api.updateLibraryEntry(uid, book.id, { condition: f.get('condition') || null, notes: f.get('notes').trim() || null });
+    const fields = { condition: f.get('condition') || null, notes: f.get('notes').trim() || null };
+    if (f.has('spares')) fields.spares = Math.max(0, Math.min(99, Number(f.get('spares')) || 0));
+    await api.updateLibraryEntry(uid, book.id, fields);
     await refreshLibrary();
     toast('Guardado', 'ok');
   }));
@@ -133,6 +169,21 @@ export async function renderBook(root, { id }) {
     toast('Quitado de tu biblioteca');
     rerender();
   }));
+
+  $('.play-form', root)?.addEventListener('submit', run(async (e) => {
+    const f = new FormData(e.target);
+    await api.addPlay(uid, book.id, {
+      role: f.get('role'), played_on: f.get('played_on'),
+      group_name: f.get('group_name').trim() || null, notes: f.get('notes').trim() || null,
+    });
+    toast('Añadido al diario', 'ok');
+    rerender();
+  }));
+
+  root.querySelectorAll('[data-play-del]').forEach((btn) => btn.addEventListener('click', run(async () => {
+    await api.deletePlay(btn.closest('[data-play]').dataset.play);
+    rerender();
+  })));
 
   $('.loan-form', root)?.addEventListener('submit', run(async (e) => {
     await api.addLoan(uid, book.id, e.target.to.value.trim());

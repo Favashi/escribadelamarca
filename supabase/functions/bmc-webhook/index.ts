@@ -1,6 +1,6 @@
 // Buy Me a Coffee webhook → marca al usuario como Mecenas.
 // Deploy: automático con la integración GitHub (declarada en supabase/config.toml), o `supabase functions deploy bmc-webhook`.
-// Secrets: BMC_WEBHOOK_SECRET (página del webhook en BMC) y, opcional, SUPPORTER_MIN_AMOUNT (por defecto 3).
+// Secrets: BMC_WEBHOOK_SECRET (página del webhook en BMC) y, opcional, SUPPORTER_MIN_AMOUNT (por defecto 5: un café).
 //
 // BMC envía JSON { event_id, type, live_mode, created, attempt, data } firmado con
 // HMAC-SHA256(raw body, secret) en hex, cabecera `x-signature-sha256`.
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
   // Los eventos de prueba (live_mode=false) se registran pero no activan Mecenas
   let matched = false;
-  const minAmount = Number(Deno.env.get("SUPPORTER_MIN_AMOUNT") ?? "3");
+  const minAmount = Number(Deno.env.get("SUPPORTER_MIN_AMOUNT") ?? "5");
   if (liveMode && SUPPORT_EVENTS.has(type) && amount >= minAmount) {
     for (const email of emails) {
       const { data: ok, error } = await supabase.rpc("mark_supporter_by_email", { p_email: email });

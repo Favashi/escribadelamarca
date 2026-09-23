@@ -3,9 +3,20 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.0.3';
+export const APP_VERSION = '1.1.0';
 
 export const RELEASES = [
+  {
+    version: '1.1.0',
+    date: '2026-09-24',
+    notes: [
+      'Nuevo buscador de aventuras (pestaña «Aventuras»): filtra por nivel del grupo, número de jugadores, duración y tipo de aventura, y combínalo con lo que tienes o te falta.',
+      'Las fichas muestran niveles, jugadores, sesiones, etiquetas y resumen de más de 60 módulos, gracias al Codex LMDE.',
+      'Mecenas: diario de partidas para apuntar qué has dirigido o jugado, cuándo y con qué grupo.',
+      'Mecenas: lista de deseos compartible con un enlace, repetidos e intercambio entre Mecenas, y valor de la colección.',
+      'Hazte Mecenas con un café (5 €).',
+    ],
+  },
   {
     version: '1.0.3',
     date: '2026-09-24',

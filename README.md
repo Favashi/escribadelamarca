@@ -22,20 +22,23 @@ Escanea el código de barras y **Escriba de la Marca** te dice al momento si est
   Para los módulos antiguos sin código de barras, basta con escribir el código de la portada (B1, X2, G0…).
 - **En todos tus dispositivos.** Entras con tu cuenta de Google y tu biblioteca se sincroniza entre móvil y ordenador.
   Se puede instalar en la pantalla de inicio como una app más.
+- **Buscador de aventuras.** ¿Qué módulo preparo para la próxima partida? Filtra por nivel del grupo, número de jugadores,
+  duración y tipo de aventura (mazmorra, exploración, investigación…), y combínalo con lo que tienes o te falta.
 - **Catálogo de la comunidad.** ¿Falta un libro, o un código de barras no lo reconoce? Proponlo desde la app y, tras revisarlo, lo tendrán todos.
 
 ## Gratis, con extras para Mecenas
 
 La app es gratuita. Si te resulta útil, puedes invitarme a un café en
-**[Buy Me a Coffee](https://buymeacoffee.com/toniruiz)**. Con una aportación de 3 € o más te conviertes en **Mecenas**
-y desbloqueas: lista de deseos, registro de préstamos, estadísticas de tu colección, exportación a CSV/JSON y el tema Pergamino.
+**[Buy Me a Coffee](https://buymeacoffee.com/toniruiz)**. Con un café (5 €) te conviertes en **Mecenas**
+y desbloqueas: diario de partidas, lista de deseos compartible, repetidos e intercambio entre Mecenas, registro de préstamos,
+estadísticas y valor de tu colección, exportación a CSV/JSON y el tema Pergamino.
 
 ## De dónde salen los datos
 
 El catálogo se ha elaborado a partir de fuentes públicas:
 [Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM),
 [Tesoros de la Marca](https://tesorosdelamarca.com/) y
-[Codex LMDE](https://github.com/diacritica/codexlmde).
+[Codex LMDE](https://github.com/diacritica/codexlmde) (niveles, personajes, sesiones, etiquetas y resúmenes de los módulos).
 Algunos datos pueden tener errores (sobre todo los códigos de barras, que se van verificando con ejemplares reales).
 Si ves algo mal, propón la corrección desde la app o abre un [issue](https://github.com/Favashi/escribadelamarca/issues).
 
@@ -57,5 +60,7 @@ Cómo está montado, cómo desplegar tu propia instancia y cómo mantener el cat
 - **Proyecto de fans, no oficial.** *Aventuras en la Marca del Este*, sus títulos, logotipos e ilustraciones pertenecen
   a sus respectivos autores y no se incluyen en este repositorio.
 - [Política de privacidad](https://favashi.github.io/escribadelamarca/privacidad.html).
+
+Hecho por Toni Ruiz ([Favashi](https://github.com/Favashi)), también autor de [OSR Manager](https://favashi.github.io/osr-manager/).
 
 Copyright (C) 2026 Favashi

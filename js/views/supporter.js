@@ -7,8 +7,11 @@ import * as api from '../api.js';
 const PERKS = [
   ['★', 'Insignia de Mecenas', 'En tu perfil, para que se vea que apoyas el proyecto.'],
   ['☆', 'Lista de deseos', 'Marca los libros que te faltan y quieres conseguir.'],
-  ['⇄', 'Registro de préstamos', 'Apunta a quién prestas cada libro y cuándo vuelve.'],
-  ['▤', 'Estadísticas', 'Porcentaje de colección completa, por categoría.'],
+  ['✎', 'Diario de partidas', 'Apunta qué módulos has dirigido o jugado, cuándo y con qué grupo.'],
+  ['⚑', 'Lista de deseos compartible', 'Un enlace para que tus amigos sepan qué regalarte.'],
+  ['⇄', 'Repetidos e intercambio', 'Marca tus repetidos y descubre qué Mecenas tienen los que te faltan.'],
+  ['↔', 'Registro de préstamos', 'Apunta a quién prestas cada libro y cuándo vuelve.'],
+  ['▤', 'Estadísticas y valor', 'Porcentaje de colección completa y valor según el precio de catálogo.'],
   ['⤓', 'Exportar biblioteca', 'Descarga tu colección en CSV o JSON cuando quieras.'],
   ['❦', 'Tema Pergamino', 'Un aspecto extra con sabor a viejo manuscrito.'],
 ];
@@ -18,12 +21,22 @@ export async function renderSupporter(root) {
 
   const uid = user().id;
   let loans = [];
-  try { loans = await api.getLoans(uid); } catch { /* RLS */ }
+  let plays = [];
+  let trades = [];
+  const profile = state.profile;
+  try {
+    [loans, plays] = await Promise.all([api.getLoans(uid), api.getPlays(uid)]);
+    if (profile.trade_opt_in) trades = await api.tradeMatches();
+  } catch { /* RLS */ }
   const active = loans.filter((l) => !l.returned_at);
   const approved = state.catalog.filter((b) => b.status === 'approved');
   const ownedApproved = approved.filter((b) => state.library.has(b.id));
   const pct = approved.length ? Math.round((ownedApproved.length / approved.length) * 100) : 0;
   const wishes = [...state.wishlist].map(bookById).filter(Boolean);
+  const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+  const ownedValue = ownedApproved.reduce((t, b) => t + Number(b.price_eur || 0), 0);
+  const missingValue = approved.filter((b) => !state.library.has(b.id)).reduce((t, b) => t + Number(b.price_eur || 0), 0);
+  const shareUrl = profile.share_token ? `${location.origin}${location.pathname}#/deseos/${profile.share_token}` : '';
 
   root.innerHTML = html`
     ${raw(viewHeader('Mecenas', `Gracias por apoyar el proyecto desde el ${fmtDate(state.profile.supporter_since) || 'principio'} ✦`))}
@@ -43,9 +56,48 @@ export async function renderSupporter(root) {
     </section>
 
     <section class="panel">
+      <h2>Valor de la colección</h2>
+      <div class="value-stats">
+        <div><span>${eur(ownedValue)}</span><small>lo que tienes, a precio de catálogo</small></div>
+        <div><span>${eur(missingValue)}</span><small>lo que costaría completarla</small></div>
+      </div>
+      <p class="muted small">Según el PVP del catálogo de Distribuciones Sombra; los libros sin precio no cuentan.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Diario de partidas</h2>
+      ${plays.length ? raw(html`<ul class="rows">${plays.slice(0, 8).map((p) => {
+        const b = bookById(p.catalog_id);
+        return raw(html`<li class="row"><a class="row-title" href="#/libro/${p.catalog_id}">${b?.code ? `${b.code} · ` : ''}${b?.title ?? '—'}
+          <small>${p.role === 'dirigido' ? 'Dirigido' : 'Jugado'} el ${fmtShort(p.played_on)}${p.group_name ? ` · ${p.group_name}` : ''}</small></a></li>`);
+      })}</ul>`) : raw('<p class="muted">Aún vacío. Desde la ficha de un libro puedes apuntar cuándo lo dirigiste o jugaste.</p>')}
+    </section>
+
+    <section class="panel">
       <h2>Lista de deseos</h2>
       ${wishes.length ? raw(html`<ul class="rows">${wishes.map((b) => raw(html`<li class="row">${raw(cover(b, 'cover-xs'))}<a class="row-title" href="#/libro/${b.id}">${b.title}<small>${categoryName(b.category_id)}</small></a></li>`))}</ul>`)
         : raw('<p class="muted">Vacía. Abre un libro que te falte y pulsa «☆ Lo quiero».</p>')}
+      <div class="share-box">
+        ${shareUrl ? raw(html`<p class="small">Cualquiera con este enlace puede ver tu lista de deseos (solo tu nombre y los títulos):</p>
+          <div class="inline-form"><input readonly value="${shareUrl}" aria-label="Enlace de tu lista de deseos"><button class="btn btn-ghost" data-share-copy>Copiar</button></div>
+          <button class="link btn-danger-text" data-share-off>Dejar de compartir</button>`)
+        : raw('<button class="btn btn-ghost" data-share-on>Crear enlace para compartir</button>')}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Repetidos e intercambio</h2>
+      <p class="muted small">Indica tus repetidos en la ficha de cada libro. Si activas el intercambio, otros Mecenas que también lo
+        tengan activado verán tu nombre y tu contacto cuando tengas algo de su lista de deseos, y tú verás los suyos.</p>
+      <form class="form trade-form">
+        <label class="switch"><input type="checkbox" name="trade_opt_in" ${profile.trade_opt_in ? 'checked' : ''}> <span>Participar en el intercambio</span></label>
+        <label>Cómo contactarte (Telegram, email…) <input name="trade_contact" maxlength="120" value="${profile.trade_contact ?? ''}" placeholder="@usuario en Telegram"></label>
+        <div class="actions"><button class="btn btn-ghost">Guardar</button></div>
+      </form>
+      ${profile.trade_opt_in ? raw(trades.length ? html`<h3 class="subhead">Tienen repetido algo de tu lista</h3>
+        <ul class="rows">${trades.map((t) => raw(html`<li class="row"><a class="row-title" href="#/libro/${t.catalog_id}">${t.code ? `${t.code} · ` : ''}${t.title}
+          <small>${t.owner_name}${t.contact ? ` · ${t.contact}` : ''}</small></a></li>`))}</ul>`
+        : html`<p class="muted small">Por ahora ningún Mecenas tiene repetido nada de tu lista de deseos.</p>`) : ''}
     </section>
 
     <section class="panel">
@@ -78,6 +130,25 @@ export async function renderSupporter(root) {
       registrado: e.added_at, estado: e.condition ?? '', notas: e.notes ?? '',
     }));
 
+  const setProfile = async (fields, msg) => {
+    try {
+      await api.updateProfile(uid, fields);
+      await loadAll();
+      if (msg) toast(msg, 'ok');
+      renderSupporter(root);
+    } catch (err) { toast(err.message, 'error'); }
+  };
+  $('[data-share-on]', root)?.addEventListener('click', () => setProfile({ share_token: crypto.randomUUID() }, 'Enlace creado'));
+  $('[data-share-off]', root)?.addEventListener('click', () => setProfile({ share_token: null }, 'Ya no se comparte'));
+  $('[data-share-copy]', root)?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(shareUrl); toast('Enlace copiado', 'ok'); } catch { /* sin portapapeles */ }
+  });
+  $('.trade-form', root).addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    setProfile({ trade_opt_in: f.get('trade_opt_in') === 'on', trade_contact: f.get('trade_contact').trim() || null }, 'Guardado');
+  });
+
   const stamp = new Date().toISOString().slice(0, 10);
   $('[data-json]', root).onclick = () =>
     download(`biblioteca-marca-${stamp}.json`, JSON.stringify(rows(), null, 2), 'application/json');
@@ -104,7 +175,7 @@ function renderPitch(root) {
     <section class="panel">
       <h2>Cómo activarlo</h2>
       <ol class="steps">
-        <li>Invita a un café de <strong>${SUPPORTER_MIN_AMOUNT} € o más</strong> en Buy Me a Coffee (pago único, para siempre).</li>
+        <li>Invítame a <strong>un café (${SUPPORTER_MIN_AMOUNT} €)</strong> en Buy Me a Coffee: pago único, Mecenas para siempre.</li>
         <li>Paga con el mismo email de tu cuenta de Google, <strong>o escribe este email en el mensaje</strong>:
           <code class="copy" tabindex="0" title="Toca para copiar">${email}</code></li>
         <li>Se activa solo en unos segundos. Pulsa «Ya he donado» para comprobarlo.</li>

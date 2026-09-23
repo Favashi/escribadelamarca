@@ -2,3 +2,4 @@
 supabase/.temp/
 .env
 MEJORAS.md
+__pycache__/

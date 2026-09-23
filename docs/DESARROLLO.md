@@ -89,7 +89,7 @@ Como admin puedes crear/editar/borrar libros, aprobar propuestas (libros y códi
    - URL: `https://fuhchwedoxopzcybccrj.supabase.co/functions/v1/bmc-webhook`
    - Eventos: `donation.created` (y, si los usas, `membership.started`, `recurring_donation.started`, `extra_purchase.created`).
    - Copia el **signing secret** de la página del webhook.
-3. Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`): `BMC_WEBHOOK_SECRET=<secret>` y, opcional, `SUPPORTER_MIN_AMOUNT=3`. Nunca lo subas a git.
+3. Supabase → **Edge Functions → Secrets** (o `supabase secrets set …`): `BMC_WEBHOOK_SECRET=<secret>` y, opcional, `SUPPORTER_MIN_AMOUNT=5`. Nunca lo subas a git.
 4. En BMC envía un evento de prueba y revisa la tabla `donations` (columna `raw`). Los eventos de prueba (`live_mode = false`) se registran pero no activan Mecenas.
 
 ## Catálogo
@@ -105,7 +105,12 @@ Cómo identifica la app un libro:
 2. **Código de publicación** (B19, G0, CR…) escrito en la caja del escáner, para libros sin código de barras.
 3. Si no se encuentra, el usuario elige el libro en una lista (código **propuesto**) o propone un libro nuevo.
 
-Para actualizarlo: edita el CSV, ejecuta `python3 scripts/catalog_sync.py` y haz commit de la migración generada.
+Datos de juego (buscador de aventuras): `python3 scripts/codex_fetch.py` descarga las fichas del Codex LMDE a
+`data/codex_modulos.csv` (niveles, personajes, sesiones, etiquetas, resumen). `catalog_sync.py` los cruza con el
+catálogo por código de publicación; solo sobrescribe un dato si el Codex lo trae, para respetar lo editado por el admin.
+
+Para actualizarlo: edita el CSV (y/o vuelve a ejecutar `codex_fetch.py`), ejecuta `python3 scripts/catalog_sync.py`
+y haz commit de la migración generada. El script numera la migración después de la última existente.
 Reglas del script: documentadas en la cabecera de `scripts/catalog_sync.py`.
 
 ## Cambios en la base de datos
@@ -118,7 +123,7 @@ Reglas del script: documentadas en la cabecera de `scripts/catalog_sync.py`.
 
 **Principio:** la app es gratis y completa para lo esencial (biblioteca, escáner, catálogo). Quien quiera apoyar paga una vez un precio simbólico y recibe extras que no rompen la experiencia gratuita.
 
-| | Gratis | Mecenas (≥ 3 €, pago único en Buy Me a Coffee) |
+| | Gratis | Mecenas (un café de 5 €, pago único en Buy Me a Coffee) |
 |---|---|---|
 | Biblioteca, categorías, escáner, sincronización | ✔ | ✔ |
 | Insignia ★ Mecenas | | ✔ |

@@ -2,6 +2,9 @@
 """
 Genera una migración SQL que sincroniza el catálogo con data/catalogo_marca_del_este.csv.
 
+Si existe data/codex_modulos.csv (generado por scripts/codex_fetch.py), añade los datos de juego
+del Codex LMDE (niveles, personajes, sesiones, etiquetas, resumen) cruzando por código de publicación.
+
 Uso:
     python3 scripts/catalog_sync.py                # crea supabase/migrations/<timestamp>_catalog_sync.sql
     python3 scripts/catalog_sync.py --name import  # nombre personalizado
@@ -17,14 +20,18 @@ Reglas de la sincronización (idempotente, se puede repetir):
     Nunca se borran códigos ni libros: eso se hace a mano (ver MEJORAS.md).
 """
 import argparse
+import difflib
+import unicodedata
 import csv
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "data" / "catalogo_marca_del_este.csv"
+CODEX_PATH = ROOT / "data" / "codex_modulos.csv"
 MIGRATIONS = ROOT / "supabase" / "migrations"
 
 # Serie → slug de categoría (tabla public.categories). Series no listadas → DEFAULT_CATEGORY.
@@ -54,11 +61,64 @@ def ean_ok(code):
     return (10 - s % 10) % 10 == int(code[12])
 
 
+def norm(s):
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9 ]+", " ", s).strip()
+
+
+def load_codex():
+    """Datos del Codex por código; si hay varias fichas con el mismo código se elige por parecido del título."""
+    if not CODEX_PATH.exists():
+        return {}
+    by_code = {}
+    with CODEX_PATH.open(encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            if r["codigo"]:
+                by_code.setdefault(r["codigo"].upper(), []).append(r)
+    # Etiquetas canónicas: misma etiqueta con distinta capitalización → la forma más frecuente
+    counts = {}
+    for rows in by_code.values():
+        for r in rows:
+            for t in filter(None, r["etiquetas"].split("|")):
+                counts.setdefault(norm(t), {}).setdefault(t.strip(), 0)
+                counts[norm(t)][t.strip()] += 1
+    canon = {k: max(v, key=v.get) for k, v in counts.items()}
+    for rows in by_code.values():
+        for r in rows:
+            r["tags"] = sorted({canon[norm(t)] for t in r["etiquetas"].split("|") if t.strip()})
+    return by_code
+
+
+def codex_for(row, codex):
+    cands = codex.get(row["codigo_publicacion"].strip().upper(), [])
+    if not cands:
+        return None
+    return max(cands, key=lambda c: difflib.SequenceMatcher(None, norm(c["titulo"]), norm(row["titulo"])).ratio())
+
+
+def q_array(items):
+    return "array[" + ", ".join(q(x) for x in items) + "]::text[]" if items else "'{}'::text[]"
+
+
 def ref_of(row):
     return row["clave_sombra"].strip() or f"codex:{row['codigo_publicacion'].strip()}"
 
 
-def build_sql(rows):
+def codex_values(c):
+    if not c:
+        return ["null"] * 5 + ["'{}'::text[]", "null", "null"]
+    def n(v):
+        return v if str(v).isdigit() else "null"
+    lo, hi = n(c["nivel_min"]), n(c["nivel_max"])
+    if lo != "null" and hi != "null" and int(lo) > int(hi):
+        lo, hi = hi, lo
+    plo, phi = n(c["personajes_min"]), n(c["personajes_max"])
+    if plo != "null" and phi != "null" and int(plo) > int(phi):
+        plo, phi = phi, plo
+    return [lo, hi, plo, phi, n(c["sesiones"]), q_array(c["tags"]), q(c["resumen"].strip()), q(c["url"])]
+
+
+def build_sql(rows, codex):
     refs = [ref_of(r) for r in rows]
     dupes = {x for x in refs if refs.count(x) > 1}
     if dupes:
@@ -71,7 +131,7 @@ def build_sql(rows):
         "",
         "insert into public.catalog as c (ref, code, series, number, title, author, kind, category_id,",
         "  pages, binding, interior, price_eur, catalog_date, isbn_published, sombra_key, tesoros_sku,",
-        "  meta, status, source)",
+        "  meta, status, source, min_level, max_level, min_players, max_players, sessions, tags, summary, codex_url)",
         "values",
     ]
     values = []
@@ -98,6 +158,7 @@ def build_sql(rows):
             q(r["isbn_publicado"].strip()), q(r["clave_sombra"].strip()), q(r["sku_tesoros"].strip()),
             q(json.dumps(meta, ensure_ascii=False)) + "::jsonb",
             "'approved'", "'csv'",
+            *codex_values(codex_for(r, codex)),
         ]) + ")")
     out.append(",\n".join(values))
     out += [
@@ -107,7 +168,13 @@ def build_sql(rows):
         "  pages = excluded.pages, binding = excluded.binding, interior = excluded.interior,",
         "  price_eur = excluded.price_eur, catalog_date = excluded.catalog_date,",
         "  isbn_published = excluded.isbn_published, sombra_key = excluded.sombra_key,",
-        "  tesoros_sku = excluded.tesoros_sku, meta = excluded.meta",
+        "  tesoros_sku = excluded.tesoros_sku, meta = excluded.meta,",
+        # Datos de juego: solo se sobrescriben si el Codex trae valor (se respeta lo editado a mano por el admin)
+        "  min_level = coalesce(excluded.min_level, c.min_level), max_level = coalesce(excluded.max_level, c.max_level),",
+        "  min_players = coalesce(excluded.min_players, c.min_players), max_players = coalesce(excluded.max_players, c.max_players),",
+        "  sessions = coalesce(excluded.sessions, c.sessions),",
+        "  tags = case when cardinality(excluded.tags) > 0 then excluded.tags else c.tags end,",
+        "  summary = coalesce(excluded.summary, c.summary), codex_url = coalesce(excluded.codex_url, c.codex_url)",
         "where c.source = 'csv';",
         "",
     ]
@@ -140,14 +207,20 @@ def main():
     with CSV_PATH.open(encoding="utf-8-sig", newline="") as f:
         rows = [r for r in csv.DictReader(f) if r.get("titulo", "").strip()]
 
-    sql, n_barcodes = build_sql(rows)
+    codex = load_codex()
+    sql, n_barcodes = build_sql(rows, codex)
     if args.stdout:
         print(sql)
         return
+    # La migración debe ordenarse después de todas las existentes (si no, `supabase db push` la rechaza)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    existing = sorted(p.name[:14] for p in MIGRATIONS.glob("*.sql") if p.name[:14].isdigit())
+    if existing and stamp <= existing[-1]:
+        stamp = str(int(existing[-1]) + 1)
     path = MIGRATIONS / f"{stamp}_{args.name}.sql"
     path.write_text(sql, encoding="utf-8")
-    print(f"{path.relative_to(ROOT)}: {len(rows)} publicaciones, {n_barcodes} códigos de barras")
+    n_codex = sum(1 for r in rows if codex_for(r, codex))
+    print(f"{path.relative_to(ROOT)}: {len(rows)} publicaciones, {n_barcodes} códigos de barras, {n_codex} con datos del Codex")
 
 
 if __name__ == "__main__":

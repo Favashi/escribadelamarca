@@ -63,6 +63,21 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
         <label>Autor <input name="author" maxlength="200" value="${initial.author ?? ''}"></label>
         <label>Páginas <input name="pages" maxlength="80" value="${initial.pages ?? ''}"></label>
       </div>
+      <fieldset class="game-fields">
+        <legend>Datos de juego</legend>
+        <div class="row2">
+          <label>Nivel mín. <input name="min_level" type="number" inputmode="numeric" min="0" max="36" value="${initial.min_level ?? ''}"></label>
+          <label>Nivel máx. <input name="max_level" type="number" inputmode="numeric" min="0" max="36" value="${initial.max_level ?? ''}"></label>
+        </div>
+        <div class="row2">
+          <label>Jugadores mín. <input name="min_players" type="number" inputmode="numeric" min="1" max="12" value="${initial.min_players ?? ''}"></label>
+          <label>Jugadores máx. <input name="max_players" type="number" inputmode="numeric" min="1" max="12" value="${initial.max_players ?? ''}"></label>
+        </div>
+        <div class="row2">
+          <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${initial.sessions ?? ''}"></label>
+          <label>Etiquetas <input name="tags" value="${(initial.tags || []).join(', ')}" placeholder="Dungeon, Exploración"></label>
+        </div>
+      </fieldset>
       <label>URL de portada
         <input name="cover_url" type="url" value="${initial.cover_url ?? ''}" placeholder="https://…">
       </label>
@@ -99,6 +114,10 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           category_id: Number(f.category_id) || null,
           author: f.author.trim() || null,
           pages: f.pages.trim() || null,
+          min_level: int(f.min_level), max_level: int(f.max_level),
+          min_players: int(f.min_players), max_players: int(f.max_players),
+          sessions: int(f.sessions),
+          tags: [...new Set(f.tags.split(',').map((t) => t.trim()).filter(Boolean))],
           cover_url: f.cover_url.trim() || null,
           description: f.description.trim() || null,
         },
@@ -106,6 +125,7 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
       });
     };
     function showErr(msg) { err.textContent = msg; err.hidden = false; }
+    function int(v) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; }
     setTimeout(() => $('input[name=title]', d).focus(), 50);
   });
 }

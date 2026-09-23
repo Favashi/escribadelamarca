@@ -6,5 +6,6 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_4AVacDrpDt6z3sZzAWkeQQ_g4xgr9k1
 // Página de donaciones (Buy Me a Coffee, compartida con OSR Manager)
 export const DONATION_URL = 'https://buymeacoffee.com/toniruiz';
 
-// Donación mínima (en la moneda del pago) para desbloquear Mecenas. Debe coincidir con SUPPORTER_MIN_AMOUNT.
-export const SUPPORTER_MIN_AMOUNT = 3;
+// Donación mínima (en la moneda del pago) para desbloquear Mecenas: un café de Buy Me a Coffee (5 €).
+// Debe coincidir con el secreto SUPPORTER_MIN_AMOUNT de la Edge Function y con public.supporter_min_amount().
+export const SUPPORTER_MIN_AMOUNT = 5;

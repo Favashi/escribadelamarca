@@ -6,7 +6,7 @@ const SHELL = [
   './js/app.js', './js/config.js', './js/supabase.js', './js/auth.js', './js/router.js', './js/api.js',
   './js/store.js', './js/util.js', './js/ui.js', './js/isbn.js', './js/scanner.js', './js/theme.js',
   './js/views/library.js', './js/views/scan.js', './js/views/catalog.js', './js/views/book.js',
-  './js/views/profile.js', './js/views/supporter.js', './js/views/review.js', './js/nav.js', './js/version.js',
+  './js/views/profile.js', './js/views/supporter.js', './js/views/review.js', './js/nav.js', './js/version.js', './js/views/finder.js', './js/views/wishlist-public.js',
   './assets/icons/icon.svg', './assets/icons/seal.svg', './privacidad.html',
 ];
 

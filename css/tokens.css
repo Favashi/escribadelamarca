@@ -1,0 +1,138 @@
+/* Escriba de la Marca — Variables de diseño de cada tema.
+   Claro por defecto; Oscuro por preferencia del sistema o elegido; Pergamino y Retro EGA para Mecenas.
+   Cada tema solo redefine variables: la estructura propia de Pergamino y Retro está en themes.css. */
+
+:root {
+  --bg: #f8f3ea;
+  --surface: #fffcf6;
+  --surface-2: #f1e9ef;
+  --ink: #24172b;
+  --muted: #6e6275;
+  --line: #e6dce4;
+  --accent: #b02a1f;
+  --accent-ink: #ffffff;
+  --accent-soft: #fbe1dc;
+  --purple: #74398a;
+  --purple-soft: #efe2f4;
+  --gold: #b9820e;
+  --gold-soft: #fbefcb;
+  --ok: #1f7a3a;
+  --ok-soft: #d8f0de;
+  --warn: #9a6200;
+  --warn-soft: #fbeac2;
+  --danger: #c0271c;
+  --shadow: 0 1px 2px rgb(36 23 43 / .06), 0 4px 14px rgb(36 23 43 / .08);
+  --radius: 14px;
+  --font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --font-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --tabbar-h: 64px;
+  color-scheme: light;
+  --admin: #2563a8;
+}
+
+/* Oscuro: por preferencia del sistema (salvo que se haya elegido otro tema) o elegido a mano */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="parchment"]):not([data-theme="retro"]) {
+    --bg: #150f1a;
+    --surface: #20172a;
+    --surface-2: #2b2036;
+    --ink: #f4ecf6;
+    --muted: #b3a6bb;
+    --line: #3a2d45;
+    --accent: #ff6b57;
+    --accent-ink: #1a0b10;
+    --accent-soft: #45201f;
+    --purple: #c79be0;
+    --purple-soft: #3a2548;
+    --gold: #f3c02f;
+    --gold-soft: #3d3113;
+    --ok: #7fdc97;
+    --ok-soft: #173323;
+    --warn: #f5c15a;
+    --warn-soft: #3d2e10;
+    --danger: #ff7a6b;
+    --shadow: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .3);
+    color-scheme: dark;
+    --admin: #7fb3ea;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #150f1a;
+  --surface: #20172a;
+  --surface-2: #2b2036;
+  --ink: #f4ecf6;
+  --muted: #b3a6bb;
+  --line: #3a2d45;
+  --accent: #ff6b57;
+  --accent-ink: #1a0b10;
+  --accent-soft: #45201f;
+  --purple: #c79be0;
+  --purple-soft: #3a2548;
+  --gold: #f3c02f;
+  --gold-soft: #3d3113;
+  --ok: #7fdc97;
+  --ok-soft: #173323;
+  --warn: #f5c15a;
+  --warn-soft: #3d2e10;
+  --danger: #ff7a6b;
+  --shadow: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .3);
+  color-scheme: dark;
+  --admin: #7fb3ea;
+}
+
+/* Pergamino (Mecenas) */
+:root[data-theme="parchment"] {
+  --bg: #d8c296;
+  --surface: #ecdcb6;
+  --surface-2: #dcc594;
+  --ink: #3a2310;
+  --muted: #6d5233;
+  --line: #a88a57;
+  --accent: #8e2a10;
+  --accent-ink: #fbf1dc;
+  --accent-soft: #e6c9a4;
+  --purple: #5e2c72;
+  --purple-soft: #e2cfd6;
+  --gold: #87570e;
+  --gold-soft: #e8d09a;
+  --ok: #3f6a1f;
+  --ok-soft: #d6dcae;
+  --warn: #8a5300;
+  --warn-soft: #ebd09a;
+  --danger: #9b2414;
+  --shadow: 0 1px 0 rgb(90 55 20 / .18), 0 8px 18px rgb(60 35 12 / .18);
+  --radius: 4px;
+  --font-ui: 'Source Serif 4', Georgia, serif;
+  color-scheme: light;
+  --admin: #2f5a86;
+}
+
+/* Retro EGA (Mecenas) */
+:root[data-theme="retro"] {
+  --bg: #0000a8;
+  --surface: #0000a8;
+  --surface-2: #000080;
+  --ink: #ffffff;
+  --muted: #aaaaaa;
+  --line: #aaaaaa;
+  --accent: #ffff55;
+  --accent-ink: #000000;
+  --accent-soft: #000080;
+  --purple: #55ffff;
+  --purple-soft: #000080;
+  --gold: #ffff55;
+  --gold-soft: #000080;
+  --ok: #55ff55;
+  --ok-soft: #005500;
+  --warn: #ffff55;
+  --warn-soft: #555500;
+  --danger: #ff5555;
+  --admin: #55ffff;
+  --shadow: none;
+  --radius: 2px;
+  --font-display: "Lucida Console", "Courier New", monospace;
+  --font-body: "Lucida Console", "Courier New", monospace;
+  --font-ui: "Lucida Console", "Courier New", monospace;
+  color-scheme: dark;
+}

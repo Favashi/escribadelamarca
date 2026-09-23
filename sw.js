@@ -2,7 +2,8 @@
 // En producción, .github/workflows/pages.yml sustituye VERSION por el hash del commit.
 const VERSION = 'edm-dev';
 const SHELL = [
-  './', './index.html', './manifest.webmanifest', './css/app.css',
+  './', './index.html', './manifest.webmanifest', './css/fonts.css', './css/tokens.css', './css/base.css', './css/layout.css',
+  './css/components.css', './css/views.css', './css/themes.css',
   './js/app.js', './js/config.js', './js/supabase.js', './js/auth.js', './js/router.js', './js/api.js',
   './js/store.js', './js/util.js', './js/ui.js', './js/isbn.js', './js/scanner.js', './js/theme.js',
   './js/views/library.js', './js/views/scan.js', './js/views/catalog.js', './js/views/book.js',
@@ -39,7 +40,7 @@ self.addEventListener('fetch', (e) => {
   }
 
   // CDN (librerías versionadas, fuentes): caché primero.
-  if (/cdn\.jsdelivr\.net|fonts\.(googleapis|gstatic)\.com/.test(url.hostname)) {
+  if (/cdn\.jsdelivr\.net/.test(url.hostname)) {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
       if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
       return res;

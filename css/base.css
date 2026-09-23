@@ -1,0 +1,103 @@
+/* Escriba de la Marca — Base: reset, tipografía, botones, insignias, formularios y utilidades */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+img { max-width: 100%; display: block; }
+a { color: var(--accent); }
+[hidden] { display: none !important; }
+code { font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: .1em .4em; border-radius: 6px; word-break: break-all; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: .02em; line-height: 1.2; margin: 0; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.1rem; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.center { text-align: center; justify-content: center; }
+.pad { padding: 1rem 0; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid transparent;
+  font: 600 .95rem var(--font-ui); text-decoration: none; cursor: pointer;
+  transition: transform .12s ease, background-color .15s ease, opacity .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .55; pointer-events: none; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger-text { color: var(--danger); }
+.btn-coffee { background: #ffdd00; color: #1a1a1a; }
+.btn-google { background: #fff; color: #1f1f1f; border-color: #dadce0; box-shadow: var(--shadow); min-height: 52px; padding: 0 24px; font-size: 1rem; }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: .85rem; }
+.btn-icon { width: 44px; height: 44px; border-radius: 50%; border: 0; font-size: 1.2rem; cursor: pointer; background: rgb(0 0 0 / .45); color: #fff; }
+.btn-icon.on { background: var(--gold); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.actions .btn { flex: 1 1 auto; }
+.back { background: none; border: 0; color: var(--accent); font: 600 .95rem var(--font-ui); padding: 10px 0; cursor: pointer; }
+
+/* ---------- Badges ---------- */
+.badge { display: inline-block; margin: 0 4px 6px 0; padding: 2px 10px; border-radius: 99px; font: 700 .72rem var(--font-ui); text-transform: uppercase; letter-spacing: .04em; background: var(--surface-2); color: var(--muted); }
+.badge-ok { background: var(--ok-soft); color: var(--ok); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-gold { background: var(--gold-soft); color: var(--gold); }
+.count { font: 600 .8rem var(--font-ui); color: var(--muted); background: var(--surface-2); border-radius: 99px; padding: 2px 10px; }
+
+/* ---------- Forms ---------- */
+input, select, textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: 1rem var(--font-ui);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+textarea { resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.form { display: grid; gap: 12px; }
+.form label { display: grid; gap: 4px; font: 600 .85rem var(--font-ui); color: var(--muted); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-error { color: var(--danger); font: .9rem var(--font-ui); margin: 0; }
+.inline-form { display: flex; gap: 8px; }
+.inline-form input { flex: 1; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.search { flex: 1 1 220px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font: .9rem var(--font-ui); color: var(--muted); cursor: pointer; min-height: 44px; }
+.switch input { width: 20px; min-height: 20px; height: 20px; accent-color: var(--accent); }
+
+/* ---------- Catálogo v2 ---------- */
+.code { display: inline-block; font: 700 .72rem var(--font-ui); letter-spacing: .03em; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 6px; margin-right: 2px; vertical-align: .1em; }
+.author { font-style: italic; color: var(--muted); margin: 4px 0 0; }
+.barcode { display: block; font-variant-numeric: tabular-nums; }
+.hint { margin: -4px 0 12px; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+
+/* ---------- Formularios: iOS Safari da ancho mínimo propio a date/time y desborda columnas ---------- */
+.row2 > *, .finder-grid > * { min-width: 0; }
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%;
+  min-height: 44px; line-height: 1.2; text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+input[type="date"]::-webkit-calendar-picker-indicator { opacity: .6; }
+
+/* ---------- Marcas de Mecenas y de administración ---------- */
+/* Safari no respeta la altura de los <select> con su estilo nativo: estilo propio con flecha */
+select {
+  -webkit-appearance: none; appearance: none; min-height: 44px; padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
+}

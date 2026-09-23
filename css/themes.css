@@ -1,0 +1,92 @@
+/* Escriba de la Marca — Ajustes estructurales de los temas Pergamino y Retro EGA (van al final para prevalecer) */
+
+
+/* ---------- Pergamino ---------- */
+:root[data-theme="parchment"] body {
+  background-color: #d8c296;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgb(255 248 225 / .55), transparent 60%),
+    radial-gradient(ellipse at 50% 120%, rgb(92 52 18 / .28), transparent 65%),
+    radial-gradient(circle at 0% 50%, rgb(92 52 18 / .18), transparent 40%),
+    radial-gradient(circle at 100% 50%, rgb(92 52 18 / .18), transparent 40%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .08 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+:root[data-theme="parchment"] h1 { font-family: 'Uncial Antiqua', 'Cinzel', Georgia, serif; font-weight: 400; letter-spacing: .01em; color: var(--accent); }
+:root[data-theme="parchment"] .panel,
+:root[data-theme="parchment"] .result-card {
+  background: rgb(236 220 182 / .72); border: 3px double var(--line);
+  box-shadow: inset 0 0 28px rgb(120 80 30 / .16), var(--shadow);
+}
+:root[data-theme="parchment"] .tabbar {
+  background: rgb(222 202 158 / .94); border-top: 3px double var(--line);
+}
+:root[data-theme="parchment"] .tabbar a.active { color: var(--accent); }
+:root[data-theme="parchment"] .btn-primary { background: var(--accent); box-shadow: inset 0 -2px 0 rgb(0 0 0 / .2); }
+:root[data-theme="parchment"] .btn-ghost,
+:root[data-theme="parchment"] input,
+:root[data-theme="parchment"] select,
+:root[data-theme="parchment"] textarea { background: rgb(246 234 206 / .8); border-color: var(--line); }
+:root[data-theme="parchment"] .group summary { border-bottom: 1px solid var(--line); }
+:root[data-theme="parchment"] .cover { box-shadow: 2px 3px 0 rgb(60 35 12 / .35); }
+:root[data-theme="parchment"] .badge { border: 1px solid rgb(90 55 20 / .25); }
+:root[data-theme="parchment"] dialog { background: #ecdcb6; border: 3px double var(--line); }
+
+/* ---------- Retro EGA ---------- */
+:root[data-theme="retro"] body {
+  background-color: #05060c;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(70,90,140,.06) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-45deg, rgba(70,90,140,.06) 0 1px, transparent 1px 4px);
+}
+/* Scanlines suaves sobre toda la pantalla */
+:root[data-theme="retro"] body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.06) 0 1px, transparent 1px 4px);
+}
+@media (prefers-reduced-motion: reduce) { :root[data-theme="retro"] body::after { opacity: .5; } }
+:root[data-theme="retro"] .view { background: #0000a8; min-height: 100dvh; }
+:root[data-theme="retro"] h1, :root[data-theme="retro"] h2 { text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+:root[data-theme="retro"] h1 { color: #ffff55; }
+:root[data-theme="retro"] .panel,
+:root[data-theme="retro"] .result-card,
+:root[data-theme="retro"] .finder-card,
+:root[data-theme="retro"] .kpi,
+:root[data-theme="retro"] dialog { background: #0000a8; border: 1px solid #aaaaaa; border-radius: 2px; box-shadow: none; }
+:root[data-theme="retro"] .btn { border-radius: 2px; box-shadow: 3px 3px 0 #000; }
+:root[data-theme="retro"] .btn:active { box-shadow: none; transform: translate(2px, 2px); }
+:root[data-theme="retro"] .btn-primary { background: #aaaaaa; color: #000; border: 1px solid #ffff55; }
+:root[data-theme="retro"] .btn-ghost { background: #000080; color: #fff; border: 1px solid #aaaaaa; }
+:root[data-theme="retro"] .btn-danger { background: #aa0000; color: #fff; }
+:root[data-theme="retro"] input,
+:root[data-theme="retro"] select,
+:root[data-theme="retro"] textarea { background-color: #000080; color: #fff; border: 1px solid #aaaaaa; border-radius: 0; }
+:root[data-theme="retro"] input:focus-visible,
+:root[data-theme="retro"] select:focus-visible,
+:root[data-theme="retro"] textarea:focus-visible { outline: 2px solid #ffff55; }
+:root[data-theme="retro"] .tabbar { background: #0000a8; border-top: 1px solid #aaaaaa; backdrop-filter: none; }
+:root[data-theme="retro"] .tabbar a.active { color: #ffff55; background: #000080; }
+@media (min-width: 760px) { :root[data-theme="retro"] .tabbar { border: 1px solid #aaaaaa; border-radius: 2px; } }
+:root[data-theme="retro"] .badge, :root[data-theme="retro"] .count, :root[data-theme="retro"] .tag, :root[data-theme="retro"] .chip { border-radius: 0; }
+:root[data-theme="retro"] .chip.on, :root[data-theme="retro"] .admin-tabs a.active, :root[data-theme="retro"] .seg input:checked + span { background: #aaaaaa; color: #000; border-color: #ffff55; }
+:root[data-theme="retro"] .cover, :root[data-theme="retro"] .tile { border-radius: 0; }
+:root[data-theme="retro"] .cover-ph { background: #000080; border-left: 6px solid #55ffff; }
+:root[data-theme="retro"] .cover-ph span { color: #ffff55; text-shadow: none; font-family: var(--font-display); }
+:root[data-theme="retro"] .tile.owned { background: #aaaaaa; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .bar > span, :root[data-theme="retro"] .wchart-bar { background: #55ffff; border-radius: 0; }
+:root[data-theme="retro"] .toast { border-radius: 2px; box-shadow: 3px 3px 0 #000; font-family: var(--font-ui); }
+:root[data-theme="retro"] .group summary::before { color: #ffff55; }
+:root[data-theme="retro"] a:not(.btn) { color: #55ffff; }
+:root[data-theme="retro"] .panel.perk::after { background: #ffff55; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .panel.admin-zone::after { background: #55ffff; color: #000; box-shadow: none; }
+:root[data-theme="retro"] .panel.perk, :root[data-theme="retro"] .panel.admin-zone { background: #0000a8; }
+:root[data-theme="retro"] .panel.danger-zone { border-color: #ff5555; background: #0000a8; }
+:root[data-theme="retro"] .btn.btn-danger-outline { background: #000080; color: #ff5555; border: 1px solid #ff5555; }
+:root[data-theme="retro"] .btn.btn-coffee { background: #ffff55; color: #000; border: 1px solid #000; }
+
+/* ---------- Pergamino ---------- */
+:root[data-theme="parchment"] .panel.danger-zone { border-color: #9b2414; }
+
+/* ---------- Retro EGA ---------- */
+:root[data-theme="retro"] .btn.btn-perk-cta { background: #000080; color: #ffff55; border: 1px solid #ffff55; }
+:root[data-theme="retro"] .hub-tile { border-radius: 2px; background: #000080; }

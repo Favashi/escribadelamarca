@@ -13,7 +13,11 @@ Resumen del stack:
 
 ```
 index.html, manifest.webmanifest, sw.js   shell + PWA
-css/app.css                               estilos (claro / oscuro / pergamino)
+css/fonts.css                             tipografías servidas desde assets/fonts (sin Google Fonts)
+css/tokens.css                            variables de cada tema (claro, oscuro, pergamino, retro)
+css/base.css · layout.css                 reset, tipografía, botones, formularios · estructura, paneles, diálogos
+css/components.css · views.css            piezas reutilizables · estilos de cada pantalla
+css/themes.css                            ajustes estructurales de Pergamino y Retro (se cargan al final)
 js/config.js                              ← TUS CLAVES AQUÍ
 js/app.js                                 arranque, sesión, rutas
 js/{api,store,router,ui,util,isbn,scanner,auth,theme}.js
@@ -146,6 +150,12 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 **Costes a cubrir:** Supabase gratuito (500 MB de base de datos, 50k usuarios activos al mes) y GitHub Pages gratuito. Las donaciones cubren un dominio propio (~12 €/año) o Supabase Pro (25 $/mes) si la app crece. Ampliación futura: membresía mensual de Buy Me a Coffee usando el mismo webhook (`membership.started`).
 
 **Seguridad:** los extras están protegidos en la base de datos (RLS de `wishlist` y `loans` exige `is_supporter`) y el usuario no puede cambiarse `is_supporter` ni `is_admin` (solo puede actualizar las columnas `display_name` y `avatar_url`).
+
+## Estilos
+- Cada tema es un bloque de **variables** en `css/tokens.css`; lo que un tema cambia de estructura (bordes, tipografía,
+  sombras) va en `css/themes.css`, que se carga el último para prevalecer.
+- Para un tema nuevo: añade sus variables en `tokens.css`, su bloque en `themes.css` y la entrada en `THEMES` (`js/theme.js`).
+- Estilos de una pantalla nueva → `views.css`; si se reutilizan en varias → `components.css`.
 
 ## Métricas y administración
 - La app registra eventos mínimos en `public.events` (`app_open` una vez al día, `scan` con `hit`/`multi`/`unknown`,

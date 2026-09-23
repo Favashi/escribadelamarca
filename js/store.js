@@ -9,7 +9,7 @@ export const state = {
   barcodes: [],         // filas de catalog_barcodes visibles (aprobadas + mis propuestas; admin: todas)
   library: new Map(),   // catalog_id -> fila de library
   wishlist: new Set(),  // catalog_id (solo Mecenas)
-  people: new Map(),    // user id -> { display_name, email } (solo admin)
+  people: new Map(),    // user id -> { display_name } (solo admin)
 };
 
 export const user = () => state.session?.user ?? null;
@@ -49,7 +49,7 @@ export async function refreshLibrary() {
 export const personName = (id) => {
   if (!id) return null;
   const p = state.people.get(id);
-  return p?.display_name || p?.email || 'un usuario';
+  return p?.display_name || 'un usuario';
 };
 
 /** Número de propuestas pendientes (libros + códigos) para el admin. */

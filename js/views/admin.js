@@ -39,6 +39,12 @@ function weeklyChart(title, weekly, key) {
   </figure>`;
 }
 
+/** f•••@gmail.com */
+export const maskEmail = (email) => {
+  const [user, domain] = String(email ?? '').split('@');
+  return domain ? `${user.slice(0, 1)}•••@${domain}` : '—';
+};
+
 const kpi = (value, label, sub = '') => html`<div class="kpi"><span>${value}</span><small>${label}</small>${sub ? raw(html`<em>${sub}</em>`) : ''}</div>`;
 
 export async function renderAdmin(root, params = {}) {
@@ -117,6 +123,7 @@ async function renderUsers(body) {
   const users = await api.adminUsers();
   let q = '';
   body.innerHTML = html`
+    <p class="muted small">Los emails se muestran ocultos; púlsalos solo cuando necesites verlos (p. ej. para emparejar una donación).</p>
     <div class="toolbar"><input type="search" class="search" placeholder="Buscar por nombre o email…" aria-label="Buscar usuario">
       <span class="muted small">${users.length} usuarios · ${users.filter((u) => u.is_supporter).length} mecenas</span></div>
     <ul class="user-list"></ul>`;
@@ -127,10 +134,10 @@ async function renderUsers(body) {
     const rows = users.filter((u) => !n || `${u.display_name ?? ''} ${u.email ?? ''}`.toLowerCase().includes(n));
     list.innerHTML = rows.map((u) => html`<li class="user-row" data-user="${u.id}">
       <div class="user-info">
-        <strong>${u.display_name || u.email}</strong>
+        <strong>${u.display_name || maskEmail(u.email)}</strong>
         ${u.is_supporter ? raw('<span class="badge badge-gold">★ Mecenas</span>') : ''}
         ${u.is_admin ? raw('<span class="badge">Admin</span>') : ''}
-        <small>${u.email}</small>
+        <small><button class="link email-mask" data-reveal="${u.email}" aria-label="Mostrar email">${maskEmail(u.email)}</button></small>
         <small>Alta ${fmtShort(u.created_at)} · última apertura ${u.last_open ? fmtShort(u.last_open) : '—'}</small>
         <small>${u.books} libros · ${u.wishes} deseos · ${u.plays} partidas${Number(u.donated) ? ` · donado ${eur(u.donated)}` : ''}</small>
       </div>
@@ -140,13 +147,15 @@ async function renderUsers(body) {
 
   $('.search', body).addEventListener('input', (e) => { q = e.target.value.trim(); draw(); });
   list.addEventListener('click', async (e) => {
+    const reveal = e.target.closest('[data-reveal]');
+    if (reveal) { reveal.textContent = reveal.dataset.reveal; reveal.removeAttribute('data-reveal'); return; }
     const btn = e.target.closest('[data-toggle]');
     if (!btn) return;
     const u = users.find((x) => x.id === btn.closest('[data-user]').dataset.user);
     const value = !u.is_supporter;
     const ok = await confirmDialog(value
-      ? `¿Hacer Mecenas a ${u.display_name || u.email}? Desbloqueará todos los extras.`
-      : `¿Quitar Mecenas a ${u.display_name || u.email}? Perderá el acceso a los extras (sus datos se conservan).`,
+      ? `¿Hacer Mecenas a ${u.display_name || maskEmail(u.email)}? Desbloqueará todos los extras.`
+      : `¿Quitar Mecenas a ${u.display_name || maskEmail(u.email)}? Perderá el acceso a los extras (sus datos se conservan).`,
     { ok: value ? 'Hacer Mecenas' : 'Quitar Mecenas', danger: !value });
     if (!ok) return;
     try {
@@ -168,11 +177,12 @@ async function renderDonations(body) {
       <strong>${eur(d.amount)}${d.currency && d.currency !== 'EUR' ? ` (${d.currency})` : ''}</strong>
       ${d.live_mode === false ? raw('<span class="badge">prueba</span>') : ''}
       ${d.matched ? raw('<span class="badge badge-ok">emparejada</span>') : raw('<span class="badge badge-warn">sin emparejar</span>')}
-      <small>${fmtDate(d.created_at)} · ${d.type || d.provider} · ${d.email || 'sin email'}</small>
+      <small>${fmtDate(d.created_at)} · ${d.type || d.provider} ·
+        ${d.email ? raw(html`<button class="link email-mask" data-reveal="${d.email}" aria-label="Mostrar email">${maskEmail(d.email)}</button>`) : 'sin email'}</small>
     </div>
     ${!d.matched && d.live_mode !== false ? raw(html`<div class="inline-form match-form">
       <select aria-label="Usuario al que asignar la donación"><option value="">Asignar a…</option>
-        ${users.map((u) => raw(html`<option value="${u.id}">${u.display_name || u.email} · ${u.email}</option>`))}</select>
+        ${users.map((u) => raw(html`<option value="${u.id}">${u.display_name || '—'} · ${maskEmail(u.email)}</option>`))}</select>
       <button class="btn btn-sm btn-primary" data-match>Asignar</button>
     </div>`) : ''}
   </li>`;
@@ -188,6 +198,8 @@ async function renderDonations(body) {
     </section>`;
 
   body.onclick = async (e) => {   // asignación (no addEventListener: se re-renderiza en el mismo nodo)
+    const reveal = e.target.closest('[data-reveal]');
+    if (reveal) { reveal.textContent = reveal.dataset.reveal; reveal.removeAttribute('data-reveal'); return; }
     const btn = e.target.closest('[data-match]');
     if (!btn) return;
     const li = btn.closest('[data-donation]');

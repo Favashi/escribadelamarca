@@ -130,6 +130,12 @@ function renderLanding() {
         <a href="https://github.com/Favashi/escribadelamarca" rel="noopener">Código (AGPL-3.0)</a>
       </p>
     </footer>`;
+  try {
+    if (sessionStorage.getItem('edm.deleted')) {
+      sessionStorage.removeItem('edm.deleted');
+      toast('Tu cuenta y todos tus datos se han eliminado.', 'ok');
+    }
+  } catch { /* sin storage */ }
   view.querySelectorAll('[data-login]').forEach((btn) => (btn.onclick = async () => {
     view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = true));
     try { await signInWithGoogle(); } catch (err) {

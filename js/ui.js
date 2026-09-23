@@ -11,8 +11,10 @@ function openDialog(content, bind) {
   const d = dialog();
   d.innerHTML = content;
   return new Promise((resolve) => {
-    const close = (value) => { d.close(); resolve(value); };
-    d.onclose = () => resolve(null);
+    const close = (value) => { resolve(value); d.close(); };
+    // Si se abre un diálogo justo después de cerrar otro, el evento «close» del anterior llega tarde,
+    // cuando este ya está abierto: se ignora (un cierre real deja d.open en false).
+    d.onclose = () => { if (!d.open) resolve(null); };
     d.onclick = (e) => { if (e.target === d) close(null); }; // clic en el fondo
     bind(d, close);
     d.showModal();

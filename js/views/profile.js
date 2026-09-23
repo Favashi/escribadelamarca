@@ -3,7 +3,7 @@ import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
 import { viewHeader, confirmDialog, errMsg, releaseNotesDialog } from '../ui.js';
 import { APP_VERSION } from '../version.js';
-import { resetLibrary } from '../api.js';
+import { resetLibrary, deleteMyAccount } from '../api.js';
 import { DONATION_URL } from '../config.js';
 import { applyTheme, getTheme, THEMES } from '../theme.js';
 
@@ -56,6 +56,14 @@ export function renderProfile(root) {
       <button class="btn btn-ghost btn-danger-text" data-reset ${state.library.size ? '' : 'disabled'}>Vaciar mi biblioteca (${state.library.size})</button>
     </section>
 
+    <section class="panel danger-zone">
+      <h2>Eliminar mi cuenta</h2>
+      <p class="muted small">Borra tu cuenta y todos tus datos: biblioteca, lista de deseos, préstamos, diario de partidas y
+        estadísticas de uso. Los libros o códigos que hayas propuesto se quedan en el catálogo común, sin tu nombre.
+        No se puede deshacer.</p>
+      <button class="btn btn-ghost btn-danger-text" data-delete-account>Eliminar mi cuenta</button>
+    </section>
+
     <button class="btn btn-ghost btn-block" data-logout>Cerrar sesión</button>
     <p class="muted small center pad">Escriba de la Marca <button class="link" data-changelog>v${APP_VERSION} · Novedades</button><br>
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
@@ -76,6 +84,25 @@ export function renderProfile(root) {
       await loadAll();
       toast('Biblioteca vaciada', 'ok');
       renderProfile(root);
+    } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
+  };
+
+  $('[data-delete-account]', root).onclick = async (e) => {
+    const ok = await confirmDialog(
+      'Se eliminarán tu cuenta y todos tus datos de forma permanente. ¿Seguro que quieres eliminar tu cuenta?',
+      { ok: 'Eliminar para siempre', danger: true });
+    if (!ok) return;
+    const sure = await confirmDialog(
+      `Última confirmación: se borrará la cuenta ${email} y ${state.library.size} libros de tu biblioteca.`,
+      { ok: 'Sí, eliminar mi cuenta', danger: true });
+    if (!sure) return;
+    e.target.disabled = true;
+    try {
+      await deleteMyAccount();
+      // La cuenta ya no existe en el servidor: cerrar solo la sesión local y recargar en la portada
+      await signOut('local').catch(() => {});
+      try { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('edm.deleted', '1'); } catch { /* sin storage */ }
+      location.replace(location.pathname);
     } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
   };
 

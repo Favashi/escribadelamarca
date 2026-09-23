@@ -6,8 +6,9 @@ export async function signInWithGoogle() {
   if (error) throw error;
 }
 
-export async function signOut() {
-  await supabase.auth.signOut();
+/** scope 'local' solo borra la sesión de este navegador, sin llamar al servidor (útil si la cuenta ya no existe). */
+export async function signOut(scope = 'global') {
+  await supabase.auth.signOut({ scope });
 }
 
 export async function getSession() {

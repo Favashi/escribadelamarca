@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#7a1f1f"/>
+  <rect x="40" y="40" width="432" height="432" rx="68" fill="none" stroke="#e8c77a" stroke-width="10" opacity=".55"/>
+  <!-- libro abierto -->
+  <path d="M256 170c-38-26-92-34-146-28v214c54-6 108 2 146 28 38-26 92-34 146-28V142c-54-6-108 2-146 28z" fill="#f5efe3"/>
+  <path d="M256 170v214" stroke="#7a1f1f" stroke-width="8"/>
+  <!-- pluma -->
+  <path d="M372 92c-58 30-104 92-128 168l18 8c30-70 74-124 128-154z" fill="#e8c77a"/>
+  <path d="M244 260l-14 44 32-34z" fill="#2b1a12"/>
+  <!-- líneas de texto -->
+  <g stroke="#b9a58a" stroke-width="7" stroke-linecap="round">
+    <path d="M140 200c30-2 60 2 88 12M140 236c30-2 60 2 88 12M140 272c30-2 60 2 88 12M140 308c30-2 60 2 88 12"/>
+    <path d="M284 316c28-10 58-14 88-12M284 280c28-10 58-14 88-12"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+# Configuración de la CLI de Supabase y de la integración con GitHub.
+# La integración solo despliega a producción: migraciones, Edge Functions y buckets declarados aquí.
+# Auth (Google), URLs de redirección y secretos se configuran en el panel de Supabase.
+
+project_id = "escribadelamarca"
+
+[db]
+major_version = 17
+
+[db.seed]
+# Solo se usa en local y en ramas de prueba (preview), nunca en producción.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[functions.bmc-webhook]
+# Buy Me a Coffee no envía JWT; la función valida la firma HMAC (x-signature-sha256).
+verify_jwt = false

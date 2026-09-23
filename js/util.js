@@ -1,5 +1,7 @@
 // Helpers de DOM y formato.
 
+import { settings } from './settings.js';
+
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
 
@@ -42,7 +44,7 @@ export function initials(title) {
 
 /** Portada o placeholder con iniciales. */
 export function cover(book, cls = '') {
-  return book.cover_url
+  return book.cover_url && settings.covers_enabled
     ? html`<img class="cover ${cls}" src="${book.cover_url}" alt="" loading="lazy">`
     : html`<div class="cover cover-ph ${cls}" aria-hidden="true"><span>${initials(book.title)}</span></div>`;
 }

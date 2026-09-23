@@ -151,6 +151,14 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 
 **Seguridad:** los extras están protegidos en la base de datos (RLS de `wishlist` y `loans` exige `is_supporter`) y el usuario no puede cambiarse `is_supporter` ni `is_admin` (solo puede actualizar las columnas `display_name` y `avatar_url`).
 
+## Ajustes de la app (feature flags)
+Tabla `app_settings` (clave → valor jsonb), de lectura pública y escritura solo admin, que se cambia en
+**Admin → Ajustes** sin publicar versión: `covers_enabled`, `suggestions_enabled` (también se aplica en la política RLS
+de `catalog_suggestions` con `setting_enabled()`), `donations_enabled` y `announcement` (franja de aviso general).
+La app los lee al arrancar (`js/settings.js`); si fallan, usa los valores por defecto (todo activado, sin aviso).
+Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/settings.js` y su interruptor en `FLAGS`
+(`js/views/admin.js`).
+
 ## Historial y sugerencias
 - `catalog_history` guarda cada alta, cambio y borrado de libros y códigos (versión anterior y nueva, quién y cuándo),
   mediante triggers. En la ficha, el admin abre «Historial de cambios» y puede **restaurar** cualquier versión

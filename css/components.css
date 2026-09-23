@@ -191,3 +191,33 @@ details.danger-zone[open] .dz-chevron { transform: rotate(90deg); }
 .dz-item p { margin: 0 0 10px; }
 .btn-danger-outline { gap: 8px; }
 .danger-title { display: flex; align-items: center; gap: 8px; color: var(--danger); }
+
+/* ---------- Aviso general ---------- */
+.announcement {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px 16px;
+  font: 600 .88rem var(--font-ui); color: #fff; background: #3b2a55;
+}
+.announcement span { flex: 1; }
+.announcement button { background: none; border: 0; color: inherit; font-size: 1.3rem; line-height: 1; padding: 4px 8px; cursor: pointer; opacity: .8; }
+.announcement-ok { background: #1f6a37; }
+.announcement-warn { background: #9a2a1b; }
+.announcement + .view { padding-top: 12px; }
+
+/* ---------- Ajustes (admin): interruptores ---------- */
+.flag-list { list-style: none; margin: 0; padding: 0; }
+.flag-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.flag-row:last-child { border-bottom: 0; }
+.flag-row strong { display: block; font: 700 .92rem var(--font-ui); }
+.flag-row small { display: block; font: .78rem var(--font-ui); color: var(--muted); margin-top: 2px; }
+.flag-switch { position: relative; flex: none; width: 50px; height: 30px; cursor: pointer; }
+.flag-switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.flag-switch span[aria-hidden] { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; }
+.flag-switch span[aria-hidden]::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s;
+}
+.flag-switch input:checked + span[aria-hidden] { background: var(--ok); }
+.flag-switch input:checked + span[aria-hidden]::after { transform: translateX(20px); }
+.flag-switch input:focus-visible + span[aria-hidden] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

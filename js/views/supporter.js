@@ -2,6 +2,7 @@ import { html, raw, $, cover, fmtDate, fmtShort, toast, download } from '../util
 import { state, user, isSupporter, groupByCategory, bookById, categoryName, barcodesOf, compareBooks, loadAll } from '../store.js';
 import { viewHeader } from '../ui.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
+import { settings } from '../settings.js';
 import * as api from '../api.js';
 import { downloadAllJson, downloadLibraryCsv } from '../export.js';
 import { track } from '../track.js';
@@ -126,10 +127,10 @@ export async function renderSupporter(root, params = {}) {
       </div>
     </section>
 
-    <section class="panel coffee">
+    ${settings.donations_enabled ? raw(html`<section class="panel coffee">
       <p>¿Quieres volver a invitar a un café? Siempre se agradece.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
-    </section>`;
+    </section>`) : ''}`;
 
   if (params.section) {
     const target = $(`#sec-${params.section}`, root);
@@ -161,6 +162,12 @@ export async function renderSupporter(root, params = {}) {
 
 function renderPitch(root) {
   const email = user().email;
+  if (!settings.donations_enabled) {
+    root.innerHTML = html`${raw(viewHeader('Mecenas'))}<div class="empty"><h2>Las donaciones están pausadas</h2>
+      <p class="muted">Por ahora no se aceptan nuevas aportaciones. La app sigue siendo gratuita para todos.</p>
+      <a class="btn btn-ghost" href="#/perfil">Volver al perfil</a></div>`;
+    return;
+  }
   root.innerHTML = html`
     ${raw(viewHeader('Hazte Mecenas', 'La app es y seguirá siendo gratuita. Si quieres apoyarla, llévate unos extras.'))}
 

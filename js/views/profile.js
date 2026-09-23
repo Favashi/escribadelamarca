@@ -8,6 +8,7 @@ import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
 import { resetLibrary, deleteMyAccount } from '../api.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
+import { settings } from '../settings.js';
 import { applyTheme, getTheme, THEMES } from '../theme.js';
 
 export function renderProfile(root) {
@@ -42,8 +43,8 @@ export function renderProfile(root) {
           <span class="hub-icon" aria-hidden="true">${icon}</span><span class="hub-title">${title}</span><span class="hub-sub">${sub}</span>
         </a>`))}
       </div>
-      <div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a otro café</a></div>
-    </section>`) : raw(html`
+      ${settings.donations_enabled ? raw(html`<div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a otro café</a></div>`) : ''}
+    </section>`) : !settings.donations_enabled ? '' : raw(html`
     <section class="panel coffee">
       <h2>¿Te es útil la app?</h2>
       <p>Escriba de la Marca es gratuita y se mantiene con aportaciones. Con un café (${SUPPORTER_MIN_AMOUNT} €) te haces Mecenas y

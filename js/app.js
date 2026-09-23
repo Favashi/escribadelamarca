@@ -4,6 +4,8 @@ import { state, loadAll, isSupporter } from './store.js';
 import { route, start, resolve } from './router.js';
 import { html, raw, $, $$, toast } from './util.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from './config.js';
+import { settings, loadSettings } from './settings.js';
+import { renderAnnouncement } from './announcement.js';
 import { restoreTheme } from './theme.js';
 import { renderLibrary } from './views/library.js';
 import { renderScan } from './views/scan.js';
@@ -109,12 +111,12 @@ function renderLanding() {
       </article>
     </section>
 
-    <section class="landing-panel coffee">
+    ${settings.donations_enabled ? raw(html`<section class="landing-panel coffee">
       <h2>Gratis, y con extras para Mecenas</h2>
       <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
         desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
-    </section>
+    </section>`) : ''}
 
     <section class="landing-cta">
       <h2>Empieza tu biblioteca</h2>
@@ -239,6 +241,8 @@ route('/admin/:section', mount(renderAdmin));
 async function boot() {
   restoreTheme(false);
   if (!isConfigured) return renderSetup();
+  await loadSettings();
+  renderAnnouncement();
 
   // Lista de deseos compartida: pública, sin login
   const shared = location.hash.match(/^#\/deseos\/([0-9a-f-]{36})$/i);

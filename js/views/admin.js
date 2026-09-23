@@ -2,6 +2,8 @@ import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
 import { isAdmin, pendingCount, loadAll } from '../store.js';
 import { viewHeader, confirmDialog, errMsg } from '../ui.js';
 import * as api from '../api.js';
+import { settings, saveSetting } from '../settings.js';
+import { renderAnnouncement } from '../announcement.js';
 
 const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -14,6 +16,7 @@ export function adminTabs(active) {
     ['revision', '#/revision', `Revisión${n ? ` (${n})` : ''}`],
     ['usuarios', '#/admin/usuarios', 'Usuarios'],
     ['donaciones', '#/admin/donaciones', 'Donaciones'],
+    ['ajustes', '#/admin/ajustes', 'Ajustes'],
   ];
   return html`<nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, href, label]) =>
     raw(html`<a href="${href}" class="${id === active ? 'active' : ''}" ${id === active ? raw('aria-current="page"') : ''}>${label}</a>`))}</nav>`;
@@ -53,7 +56,8 @@ export async function renderAdmin(root, params = {}) {
   root.innerHTML = html`${raw(viewHeader('Administración'))}${raw(adminTabs(section))}<div class="admin-body"><div class="loading" aria-busy="true">Cargando…</div></div>`;
   const body = $('.admin-body', root);
   try {
-    if (section === 'usuarios') await renderUsers(body);
+    if (section === 'ajustes') renderSettings(body);
+    else if (section === 'usuarios') await renderUsers(body);
     else if (section === 'donaciones') await renderDonations(body);
     else await renderSummary(body);
   } catch (e) {
@@ -211,4 +215,65 @@ async function renderDonations(body) {
       await renderDonations(body);
     } catch (err) { toast(errMsg(err), 'error'); }
   };
+}
+
+const FLAGS = [
+  ['covers_enabled', 'Portadas', 'Muestra las portadas de los libros. Desactivado, todos ven las mini-portadas con iniciales. (Ocultarlas no las borra del almacenamiento.)'],
+  ['suggestions_enabled', 'Sugerencias de cambios', 'Permite a los usuarios proponer correcciones. Desactivado, el botón desaparece y la base de datos rechaza sugerencias nuevas.'],
+  ['donations_enabled', 'Donaciones y Mecenas', 'Muestra los botones de café y la invitación a hacerse Mecenas. Los Mecenas actuales conservan sus extras.'],
+];
+
+/** Admin → Ajustes: interruptores que cambian la app al instante, sin publicar versión. */
+function renderSettings(body) {
+  const a = settings.announcement || { enabled: false, text: '', level: 'info' };
+  body.innerHTML = html`
+    <p class="muted small">Los cambios se aplican al momento para quien abra o recargue la app.</p>
+    <section class="panel">
+      <h2>Funciones</h2>
+      <ul class="flag-list">${FLAGS.map(([key, title, desc]) => raw(html`<li class="flag-row">
+        <div><strong>${title}</strong><small>${desc}</small></div>
+        <label class="flag-switch"><input type="checkbox" data-flag="${key}" ${settings[key] ? 'checked' : ''}>
+          <span aria-hidden="true"></span><span class="sr-only">${title}</span></label>
+      </li>`))}</ul>
+    </section>
+
+    <section class="panel">
+      <h2>Aviso general</h2>
+      <p class="muted small">Una franja arriba de la app para todos (también en la portada). Cada usuario puede cerrarla;
+        vuelve a salir si cambias el texto.</p>
+      <form class="form announcement-form">
+        <label class="switch"><input type="checkbox" name="enabled" ${a.enabled ? 'checked' : ''}> <span>Mostrar el aviso</span></label>
+        <label>Texto <textarea name="text" rows="2" maxlength="240" placeholder="Mantenimiento el domingo de 18 a 19 h…">${a.text || ''}</textarea></label>
+        <label>Tipo
+          <select name="level">
+            <option value="info" ${a.level === 'info' ? 'selected' : ''}>Información</option>
+            <option value="ok" ${a.level === 'ok' ? 'selected' : ''}>Buena noticia</option>
+            <option value="warn" ${a.level === 'warn' ? 'selected' : ''}>Aviso importante</option>
+          </select>
+        </label>
+        <div class="actions"><button class="btn btn-primary">Guardar aviso</button></div>
+      </form>
+    </section>`;
+
+  body.querySelectorAll('[data-flag]').forEach((input) => input.addEventListener('change', async () => {
+    const key = input.dataset.flag;
+    input.disabled = true;
+    try {
+      await saveSetting(key, input.checked);
+      toast(`${FLAGS.find((f) => f[0] === key)[1]}: ${input.checked ? 'activado' : 'desactivado'}`, 'ok');
+    } catch (err) { input.checked = !input.checked; toast(errMsg(err), 'error'); }
+    input.disabled = false;
+  }));
+
+  $('.announcement-form', body).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const value = { enabled: f.get('enabled') === 'on', text: f.get('text').trim(), level: f.get('level') };
+    if (value.enabled && !value.text) { toast('Escribe el texto del aviso', 'error'); return; }
+    try {
+      await saveSetting('announcement', value);
+      renderAnnouncement();
+      toast(value.enabled ? 'Aviso publicado' : 'Aviso retirado', 'ok');
+    } catch (err) { toast(errMsg(err), 'error'); }
+  });
 }

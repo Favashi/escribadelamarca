@@ -4,6 +4,7 @@ import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG, suggestDia
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { icon, ribbon } from '../icons.js';
+import { settings } from '../settings.js';
 import { gameInfo } from './finder.js';
 import { neighbors, onSwipe } from '../navlist.js';
 import * as api from '../api.js';
@@ -358,8 +359,9 @@ function suggestBlock(book, uid) {
     ${pending ? raw(html`<p class="small"><span class="badge badge-warn">Pendiente</span> Enviaste una sugerencia el ${fmtShort(pending.created_at)}
       (${Object.keys(pending.changes).map((k) => FIELD_LABELS[k] || k).join(', ')}).
       <button class="link" data-suggest-del="${pending.id}">Retirar</button></p>`)
-    : raw(html`<p class="small muted">¿Falta algún dato o hay algo mal?
-      <button class="btn btn-sm btn-ghost" data-suggest>✎ Sugerir cambios</button></p>`)}
+    : settings.suggestions_enabled ? raw(html`<p class="small muted">¿Falta algún dato o hay algo mal?
+      <button class="btn btn-sm btn-ghost" data-suggest>✎ Sugerir cambios</button></p>`)
+    : raw('<p class="small muted">Las sugerencias de cambios están pausadas temporalmente.</p>')}
     ${last ? raw(html`<p class="small muted">Tu última sugerencia fue ${last.status === 'approved' ? 'aceptada ✓' : 'rechazada'}${last.review_note ? `: «${last.review_note}»` : ''}.</p>`) : ''}
   </section>`;
 }

@@ -1,5 +1,6 @@
 // Service worker: cachea el "shell" de la app. Los datos (Supabase) siempre van a red.
-const VERSION = 'edm-v4';
+// En producción, .github/workflows/pages.yml sustituye VERSION por el hash del commit.
+const VERSION = 'edm-dev';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/config.js', './js/supabase.js', './js/auth.js', './js/router.js', './js/api.js',

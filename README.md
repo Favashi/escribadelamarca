@@ -40,7 +40,8 @@ scripts/catalog_sync.py                   CSV → migración SQL de sincronizaci
    git init -b main && git add . && git commit -m "init"
    git remote add origin git@github.com:Favashi/escribadelamarca.git && git push -u origin main
    ```
-2. Repo → **Settings → Pages** → *Deploy from a branch* → `main` / `(root)`.
+2. Repo → **Settings → Pages** → *Source*: **GitHub Actions**. El workflow `.github/workflows/pages.yml` publica cada push a `main`
+   (solo los ficheros de la web) y fija la versión de caché del service worker al hash del commit.
 3. Abre `https://favashi.github.io/escribadelamarca/`. La cámara exige HTTPS: GitHub Pages ya lo da.
 
 ### 3. Integración GitHub ↔ Supabase (despliegue del backend)
@@ -147,7 +148,7 @@ python3 -m http.server 8000
 ```
 Para probar desde el móvil en local necesitas HTTPS (p. ej. `npx localtunnel --port 8000`) o prueba directamente en GitHub Pages.
 
-Tras cambiar ficheros, sube `VERSION` en `sw.js` para que los móviles con la PWA instalada reciban la nueva versión.
+No hace falta tocar `VERSION` en `sw.js`: el workflow de Pages la cambia en cada despliegue.
 
 ## Compatibilidad del escáner
 - Android / Chrome: `BarcodeDetector` nativo.

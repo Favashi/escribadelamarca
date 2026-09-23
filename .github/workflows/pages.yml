@@ -1,0 +1,54 @@
+# Publica la web en GitHub Pages en cada push a main.
+# Solo se despliegan los ficheros de la app (no data/, scripts/ ni supabase/)
+# y la versión de la caché del service worker se sustituye por el hash del commit,
+# para que las PWA instaladas reciban siempre la última versión.
+#
+# Requisito: Settings → Pages → Source: "GitHub Actions".
+
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar la web
+        run: |
+          mkdir _site
+          cp -r index.html privacidad.html manifest.webmanifest sw.js css js assets _site/
+          VERSION="edm-${GITHUB_SHA::7}"
+          sed -i "s/const VERSION = '[^']*';/const VERSION = '${VERSION}';/" _site/sw.js
+          grep -q "const VERSION = '${VERSION}';" _site/sw.js || { echo "No se pudo fijar VERSION en sw.js"; exit 1; }
+          echo "Versión de caché: ${VERSION}"
+          find _site -type f | sort
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

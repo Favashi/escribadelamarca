@@ -31,35 +31,51 @@ function renderLanding() {
   nav.hidden = true;
   const loginBtn = raw(`<button class="btn btn-google" data-login>${GOOGLE_ICON} Entrar con Google</button>`);
   view.innerHTML = html`
-    <section class="hero">
-      <div class="hero-copy">
-        <img src="assets/icons/icon.svg" alt="" class="hero-logo" width="88" height="88">
-        <h1>Escriba de la Marca</h1>
-        <p class="lead">Tu biblioteca de <em>Aventuras en la Marca del Este</em>, siempre en el bolsillo.
-          Escanea un módulo en la tienda y sabrás al momento si ya lo tienes.</p>
+    <article class="cover-page">
+      <div class="corner-ribbon" aria-hidden="true"><span>Para coleccionistas de<br>Aventuras en la Marca del Este</span></div>
+      <p class="module-code" aria-hidden="true">E1</p>
+
+      <header class="cover-head">
+        <img src="assets/icons/icon.svg" alt="" class="cover-logo" width="72" height="72">
+        <h1 class="cover-title">Escriba de la Marca</h1>
+        <div class="cover-rule" aria-hidden="true"><span></span></div>
+        <p class="cover-sub">Aplicación para coleccionistas de todos los niveles</p>
+      </header>
+
+      <figure class="cover-art" aria-hidden="true">
+        <div class="mock">
+          <div class="mock-screen">
+            <div class="mock-scan"><span></span></div>
+            <div class="mock-card is-owned">
+              <div class="cover cover-ph mock-cover"><span>N</span></div>
+              <div>
+                <p class="badge badge-ok">Ya registrado</p>
+                <p class="mock-title"><span class="code">B24</span> La Niebla</p>
+                <p class="mock-text">Lo añadiste el <strong>12 de marzo de 2025</strong>.</p>
+              </div>
+            </div>
+            <ul class="mock-bars">
+              <li><span>Aventuras serie B</span><b style="--p:62%"></b><em>26/42</em></li>
+              <li><span>Ambientación</span><b style="--p:38%"></b><em>3/8</em></li>
+              <li><span>Reglamento</span><b style="--p:100%"></b><em>3/3</em></li>
+            </ul>
+          </div>
+        </div>
+      </figure>
+
+      <p class="cover-blurb">
+        Más allá de las estanterías abarrotadas, entre cajas rojas y módulos grapados, se dice que hay una colección
+        que ningún aventurero ha logrado catalogar jamás. ¿Quién será tan valiente como para escanear cada código de barras
+        y descubrir, por fin, qué módulos le faltan?
+      </p>
+
+      <div class="cover-cta">
         ${loginBtn}
-        <p class="muted small">Gratis · solo necesitas tu cuenta de Google</p>
+        <p class="small">Gratis · solo necesitas tu cuenta de Google</p>
       </div>
 
-      <div class="mock" aria-hidden="true">
-        <div class="mock-screen">
-          <div class="mock-scan"><span></span></div>
-          <div class="mock-card is-owned">
-            <div class="cover cover-ph mock-cover"><span>N</span></div>
-            <div>
-              <p class="badge badge-ok">Ya registrado</p>
-              <p class="mock-title"><span class="code">B24</span> La Niebla</p>
-              <p class="mock-text">Lo añadiste el <strong>12 de marzo de 2025</strong>.</p>
-            </div>
-          </div>
-          <ul class="mock-bars">
-            <li><span>Aventuras serie B</span><b style="--p:62%"></b><em>26/42</em></li>
-            <li><span>Ambientación</span><b style="--p:38%"></b><em>3/8</em></li>
-            <li><span>Reglamento</span><b style="--p:100%"></b><em>3/3</em></li>
-          </ul>
-        </div>
-      </div>
-    </section>
+      <img src="assets/icons/icon.svg" alt="" class="cover-emblem" width="44" height="44">
+    </article>
 
     <section class="features">
       <article>
@@ -71,7 +87,7 @@ function renderLanding() {
       <article>
         <span class="feature-icon" aria-hidden="true">📷</span>
         <h2>Escanea y listo</h2>
-        <p>Apunta la cámara al código de barras: si ya lo tienes te dice desde cuándo; si no, lo añades con un toque.
+        <p>Enfoca el código de barras: si ya lo tienes te dice desde cuándo; si no, lo añades con un toque.
           ¿Un módulo antiguo sin código? Escribe el de la portada (B1, X2…).</p>
       </article>
       <article>
@@ -99,9 +115,10 @@ function renderLanding() {
       ${loginBtn}
     </section>
 
+    ${raw(OSR_BANNER)}
+
     <footer class="landing-footer">
-      <p>¿Diriges partidas OSR? Prueba también <a href="https://favashi.github.io/osr-manager/" rel="noopener">OSR Manager</a>.</p>
-      <p class="muted small">
+      <p class="small">
         Proyecto de fans, no oficial. <em>Aventuras en la Marca del Este</em> pertenece a sus autores.<br>
         <a href="privacidad.html">Privacidad</a> ·
         <a href="https://github.com/Favashi/escribadelamarca" rel="noopener">Código (AGPL-3.0)</a>
@@ -115,6 +132,28 @@ function renderLanding() {
     }
   }));
 }
+
+// Banner de OSR Manager con el estilo de su web (tema Fósforo Verde, franja y marco doble).
+const OSR_BANNER = `
+  <aside class="osr-banner" aria-label="OSR Manager">
+    <div class="osr-hero">
+      <div class="osr-code" aria-hidden="true">OSR-01</div>
+      <div class="osr-ribbon" aria-hidden="true">PORTABLE<br>SIN INSTALAR</div>
+      <pre class="osr-logo" aria-hidden="true"> ██████╗ ███████╗██████╗
+██╔═══██╗██╔════╝██╔══██╗
+██║   ██║███████╗██████╔╝
+██║   ██║╚════██║██╔══██╗
+╚██████╔╝███████║██║  ██║
+ ╚═════╝ ╚══════╝╚═╝  ╚═╝</pre>
+      <h2 class="osr-title">OSR MANAGER</h2>
+      <p class="osr-tag">Herramienta para directores de juego</p>
+      <p class="osr-tagline">Una ayuda de mesa para dirigir partidas OSR: exploración, hexcrawl, encuentros y combate.</p>
+      <div class="osr-cta">
+        <a class="osr-btn" href="https://favashi.github.io/osr-manager/app/" rel="noopener">Abrir OSR Manager →</a>
+      </div>
+      <p class="osr-secondary"><a href="https://favashi.github.io/osr-manager/" rel="noopener">Ver la web del proyecto</a></p>
+    </div>
+  </aside>`;
 
 function renderSetup() {
   nav.hidden = true;

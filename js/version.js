@@ -3,9 +3,19 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.1';
 
 export const RELEASES = [
+  {
+    version: '1.0.1',
+    date: '2026-09-24',
+    notes: [
+      'Nueva portada inspirada en los módulos de la Marca, con su franja diagonal.',
+      'Colores renovados: morado de módulo, rojo de la Caja Roja y dorado, en tema claro y oscuro.',
+      'Las portadas generadas ahora parecen mini-portadas moradas con las iniciales en dorado.',
+      'Enlace a OSR Manager, la ayuda de mesa para directores de juego.',
+    ],
+  },
   {
     version: '1.0.0',
     date: '2026-09-24',

@@ -155,6 +155,40 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 - En la app, la pestaña **Admin** (solo admins) muestra Resumen, Revisión, Usuarios y Donaciones.
 - `admin_metrics()` purga los eventos de más de 12 meses cada vez que se consulta.
 
+## Avisos por Telegram
+Triggers en la base de datos envían un mensaje al administrador cuando hay un **usuario nuevo**, un **libro o código
+propuesto** o una **donación**. Usan `pg_net` para llamar a la API de Telegram; el token vive cifrado en **Vault**.
+
+1. En Telegram, habla con **@BotFather** → `/newbot` → copia el token.
+2. Envía cualquier mensaje a tu bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`: el `chat.id` es tu chat.
+3. En el SQL Editor de Supabase (una sola vez; nunca en una migración, el repositorio es público):
+   ```sql
+   select vault.create_secret('<TOKEN>', 'telegram_bot_token');
+   select vault.create_secret('<CHAT_ID>', 'telegram_chat_id');
+   ```
+4. Prueba: `select public.notify_admin('Hola desde Supabase');`
+
+Sin esos secretos no se envía nada y la app funciona igual. Los mensajes no incluyen emails.
+
+## Copias de seguridad
+`.github/workflows/backup.yml` vuelca cada domingo roles, esquema y datos (incluido `auth`) con la CLI de Supabase,
+los cifra con AES-256 (gpg) y los guarda 90 días como artefacto del workflow.
+
+Secretos del repositorio (GitHub → Settings → Secrets and variables → Actions):
+- `SUPABASE_DB_URL`: Supabase → **Connect** → *Session pooler* (los runners de GitHub no tienen IPv6), con la contraseña.
+- `BACKUP_PASSPHRASE`: frase larga; guárdala en tu gestor de contraseñas.
+
+Restaurar (a un proyecto nuevo o local):
+```bash
+gpg --decrypt backup-AAAA-MM-DD.tar.gz.gpg > backup.tar.gz && tar xzf backup.tar.gz
+psql "$NUEVA_DB_URL" -f backup/roles.sql -f backup/schema.sql \
+  -c 'SET session_replication_role = replica' -f backup/auth_data.sql -f backup/data.sql
+```
+
+## Mantener el proyecto activo
+`.github/workflows/keepalive.yml` consulta la API lunes y jueves para que el plan gratuito no pause el proyecto.
+GitHub desactiva los workflows programados tras 60 días sin commits: reactívalos desde Actions si pasa.
+
 ## Publicar una versión
 1. En `js/version.js`, sube `APP_VERSION` (semver: `1.1.0` funciones nuevas, `1.0.1` arreglos) y añade una entrada
    **arriba** en `RELEASES` con la fecha y 2-4 notas pensadas para usuarios.

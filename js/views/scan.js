@@ -12,6 +12,36 @@ export function renderScan(root) {
   let scanner = null;
   let busy = false;
   let torchOn = false;
+  let shownCode = null;   // código cuyo resultado se está mostrando (no se vuelve a procesar)
+  let resumeTimer = null; // reactiva el escáner unos segundos después de un resultado
+  let idleTimer = null;   // pista si pasa un rato sin detectar nada
+
+  const RESUME_MS = 2500;
+  const IDLE_HINT_MS = 8000;
+  const dialogOpen = () => document.getElementById('dialog')?.open;
+
+  function armIdleHint() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!busy && scanner) status.textContent = '¿No lo detecta? Acerca el libro, busca buena luz o escribe el código abajo.';
+    }, IDLE_HINT_MS);
+  }
+
+  /** Tras mostrar un resultado, vuelve a escanear sola: un código distinto sustituye al resultado. */
+  function scheduleResume() {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      busy = false;
+      if (scanner) { status.textContent = 'Listo para el siguiente libro'; armIdleHint(); }
+    }, RESUME_MS);
+  }
+
+  function onDetected(code) {
+    if (busy || code === shownCode || dialogOpen()) return;
+    // No pisar el resultado si el usuario está escribiendo en él (buscador de "¿qué libro es?")
+    if (document.activeElement?.matches('input, textarea') && result.contains(document.activeElement)) return;
+    handleBarcode(code);
+  }
 
   root.innerHTML = html`
     <header class="view-head"><div><h1>Escanear</h1><p class="muted">Apunta al código de barras de la contraportada.</p></div></header>
@@ -43,8 +73,9 @@ export function renderScan(root) {
     }
     try {
       status.textContent = 'Iniciando cámara…';
-      scanner = await startScanner(video, (code) => { if (!busy) handleBarcode(code); });
+      scanner = await startScanner(video, onDetected);
       status.textContent = 'Buscando código…';
+      armIdleHint();
       torchBtn.hidden = !scanner.hasTorch;
     } catch (e) {
       console.error(e);
@@ -72,7 +103,10 @@ export function renderScan(root) {
       if (!books.length) { toast(`No hay ningún libro con el código ${value.toUpperCase()}.`, 'error'); return; }
       input.value = ''; input.blur();
       busy = true;
+      shownCode = null;
+      clearTimeout(idleTimer);
       books.length === 1 ? showBook(books[0]) : showChoice(books, null);
+      scheduleResume();
     } else {
       toast('Código no válido. Revisa los dígitos.', 'error');
     }
@@ -80,6 +114,9 @@ export function renderScan(root) {
 
   async function handleBarcode(code) {
     busy = true;
+    shownCode = code;
+    clearTimeout(idleTimer);
+    clearTimeout(resumeTimer);
     status.textContent = `Leído ${formatCode(code)}`;
     result.innerHTML = html`<div class="result-card"><p class="muted">Buscando ${formatCode(code)}…</p></div>`;
     let books = booksForBarcode(code);
@@ -91,12 +128,16 @@ export function renderScan(root) {
     else if (books.length > 1) showChoice(books, code);
     else showUnknown(code);
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    scheduleResume();
   }
 
   function again() {
     result.innerHTML = '';
     busy = false;
+    shownCode = null;
+    clearTimeout(resumeTimer);
     status.textContent = 'Buscando código…';
+    armIdleHint();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -122,7 +163,7 @@ export function renderScan(root) {
         <div class="actions">
           ${entry
             ? raw(html`<a class="btn btn-ghost" href="#/libro/${book.id}">Ver ficha</a>
-                <button class="btn btn-primary" data-again>Escanear otro</button>`)
+                <button class="btn btn-primary" data-again>Cerrar</button>`)
             : raw(html`<button class="btn btn-ghost" data-again>Ahora no</button>
                 <button class="btn btn-primary" data-add>Añadir</button>`)}
         </div>
@@ -237,5 +278,5 @@ export function renderScan(root) {
   }
 
   start();
-  return { cleanup: () => scanner?.stop() };
+  return { cleanup: () => { clearTimeout(resumeTimer); clearTimeout(idleTimer); scanner?.stop(); } };
 }

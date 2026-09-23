@@ -52,6 +52,17 @@ export const updateBook = async (id, fields) =>
 export const deleteBook = async (id) =>
   ok(await supabase.from('catalog').delete().eq('id', id));
 
+/** Admin: nombres de todos los usuarios (RLS solo lo permite a admins). */
+export const getPeople = async () =>
+  ok(await supabase.from('profiles').select('id, display_name, email'));
+
+/** Vacía la biblioteca del usuario (y sus préstamos y lista de deseos). */
+export async function resetLibrary(uid) {
+  ok(await supabase.from('loans').delete().eq('user_id', uid));
+  ok(await supabase.from('wishlist').delete().eq('user_id', uid));
+  ok(await supabase.from('library').delete().eq('user_id', uid));
+}
+
 export const updateProfile = async (uid, fields) =>
   ok(await supabase.from('profiles').update(fields).eq('id', uid));
 

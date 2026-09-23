@@ -1,7 +1,9 @@
 # Publica la web en GitHub Pages en cada push a main.
 # Solo se despliegan los ficheros de la app (no data/, scripts/ ni supabase/)
-# y la versión de la caché del service worker se sustituye por el hash del commit,
+# y la versión de la caché del service worker pasa a ser <APP_VERSION>-<commit>,
 # para que las PWA instaladas reciban siempre la última versión.
+# Si APP_VERSION (js/version.js) es nueva, crea la etiqueta vX.Y.Z y la GitHub Release
+# con las notas de RELEASES.
 #
 # Requisito: Settings → Pages → Source: "GitHub Actions".
 
@@ -31,7 +33,8 @@ jobs:
         run: |
           mkdir _site
           cp -r index.html privacidad.html manifest.webmanifest sw.js css js assets _site/
-          VERSION="edm-${GITHUB_SHA::7}"
+          APP_VERSION=$(node --input-type=module -e "$(cat js/version.js); console.log(APP_VERSION)")
+          VERSION="edm-${APP_VERSION}-${GITHUB_SHA::7}"
           sed -i "s/const VERSION = '[^']*';/const VERSION = '${VERSION}';/" _site/sw.js
           grep -q "const VERSION = '${VERSION}';" _site/sw.js || { echo "No se pudo fijar VERSION en sw.js"; exit 1; }
           echo "Versión de caché: ${VERSION}"
@@ -52,3 +55,29 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  release:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Crear GitHub Release si la versión es nueva
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module -e "$(cat js/version.js)
+            const r = RELEASES.find((x) => x.version === APP_VERSION);
+            if (!r) { console.error('RELEASES no tiene notas para ' + APP_VERSION); process.exit(1); }
+            const fs = await import('node:fs');
+            fs.writeFileSync('notes.md', r.notes.map((n) => '- ' + n).join('\\n') + '\\n');
+            fs.writeFileSync('version.txt', APP_VERSION);"
+          V="v$(cat version.txt)"
+          if gh release view "$V" >/dev/null 2>&1; then
+            echo "La release $V ya existe: nada que hacer."
+          else
+            gh release create "$V" --target "$GITHUB_SHA" --title "$V" --notes-file notes.md
+            echo "Creada la release $V"
+          fi

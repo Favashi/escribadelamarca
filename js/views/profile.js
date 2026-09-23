@@ -1,7 +1,9 @@
 import { html, raw, $, toast } from '../util.js';
-import { state, isSupporter, isAdmin } from '../store.js';
+import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
-import { viewHeader } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, releaseNotesDialog } from '../ui.js';
+import { APP_VERSION } from '../version.js';
+import { resetLibrary } from '../api.js';
 import { DONATION_URL } from '../config.js';
 import { applyTheme, getTheme, THEMES } from '../theme.js';
 
@@ -47,9 +49,34 @@ export function renderProfile(root) {
       </div>
     </section>
 
+    <section class="panel danger-zone">
+      <h2>Empezar de cero</h2>
+      <p class="muted small">Quita todos los libros de tu biblioteca${isSupporter() ? ', tu lista de deseos y tus préstamos' : ''}.
+        El catálogo general no se toca.</p>
+      <button class="btn btn-ghost btn-danger-text" data-reset ${state.library.size ? '' : 'disabled'}>Vaciar mi biblioteca (${state.library.size})</button>
+    </section>
+
     <button class="btn btn-ghost btn-block" data-logout>Cerrar sesión</button>
-    <p class="muted small center pad">Escriba de la Marca · proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a></p>`;
+    <p class="muted small center pad">Escriba de la Marca <button class="link" data-changelog>v${APP_VERSION} · Novedades</button><br>
+      Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a></p>`;
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
+  $('[data-reset]', root).onclick = async (e) => {
+    const n = state.library.size;
+    const ok = await confirmDialog(
+      `¿Vaciar tu biblioteca? Se quitarán ${n} ${n === 1 ? 'libro' : 'libros'} con sus fechas de registro y notas. No se puede deshacer.`,
+      { ok: 'Vaciar biblioteca', danger: true });
+    if (!ok) return;
+    e.target.disabled = true;
+    try {
+      await resetLibrary(user().id);
+      await loadAll();
+      toast('Biblioteca vaciada', 'ok');
+      renderProfile(root);
+    } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
+  };
+
+  $('[data-changelog]', root).onclick = () => releaseNotesDialog();
+
   $('[data-logout]', root).onclick = async () => { await signOut(); toast('Sesión cerrada'); };
 }

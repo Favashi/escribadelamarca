@@ -1,7 +1,6 @@
 import { html, raw, $, cover, toast } from '../util.js';
-import { state, user, isAdmin, groupByCategory, refreshCatalog, refreshLibrary, bookById, matches } from '../store.js';
+import { state, user, isAdmin, groupByCategory, refreshCatalog, refreshLibrary, bookById, matches, pendingCount } from '../store.js';
 import { bookFormDialog, confirmDialog, viewHeader, errMsg } from '../ui.js';
-import { formatCode } from '../isbn.js';
 import * as api from '../api.js';
 
 export function renderCatalog(root) {
@@ -9,27 +8,8 @@ export function renderCatalog(root) {
   const admin = isAdmin();
 
   function pendingSection() {
-    if (!admin) return '';
-    const books = state.catalog.filter((b) => b.status === 'pending');
-    const codes = state.barcodes.filter((b) => b.status === 'pending');
-    if (!books.length && !codes.length) return '';
-    return html`<section class="pending">
-      <h2>Pendiente de revisar <span class="count">${books.length + codes.length}</span></h2>
-      ${books.map((b) => raw(html`<div class="row" data-id="${b.id}">
-        ${raw(cover(b, 'cover-xs'))}
-        <a class="row-title" href="#/libro/${b.id}">${b.title}<small>Libro nuevo${b.code ? ` · ${b.code}` : ''}</small></a>
-        <button class="btn btn-sm btn-ghost" data-reject>Rechazar</button>
-        <button class="btn btn-sm btn-primary" data-approve>Aprobar</button>
-      </div>`))}
-      ${codes.map((c) => {
-        const b = bookById(c.catalog_id);
-        return raw(html`<div class="row" data-id="${c.catalog_id}" data-code="${c.code}">
-          <a class="row-title" href="#/libro/${c.catalog_id}">${b?.title ?? '—'}<small>Código propuesto: ${formatCode(c.code)}</small></a>
-          <button class="btn btn-sm btn-ghost" data-code-reject>Rechazar</button>
-          <button class="btn btn-sm btn-primary" data-code-approve>Aprobar</button>
-        </div>`);
-      })}
-    </section>`;
+    const n = admin ? pendingCount() : 0;
+    return n ? html`<a class="panel teaser" href="#/revision">📝 Hay <strong>${n}</strong> ${n === 1 ? 'propuesta pendiente' : 'propuestas pendientes'} de revisar →</a>` : '';
   }
 
   function draw() {
@@ -84,7 +64,6 @@ export function renderCatalog(root) {
     const row = e.target.closest('[data-id]');
     if (!btn || !row) return;
     const book = bookById(row.dataset.id);
-    const code = row.dataset.code;
     btn.disabled = true;
     try {
       if (btn.hasAttribute('data-toggle')) {
@@ -95,22 +74,6 @@ export function renderCatalog(root) {
           await api.addToLibrary(user().id, book.id);
         }
         await refreshLibrary();
-      } else if (btn.hasAttribute('data-approve')) {
-        await api.updateBook(book.id, { status: 'approved' });
-        await refreshCatalog();
-        toast('Aprobado', 'ok');
-      } else if (btn.hasAttribute('data-reject')) {
-        if (!(await confirmDialog(`¿Rechazar y borrar «${book.title}»? Se quitará de las bibliotecas que lo tengan.`, { ok: 'Borrar', danger: true }))) { btn.disabled = false; return; }
-        await api.deleteBook(book.id);
-        await Promise.all([refreshCatalog(), refreshLibrary()]);
-      } else if (btn.hasAttribute('data-code-approve')) {
-        // Un usuario lo escaneó en su ejemplar: cuenta como verificado
-        await api.updateBarcode(code, book.id, { status: 'approved', verified: true });
-        await refreshCatalog();
-        toast('Código aprobado', 'ok');
-      } else if (btn.hasAttribute('data-code-reject')) {
-        await api.deleteBarcode(code, book.id);
-        await refreshCatalog();
       }
       draw();
     } catch (err) {

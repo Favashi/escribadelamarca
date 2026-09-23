@@ -139,6 +139,17 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 
 **Seguridad:** los extras están protegidos en la base de datos (RLS de `wishlist` y `loans` exige `is_supporter`) y el usuario no puede cambiarse `is_supporter` ni `is_admin` (solo puede actualizar las columnas `display_name` y `avatar_url`).
 
+## Publicar una versión
+1. En `js/version.js`, sube `APP_VERSION` (semver: `1.1.0` funciones nuevas, `1.0.1` arreglos) y añade una entrada
+   **arriba** en `RELEASES` con la fecha y 2-4 notas pensadas para usuarios.
+2. Commit y push a `main`. El workflow de Pages:
+   - publica la web con caché `edm-<versión>-<commit>`;
+   - crea la etiqueta `vX.Y.Z` y la GitHub Release con esas notas (si no existía).
+3. Al abrir la app, quien ya la usaba ve una vez «Novedades de la versión X.Y.Z». El historial completo está en
+   Perfil → «vX.Y.Z · Novedades».
+
+Los cambios sin nueva versión (arreglos menores) se publican igual; simplemente no generan release ni aviso.
+
 ## Desarrollo local
 ```bash
 python3 -m http.server 8000

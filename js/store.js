@@ -9,6 +9,7 @@ export const state = {
   barcodes: [],         // filas de catalog_barcodes visibles (aprobadas + mis propuestas; admin: todas)
   library: new Map(),   // catalog_id -> fila de library
   wishlist: new Set(),  // catalog_id (solo Mecenas)
+  people: new Map(),    // user id -> { display_name, email } (solo admin)
 };
 
 export const user = () => state.session?.user ?? null;
@@ -28,6 +29,10 @@ export async function loadAll() {
   state.catalog = catalog;
   state.library = new Map(library.map((r) => [r.catalog_id, r]));
   state.wishlist = new Set();
+  state.people = new Map();
+  if (profile?.is_admin) {
+    try { state.people = new Map((await api.getPeople()).map((p) => [p.id, p])); } catch { /* RLS */ }
+  }
   if (profile?.is_supporter) {
     try { state.wishlist = new Set((await api.getWishlist(uid)).map((r) => r.catalog_id)); } catch { /* RLS */ }
   }
@@ -39,6 +44,17 @@ export async function refreshCatalog() {
 export async function refreshLibrary() {
   state.library = new Map((await api.getLibrary(user().id)).map((r) => [r.catalog_id, r]));
 }
+
+/** Nombre legible de un usuario (solo admin tiene la lista). */
+export const personName = (id) => {
+  if (!id) return null;
+  const p = state.people.get(id);
+  return p?.display_name || p?.email || 'un usuario';
+};
+
+/** Número de propuestas pendientes (libros + códigos) para el admin. */
+export const pendingCount = () =>
+  state.catalog.filter((b) => b.status === 'pending').length + state.barcodes.filter((b) => b.status === 'pending').length;
 
 /** Libros asociados a un código de barras (puede haber varios por errores de las fuentes). */
 export const booksForBarcode = (code) =>

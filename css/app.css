@@ -397,8 +397,8 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .barcode { display: block; font-variant-numeric: tabular-nums; }
 .hint { margin: -4px 0 12px; }
 .link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
-.pick-search { margin: 10px 0 6px; }
-.pick-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 45vh; overflow-y: auto; }
+.pick-search { margin: 14px 0 6px; }
+.pick-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
 .pick {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 4px;
   background: none; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
@@ -412,3 +412,29 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .legal h1 { margin: 8px 0 4px; }
 .legal h2 { margin: 28px 0 8px; }
 .legal li { margin-bottom: 8px; }
+
+/* ---------- Revisión (admin) ---------- */
+.tabbar.has-admin { grid-template-columns: repeat(5, 1fr); }
+.tabbar a { position: relative; }
+.tab-badge {
+  position: absolute; top: 2px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 99px; background: var(--accent); color: var(--accent-ink);
+  font: 700 .66rem/18px var(--font-ui); text-align: center;
+}
+.review-row { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.review-info { display: grid; gap: 2px; min-width: 0; }
+.review-info small { font: .76rem var(--font-ui); color: var(--muted); }
+.review-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+@media (min-width: 560px) {
+  .review-row { grid-template-columns: auto 1fr auto; align-items: center; }
+  .review-actions { grid-column: auto; }
+}
+.audit { justify-content: start; margin: 4px 0 12px; }
+.audit dt { text-align: left; }
+.danger-zone { border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); }
+
+/* ---------- Novedades ---------- */
+.releases { display: grid; gap: 16px; max-height: 60dvh; overflow-y: auto; margin-top: 8px; }
+.release h3 { font: 700 1rem var(--font-display); margin: 0 0 6px; }
+.release h3 small { font: 400 .78rem var(--font-ui); color: var(--muted); margin-left: 6px; }
+.release ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }

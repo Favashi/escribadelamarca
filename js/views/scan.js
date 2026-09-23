@@ -199,12 +199,12 @@ export function renderScan(root) {
         <p class="badge badge-warn">Varios libros</p>
         <h2>${code ? `El código ${formatCode(code)} aparece en ${books.length} libros` : `${books.length} libros con ese código`}</h2>
         <p class="muted small">Elige el que tienes en la mano.</p>
+        <div class="actions"><button class="btn btn-ghost" data-again>Cancelar</button></div>
         <ul class="pick-list">
           ${books.sort(compareBooks).map((b) => raw(html`<li><button class="pick" data-id="${b.id}">
             ${raw(cover(b, 'cover-xs'))}<span>${codeLabel(b)}${b.title}
             ${state.library.has(b.id) ? raw('<small>✓ En tu biblioteca</small>') : ''}</span></button></li>`))}
         </ul>
-        <div class="actions"><button class="btn btn-ghost" data-again>Cancelar</button></div>
       </div>
     </div>`;
     $('[data-again]', result).onclick = again;
@@ -221,12 +221,12 @@ export function renderScan(root) {
         <p class="muted small">${admin
           ? 'Elige a qué libro pertenece: el código quedará asignado y verificado.'
           : 'Si sabes qué libro es, elígelo: se añadirá a tu biblioteca y el código quedará propuesto para revisión.'}</p>
-        <input type="search" class="search pick-search" placeholder="Busca por título o código (B19)…" aria-label="Buscar libro">
-        <ul class="pick-list"></ul>
         <div class="actions">
           <button class="btn btn-ghost" data-again>Cancelar</button>
           <button class="btn btn-ghost" data-new>No está: ${admin ? 'crear libro' : 'proponer libro'}</button>
         </div>
+        <input type="search" class="search pick-search" placeholder="¿Qué libro es? Busca por título o código (B19)…" aria-label="Buscar libro">
+        <ul class="pick-list"></ul>
       </div>
     </div>`;
     const list = $('.pick-list', result);

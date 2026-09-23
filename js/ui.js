@@ -2,6 +2,7 @@
 import { html, raw, esc, $ } from './util.js';
 import { state } from './store.js';
 import { normalizeCode } from './isbn.js';
+import { APP_VERSION, RELEASES } from './version.js';
 
 const dialog = () => document.getElementById('dialog');
 
@@ -121,4 +122,37 @@ export function errMsg(e) {
   if (e?.code === '23505') return e.message?.includes('barcodes') ? 'Ese código ya está asignado a ese libro.' : 'Ya existe.';
   if (e?.code === '42501') return 'No tienes permiso para esta acción.';
   return e?.message || 'Algo ha fallado. Inténtalo de nuevo.';
+}
+
+const SEEN_KEY = 'edm.seenVersion';
+const releaseDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/** Diálogo con las notas de versión (todas, o solo las más recientes que `since`). */
+export function releaseNotesDialog({ releases = RELEASES, heading = 'Novedades' } = {}) {
+  return openDialog(html`
+    <div class="sheet">
+      <h2 class="sheet-title">${heading}</h2>
+      <div class="releases">
+        ${releases.map((r) => raw(html`<section class="release">
+          <h3>Versión ${r.version} <small>${releaseDate.format(new Date(r.date))}</small></h3>
+          <ul>${r.notes.map((n) => raw(html`<li>${n}</li>`))}</ul>
+        </section>`))}
+      </div>
+      <div class="actions"><button class="btn btn-primary" data-close>Entendido</button></div>
+    </div>`, (d, close) => { $('[data-close]', d).onclick = () => close(true); });
+}
+
+const cmpVersion = (a, b) => {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+  return 0;
+};
+
+/** Muestra una vez las novedades tras una actualización. Los usuarios nuevos no las ven. */
+export function showWhatsNewIfUpdated() {
+  let seen = null;
+  try { seen = localStorage.getItem(SEEN_KEY); localStorage.setItem(SEEN_KEY, APP_VERSION); } catch { return; }
+  if (!seen || cmpVersion(APP_VERSION, seen) <= 0) return;
+  const fresh = RELEASES.filter((r) => cmpVersion(r.version, seen) > 0);
+  if (fresh.length) releaseNotesDialog({ releases: fresh, heading: `Novedades de la versión ${APP_VERSION}` });
 }

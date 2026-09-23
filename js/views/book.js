@@ -1,5 +1,5 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast } from '../util.js';
-import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, refreshCatalog, refreshLibrary } from '../store.js';
+import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, personName, refreshCatalog, refreshLibrary } from '../store.js';
 import { bookFormDialog, confirmDialog, errMsg, CONDITIONS } from '../ui.js';
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
@@ -85,8 +85,9 @@ export async function renderBook(root, { id }) {
     ${admin ? raw(html`
       <section class="panel admin">
         <h2>Administración</h2>
+        <dl class="meta audit">${raw(provenance(book))}</dl>
         ${codes.length ? raw(html`<ul class="rows">${codes.map((c) => raw(html`<li class="row" data-code="${c.code}">
-          <span class="row-title">${formatCode(c.code)}<small>${c.source} · ${c.status === 'pending' ? 'pendiente' : c.verified ? 'verificado' : 'sin verificar'}</small></span>
+          <span class="row-title">${formatCode(c.code)}<small>${barcodeInfo(c)}</small></span>
           ${c.status === 'pending' || !c.verified ? raw('<button class="btn btn-sm btn-ghost" data-code-ok>Verificar</button>') : ''}
           <button class="btn btn-sm btn-ghost btn-danger-text" data-code-del aria-label="Quitar código">Quitar</button>
         </li>`))}</ul>`) : ''}
@@ -181,4 +182,28 @@ export async function renderBook(root, { id }) {
     toast('Libro borrado');
     navigate('/catalogo');
   }));
+}
+
+const SOURCE_LABEL = { sombra: 'Distribuciones Sombra', admin: 'admin', usuario: 'usuario' };
+
+/** Quién y cuándo añadió el libro al catálogo general (solo admin). */
+function provenance(book) {
+  const rows = [];
+  if (book.source === 'csv') {
+    rows.push(['Origen', 'Importado del CSV del catálogo (Sombra / Tesoros / Codex)']);
+  } else {
+    rows.push(['Propuesto por', `${personName(book.created_by) ?? 'desconocido'} · ${fmtDate(book.created_at)}`]);
+  }
+  if (book.status === 'pending') rows.push(['Estado', 'Pendiente de validar']);
+  else if (book.approved_at) rows.push(['Validado por', `${personName(book.approved_by) ?? 'desconocido'} · ${fmtDate(book.approved_at)}`]);
+  return rows.map(([k, v]) => html`<dt>${k}</dt><dd>${v}</dd>`).join('');
+}
+
+/** Estado y procedencia de un código de barras (solo admin). */
+function barcodeInfo(c) {
+  const status = c.status === 'pending' ? 'pendiente' : c.verified ? 'verificado' : 'sin verificar';
+  const who = c.source === 'sombra' ? 'Distribuciones Sombra'
+    : `${personName(c.created_by) ?? SOURCE_LABEL[c.source]} · ${fmtShort(c.created_at)}`;
+  const approved = c.approved_at ? ` · validado por ${personName(c.approved_by) ?? 'desconocido'} ${fmtShort(c.approved_at)}` : '';
+  return `${status} · ${who}${approved}`;
 }

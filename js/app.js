@@ -36,7 +36,7 @@ function renderLanding() {
       <p class="module-code" aria-hidden="true">E1</p>
 
       <header class="cover-head">
-        <img src="assets/icons/icon.svg" alt="" class="cover-logo" width="72" height="72">
+        <img src="assets/icons/seal.svg" alt="" class="cover-seal" width="84" height="84">
         <h1 class="cover-title">Escriba de la Marca</h1>
         <div class="cover-rule" aria-hidden="true"><span></span></div>
         <p class="cover-sub">Aplicación para coleccionistas de todos los niveles</p>
@@ -74,7 +74,7 @@ function renderLanding() {
         <p class="small">Gratis · solo necesitas tu cuenta de Google</p>
       </div>
 
-      <img src="assets/icons/icon.svg" alt="" class="cover-emblem" width="44" height="44">
+      <img src="assets/icons/seal.svg" alt="" class="cover-emblem" width="64" height="64">
     </article>
 
     <section class="features">

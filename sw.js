@@ -7,7 +7,7 @@ const SHELL = [
   './js/store.js', './js/util.js', './js/ui.js', './js/isbn.js', './js/scanner.js', './js/theme.js',
   './js/views/library.js', './js/views/scan.js', './js/views/catalog.js', './js/views/book.js',
   './js/views/profile.js', './js/views/supporter.js', './js/views/review.js', './js/nav.js', './js/version.js',
-  './assets/icons/icon.svg', './privacidad.html',
+  './assets/icons/icon.svg', './assets/icons/seal.svg', './privacidad.html',
 ];
 
 self.addEventListener('install', (e) => {

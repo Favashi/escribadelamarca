@@ -7,6 +7,7 @@ import { startScanner, cameraAvailable } from '../scanner.js';
 import { normalizeCode, formatCode, isPubCode } from '../isbn.js';
 import { bookFormDialog, errMsg } from '../ui.js';
 import * as api from '../api.js';
+import { track } from '../track.js';
 
 export function renderScan(root) {
   let scanner = null;
@@ -124,6 +125,7 @@ export function renderScan(root) {
       // Puede haberse añadido desde otro dispositivo: refrescar y reintentar
       try { await refreshCatalog(); books = booksForBarcode(code); } catch (e) { toast(errMsg(e), 'error'); }
     }
+    track('scan', books.length === 1 ? 'hit' : books.length > 1 ? 'multi' : 'unknown');
     if (books.length === 1) showBook(books[0], code);
     else if (books.length > 1) showChoice(books, code);
     else showUnknown(code);

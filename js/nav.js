@@ -13,5 +13,5 @@ export function updateAdminBadge() {
   const badge = $('.tab-badge', tab);
   badge.textContent = n > 99 ? '99+' : String(n);
   badge.hidden = n === 0;
-  tab.setAttribute('aria-label', n ? `Revisión, ${n} pendientes` : 'Revisión');
+  tab.setAttribute('aria-label', n ? `Admin, ${n} pendientes de revisar` : 'Admin');
 }

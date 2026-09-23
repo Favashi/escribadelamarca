@@ -147,6 +147,14 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 
 **Seguridad:** los extras están protegidos en la base de datos (RLS de `wishlist` y `loans` exige `is_supporter`) y el usuario no puede cambiarse `is_supporter` ni `is_admin` (solo puede actualizar las columnas `display_name` y `avatar_url`).
 
+## Métricas y administración
+- La app registra eventos mínimos en `public.events` (`app_open` una vez al día, `scan` con `hit`/`multi`/`unknown`,
+  `finder_search`, `wishlist_share`). Cada usuario solo puede insertar los suyos; no hay política de lectura.
+- Las funciones `admin_metrics()`, `admin_users()`, `admin_donations()`, `admin_set_supporter()` y
+  `admin_match_donation()` son `security definer` y lanzan error si quien llama no es admin.
+- En la app, la pestaña **Admin** (solo admins) muestra Resumen, Revisión, Usuarios y Donaciones.
+- `admin_metrics()` purga los eventos de más de 12 meses cada vez que se consulta.
+
 ## Publicar una versión
 1. En `js/version.js`, sube `APP_VERSION` (semver: `1.1.0` funciones nuevas, `1.0.1` arreglos) y añade una entrada
    **arriba** en `RELEASES` con la fecha y 2-4 notas pensadas para usuarios.

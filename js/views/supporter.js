@@ -3,6 +3,7 @@ import { state, user, isSupporter, groupByCategory, bookById, categoryName, barc
 import { viewHeader } from '../ui.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import * as api from '../api.js';
+import { track } from '../track.js';
 
 const PERKS = [
   ['★', 'Insignia de Mecenas', 'En tu perfil, para que se vea que apoyas el proyecto.'],
@@ -138,7 +139,7 @@ export async function renderSupporter(root) {
       renderSupporter(root);
     } catch (err) { toast(err.message, 'error'); }
   };
-  $('[data-share-on]', root)?.addEventListener('click', () => setProfile({ share_token: crypto.randomUUID() }, 'Enlace creado'));
+  $('[data-share-on]', root)?.addEventListener('click', () => { track('wishlist_share'); setProfile({ share_token: crypto.randomUUID() }, 'Enlace creado'); });
   $('[data-share-off]', root)?.addEventListener('click', () => setProfile({ share_token: null }, 'Ya no se comparte'));
   $('[data-share-copy]', root)?.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast('Enlace copiado', 'ok'); } catch { /* sin portapapeles */ }

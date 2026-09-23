@@ -3,6 +3,7 @@ import { state, isAdmin, bookById, categoryName, personName, refreshCatalog, ref
 import { confirmDialog, viewHeader, errMsg } from '../ui.js';
 import { formatCode } from '../isbn.js';
 import { updateAdminBadge } from '../nav.js';
+import { adminTabs } from './admin.js';
 import * as api from '../api.js';
 
 /** Revisión (solo admin): libros y códigos de barras propuestos por los usuarios. */
@@ -24,9 +25,11 @@ export function renderReview(root) {
     const by = (id, date) => `Propuesto por ${personName(id) ?? 'desconocido'} el ${fmtDate(date)}`;
 
     wrap.innerHTML = html`
-      ${raw(viewHeader('Revisión', books.length + codes.length
-        ? `${books.length + codes.length} propuestas pendientes`
-        : 'No hay nada pendiente'))}
+      ${raw(viewHeader('Administración'))}
+      ${raw(adminTabs('revision'))}
+      <p class="muted admin-sub">${books.length + codes.length
+        ? `${books.length + codes.length} propuestas pendientes de revisar`
+        : 'No hay nada pendiente de revisar'}</p>
 
       <section class="panel">
         <h2>Libros nuevos <span class="count">${books.length}</span></h2>

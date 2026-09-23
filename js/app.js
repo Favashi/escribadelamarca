@@ -14,15 +14,18 @@ import { renderSupporter } from './views/supporter.js';
 import { renderReview } from './views/review.js';
 import { renderFinder } from './views/finder.js';
 import { renderPublicWishlist } from './views/wishlist-public.js';
+import { renderAdmin } from './views/admin.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated } from './ui.js';
+import { trackOpen } from './track.js';
 
 const view = $('#view');
 const nav = $('#nav');
 
 function setActiveNav() {
   const path = location.hash.slice(1) || '/biblioteca';
-  $$('#nav a').forEach((a) => a.classList.toggle('active', path.startsWith(a.getAttribute('href').slice(1))));
+  const section = path.startsWith('/revision') ? '/admin' : path;
+  $$('#nav a').forEach((a) => a.classList.toggle('active', section.startsWith(a.getAttribute('href').slice(1))));
   if (state.session) updateAdminBadge();
 }
 
@@ -183,6 +186,7 @@ async function enterApp(session) {
   nav.hidden = false;
   updateAdminBadge();
   showWhatsNewIfUpdated();
+  trackOpen(session.user.id);
   if (!routerStarted) {
     routerStarted = true;
     window.addEventListener('hashchange', setActiveNav);
@@ -207,6 +211,8 @@ route('/perfil', mount(renderProfile));
 route('/mecenas', mount(renderSupporter));
 route('/revision', mount(renderReview));
 route('/buscar', mount(renderFinder));
+route('/admin', mount(renderAdmin));
+route('/admin/:section', mount(renderAdmin));
 
 async function boot() {
   restoreTheme(false);

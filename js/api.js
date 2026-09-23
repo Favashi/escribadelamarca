@@ -101,3 +101,12 @@ export const publicWishlist = async (token) =>
 
 export const tradeMatches = async () =>
   ok(await supabase.rpc('trade_matches'));
+
+// --- Administración (las funciones comprueban en la base de datos que el usuario es admin) ---
+export const adminMetrics = async () => ok(await supabase.rpc('admin_metrics'));
+export const adminUsers = async () => ok(await supabase.rpc('admin_users'));
+export const adminDonations = async () => ok(await supabase.rpc('admin_donations'));
+export const adminSetSupporter = async (userId, value) =>
+  ok(await supabase.rpc('admin_set_supporter', { p_user: userId, p_value: value }));
+export const adminMatchDonation = async (donationId, userId) =>
+  ok(await supabase.rpc('admin_match_donation', { p_donation: donationId, p_user: userId }));

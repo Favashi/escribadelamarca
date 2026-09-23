@@ -2,6 +2,7 @@ import { html, raw, $, cover } from '../util.js';
 import { state, user, isSupporter, matches, compareBooks, categoryName } from '../store.js';
 import { viewHeader } from '../ui.js';
 import * as api from '../api.js';
+import { track } from '../track.js';
 
 const KEY = 'edm.finder2';
 const EMPTY = { scope: 'mine', text: '', level: '', players: '', duration: '', tags: [], fresh: false, nodata: false };
@@ -120,11 +121,15 @@ export async function renderFinder(root) {
       : html`<li class="empty"><p class="muted">Ninguna aventura cumple esos filtros.</p></li>`;
   }
 
+  // Una «búsqueda» = una sesión de filtrado (se registra una vez, tras el primer cambio)
+  let tracked = false;
+  const noteSearch = () => { if (!tracked) { tracked = true; setTimeout(() => track('finder_search'), 3000); } };
+
   form.addEventListener('input', (e) => {
     const el = e.target;
     if (!el.name) return;
     f[el.name] = el.type === 'checkbox' ? el.checked : el.value.trim();
-    save(); draw();
+    save(); draw(); noteSearch();
   });
   form.addEventListener('submit', (e) => e.preventDefault());
   list.addEventListener('click', (e) => {
@@ -139,7 +144,7 @@ export async function renderFinder(root) {
       const t = chip.dataset.tag;
       f.tags = f.tags.includes(t) ? f.tags.filter((x) => x !== t) : [...f.tags, t];
       chip.classList.toggle('on'); chip.setAttribute('aria-pressed', f.tags.includes(t));
-      save(); draw();
+      save(); draw(); noteSearch();
     }
     if (e.target.closest('[data-clear]')) {
       f = { ...EMPTY, scope: f.scope };

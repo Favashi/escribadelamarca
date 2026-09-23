@@ -716,3 +716,15 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 .series-missing .complete { color: var(--ok); font-weight: 700; }
 .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .tile.sample { display: inline-grid; min-height: 26px; min-width: 34px; font-size: .66rem; vertical-align: middle; }
+
+/* ---------- Aviso de versión nueva ---------- */
+.update-banner {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 60;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  display: flex; align-items: center; gap: 10px; width: min(460px, calc(100% - 24px));
+  padding: 10px 10px 10px 16px; border-radius: 14px;
+  background: #2b1a33; color: #fbf5ea; box-shadow: 0 10px 30px rgb(0 0 0 / .35);
+  font: 600 .9rem var(--font-ui); animation: rise .25s ease-out;
+}
+.update-banner span { flex: 1; }
+.update-close { background: none; border: 0; color: inherit; font-size: 1.3rem; line-height: 1; padding: 4px 8px; cursor: pointer; opacity: .7; }

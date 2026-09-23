@@ -18,6 +18,7 @@ import { renderAdmin } from './views/admin.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated } from './ui.js';
 import { trackOpen } from './track.js';
+import { watchForUpdates } from './update.js';
 
 const view = $('#view');
 const nav = $('#nav');
@@ -247,6 +248,7 @@ async function boot() {
 }
 
 boot();
+watchForUpdates();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});

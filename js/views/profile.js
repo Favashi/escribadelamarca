@@ -3,6 +3,7 @@ import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
 import { viewHeader, confirmDialog, errMsg, releaseNotesDialog } from '../ui.js';
 import { APP_VERSION } from '../version.js';
+import { checkForUpdate, reloadApp } from '../update.js';
 import { resetLibrary, deleteMyAccount } from '../api.js';
 import { DONATION_URL } from '../config.js';
 import { applyTheme, getTheme, THEMES } from '../theme.js';
@@ -65,7 +66,8 @@ export function renderProfile(root) {
     </section>
 
     <button class="btn btn-ghost btn-block" data-logout>Cerrar sesión</button>
-    <p class="muted small center pad">Escriba de la Marca <button class="link" data-changelog>v${APP_VERSION} · Novedades</button><br>
+    <p class="muted small center pad">Escriba de la Marca <button class="link" data-changelog>v${APP_VERSION} · Novedades</button> ·
+      <button class="link" data-update>Buscar actualizaciones</button><br>
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
       Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a> ·
@@ -107,6 +109,12 @@ export function renderProfile(root) {
   };
 
   $('[data-changelog]', root).onclick = () => releaseNotesDialog();
+  $('[data-update]', root).onclick = async (e) => {
+    e.target.disabled = true;
+    const v = await checkForUpdate({ force: true });
+    if (v) { toast(`Actualizando a la v${v}…`); setTimeout(reloadApp, 600); }
+    else { toast('Ya tienes la última versión', 'ok'); e.target.disabled = false; }
+  };
 
   $('[data-logout]', root).onclick = async () => { await signOut(); toast('Sesión cerrada'); };
 }

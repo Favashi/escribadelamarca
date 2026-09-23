@@ -171,18 +171,23 @@ propuesto** o una **donación**. Usan `pg_net` para llamar a la API de Telegram;
 Sin esos secretos no se envía nada y la app funciona igual. Los mensajes no incluyen emails.
 
 ## Copias de seguridad
-`.github/workflows/backup.yml` vuelca cada domingo roles, esquema y datos (incluido `auth`) con la CLI de Supabase,
-los cifra con AES-256 (gpg) y los guarda 90 días como artefacto del workflow.
+`.github/workflows/backup.yml` hace cada domingo, con `pg_dump` 17 (sin Docker):
+- `public.dump`: todo el esquema `public` (tablas, RLS, funciones, triggers, permisos y datos), formato custom;
+- `auth_data.sql`: `auth.users` y `auth.identities` (las cuentas);
+- `migrations_history.sql`: historial de migraciones aplicadas.
+
+Lo comprime, lo cifra con AES-256 (gpg) y lo guarda 90 días como artefacto del workflow.
 
 Secretos del repositorio (GitHub → Settings → Secrets and variables → Actions):
 - `SUPABASE_DB_URL`: Supabase → **Connect** → *Session pooler* (los runners de GitHub no tienen IPv6), con la contraseña.
 - `BACKUP_PASSPHRASE`: frase larga; guárdala en tu gestor de contraseñas.
 
-Restaurar (a un proyecto nuevo o local):
+Restaurar en un proyecto de Supabase nuevo (que ya trae los esquemas `auth` y `supabase_migrations`):
 ```bash
 gpg --decrypt backup-AAAA-MM-DD.tar.gz.gpg > backup.tar.gz && tar xzf backup.tar.gz
-psql "$NUEVA_DB_URL" -f backup/roles.sql -f backup/schema.sql \
-  -c 'SET session_replication_role = replica' -f backup/auth_data.sql -f backup/data.sql
+psql "$NUEVA_DB_URL" -f backup/auth_data.sql            # primero las cuentas (las tablas públicas las referencian)
+pg_restore --no-owner --clean --if-exists -d "$NUEVA_DB_URL" backup/public.dump
+psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 ```
 
 ## Mantener el proyecto activo

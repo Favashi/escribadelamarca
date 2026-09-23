@@ -6,6 +6,7 @@
 #
 # La copia se sube CIFRADA como artefacto del workflow (el repositorio es público) y se conserva 90 días.
 # Descifrar:  gpg --decrypt backup-AAAA-MM-DD.tar.gz.gpg > backup.tar.gz && tar xzf backup.tar.gz
+# Restaurar:  ver docs/DESARROLLO.md → «Copias de seguridad».
 
 name: Copia de seguridad
 
@@ -29,19 +30,29 @@ jobs:
           test -n "$DB_URL" || { echo "Falta el secreto SUPABASE_DB_URL"; exit 1; }
           test -n "$PASS"   || { echo "Falta el secreto BACKUP_PASSPHRASE"; exit 1; }
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      # pg_dump nativo (PostgreSQL 17): sin Docker, así no dependemos de descargar imágenes de ghcr.io
+      - name: Instalar cliente de PostgreSQL 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
-      - name: Volcar roles, esquema y datos
+      - name: Volcar esquema y datos
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          PG=/usr/lib/postgresql/17/bin
           mkdir backup
-          supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
-          supabase db dump --db-url "$DB_URL" -f backup/schema.sql
-          supabase db dump --db-url "$DB_URL" -f backup/data.sql --data-only --use-copy
-          supabase db dump --db-url "$DB_URL" -f backup/auth_data.sql --data-only --use-copy --schema auth
+          # Todo lo de la app (tablas, políticas RLS, funciones, triggers, permisos y datos)
+          $PG/pg_dump "$DB_URL" --format=custom --no-owner --schema=public -f backup/public.dump
+          # Cuentas de usuario (necesarias para que las bibliotecas vuelvan a casar con sus dueños)
+          $PG/pg_dump "$DB_URL" --data-only --no-owner --table=auth.users --table=auth.identities -f backup/auth_data.sql
+          # Historial de migraciones (para que la CLI y la integración sepan qué está aplicado)
+          $PG/pg_dump "$DB_URL" --data-only --no-owner --schema=supabase_migrations -f backup/migrations_history.sql
           ls -la backup
 
       - name: Comprimir y cifrar

@@ -74,6 +74,7 @@ Es una **app web gratuita, instalable en el móvil**, hecha por un aficionado pa
 | 📷 **Escáner de códigos de barras** | Escaneo continuo con la cámara (Android e iPhone). Te dice si ya tienes el libro; si no, lo añades con un toque. Los módulos antiguos se buscan por el código de portada (B1, X2…). |
 | 🎲 **Buscador de aventuras** | Filtra por nivel del grupo, número de jugadores, duración y tipo (mazmorra, exploración, investigación…), en tu biblioteca o en todo el catálogo. |
 | 🏆 **Logros y rangos** | Celebra cuando completas una serie o llegas a 10, 25 o 50 libros. Sube de *Aprendiz de escriba* a *Gran Escriba de la Marca* ayudando a mejorar el catálogo. |
+| ☆ **Lista de deseos** | Apunta los módulos que te faltan y compártela con un enlace: tu grupo sabrá qué regalarte. |
 | 🆕 **Series que crecen** | Las novedades se marcan como «Nuevo» y la app te avisa de los módulos recién publicados en las series que coleccionas. |
 | 🤝 **Catálogo de la comunidad** | Propón libros o códigos que falten y sugiere correcciones desde cada ficha; se revisan antes de publicarse. |
 | ☁️ **En todos tus dispositivos** | Entras con Google y tu biblioteca se sincroniza entre el móvil y el ordenador. |
@@ -97,7 +98,6 @@ La app es y seguirá siendo **gratuita**. Si te resulta útil, puedes [invitarme
 con **un café (5 €, pago único)** te haces **Mecenas para siempre** y desbloqueas, como agradecimiento:
 
 - ✎ **Diario de partidas**: qué módulos has dirigido o jugado, cuándo y con qué grupo.
-- ☆ **Lista de deseos** y un enlace para compartirla.
 - ⇄ **Repetidos e intercambio** con otros Mecenas (voluntario).
 - ↔ **Registro de préstamos**.
 - ▤ **Estadísticas** y valor de tu colección.

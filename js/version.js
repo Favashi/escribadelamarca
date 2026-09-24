@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.7.0';
+export const APP_VERSION = '1.8.0';
 
 export const RELEASES = [
+  {
+    version: '1.8.0',
+    date: '2026-09-24',
+    notes: [
+      'La lista de deseos ya es para todos: pulsa «☆ Lo quiero» en un libro que te falte y compártela con un enlace desde Perfil → Lista de deseos.',
+      'Al compartir el enlace de la app en WhatsApp, Telegram o Discord ahora se ve una vista previa con imagen.',
+      'Política de privacidad actualizada: recuento anónimo de visitas a la portada y, si llegas por un enlace de difusión, de qué canal vienes.',
+    ],
+  },
   {
     version: '1.7.0',
     date: '2026-09-24',

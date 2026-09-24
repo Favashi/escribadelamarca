@@ -40,6 +40,14 @@ export function renderProfile(root) {
       </button>
     </section>
 
+    <a class="panel wish-link" href="#/deseos">
+      <span class="rank-icon" aria-hidden="true">${raw(icon('star'))}</span>
+      <span><strong>Lista de deseos</strong><small>${state.wishlist.size
+        ? `${state.wishlist.size} ${state.wishlist.size === 1 ? 'libro' : 'libros'} · compártela con tu grupo`
+        : 'Apunta lo que te falta y compártela con tu grupo'}</small></span>
+      ${raw(icon('chevron'))}
+    </a>
+
     ${raw(rankCard())}
 
     <section class="panel achievements">
@@ -60,7 +68,7 @@ export function renderProfile(root) {
     <section class="panel coffee">
       <h2>¿Te es útil la app?</h2>
       <p>Escriba de la Marca es gratuita y se mantiene con aportaciones. Con un café (${SUPPORTER_MIN_AMOUNT} €) te haces Mecenas y
-        desbloqueas diario de partidas, lista de deseos compartible, intercambio, estadísticas y temas extra.</p>
+        desbloqueas diario de partidas, repetidos e intercambio, préstamos, estadísticas y temas extra.</p>
       <div class="actions">
         <a class="btn btn-perk-cta" href="#/mecenas">★ Ver ventajas de Mecenas</a>
         <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
@@ -93,7 +101,7 @@ export function renderProfile(root) {
 
       <div class="dz-item">
         <h3>Empezar de cero</h3>
-        <p class="muted small">Quita todos los libros de tu biblioteca${isSupporter() ? ', tu lista de deseos y tus préstamos' : ''}.
+        <p class="muted small">Quita todos los libros de tu biblioteca y tu lista de deseos${isSupporter() ? ' y tus préstamos' : ''}.
           El catálogo general no se toca.</p>
         <button class="btn btn-danger-outline" data-reset ${state.library.size ? '' : 'disabled'}>${raw(icon('trash'))}
           Vaciar mi biblioteca (${state.library.size} ${state.library.size === 1 ? 'libro' : 'libros'})</button>
@@ -220,7 +228,6 @@ function themeOption(t, current, locked) {
 const HUB = [
   ['coleccion', '▤', 'Estadísticas', 'Progreso y valor'],
   ['diario', '✎', 'Diario de partidas', 'Lo dirigido y jugado'],
-  ['deseos', '☆', 'Lista de deseos', 'Y enlace para compartir'],
   ['intercambio', '⇄', 'Intercambio', 'Repetidos entre Mecenas'],
   ['prestamos', '↔', 'Préstamos', 'Qué tienes prestado'],
   ['exportar', '⤓', 'Exportar', 'CSV o JSON'],

@@ -269,6 +269,18 @@ pg_restore --no-owner --clean --if-exists -d "$NUEVA_DB_URL" backup/public.dump
 psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 ```
 
+## Difusión
+- **Vista previa al compartir** (Open Graph en `index.html`): imagen `assets/og-image.jpg` (1200×630, < 300 KB para
+  WhatsApp) generada desde `docs/og/og-image.html` con `node docs/og/render.mjs`. Si cambias el texto, regénerala.
+  Las redes guardan en caché la vista previa: para refrescarla, comparte el enlace con un parámetro (`?v=2`).
+- **Canal de llegada**: los enlaces de difusión llevan `?ref=<canal>` (minúsculas, letras, números y guiones:
+  `reddit`, `jornadas`, `telegram-lmde`…). `js/referral.js` guarda el primero (30 días), lo quita de la URL y, si la
+  cuenta es nueva, lo apunta en `profiles.signup_ref`. Las listas compartidas cuentan como `lista-compartida`.
+- **Visitas anónimas**: `track_landing()` suma una por navegador y día a `landing_visits` (solo recuento por canal y
+  día; máx. 50 canales/día y 10.000 visitas por canal). Admin → Resumen → «¿De dónde vienen?» (`admin_acquisition()`).
+- **Lista de deseos para todos** (antes Mecenas): `#/deseos`, con enlace para compartir; la página pública
+  (`#/deseos/<token>`) invita a crear la tuya.
+
 ## Monitorización (Supabase + GitHub + Telegram, sin servicios externos)
 | Qué | Dónde | Aviso |
 |---|---|---|

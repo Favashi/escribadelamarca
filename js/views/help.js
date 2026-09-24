@@ -54,6 +54,10 @@ function sections() {
         y cuando consigas las novedades sube de nivel (×2, ×3…).</li></ul>`],
       ['He quitado un libro sin querer',
         '<p>Justo después de quitarlo aparece <strong>«Deshacer»</strong> unos segundos: lo recupera con su fecha y sus notas.</p>'],
+      ['¿Cómo comparto mi lista de deseos?',
+        `<p>Abre un libro que te falte y pulsa <strong>«☆ Lo quiero»</strong>. Luego, en <a href="#/deseos">Perfil → Lista de
+        deseos</a>, crea un enlace y compártelo: quien lo abra verá tu nombre y los títulos, nada más. Cuando consigas un
+        libro y lo añadas a tu biblioteca, sale solo de la lista.</p>`],
       ['¿Puedo ordenar la biblioteca?',
         '<p>Sí, en la vista «Por categorías»: por serie y número, por los añadidos más recientes o por título.</p>'],
     ]],
@@ -80,8 +84,8 @@ function sections() {
     ...(settings.donations_enabled ? [['Mecenas', [
       ['¿Qué es ser Mecenas?',
         `<p>La app es gratuita. Si te resulta útil, puedes invitarme a un café (${SUPPORTER_MIN_AMOUNT} €, pago único) y, como
-        agradecimiento, desbloqueas para siempre el diario de partidas, la lista de deseos compartible, repetidos e intercambio,
-        préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>`],
+        agradecimiento, desbloqueas para siempre el diario de partidas, repetidos e intercambio, préstamos, estadísticas y
+        los temas Pergamino y Retro EGA.</p>`],
       ['He donado y no se ha activado',
         `<p>Se activa sola si pagaste con el mismo email de tu cuenta de Google o lo escribiste en el mensaje. Pulsa
         «Ya he donado» en <a href="#/mecenas">Mecenas</a>; si sigue sin activarse, envíame un comentario y lo reviso.</p>`],

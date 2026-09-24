@@ -537,3 +537,23 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .new-group summary > span:first-child { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); }
 .new-group summary .i { color: var(--gold); }
 .row-title .new-date { color: var(--accent); font-weight: 600; }
+
+/* ---------- Perfil: acceso a la lista de deseos ---------- */
+.wish-link { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+.wish-link > span:nth-child(2) { flex: 1; min-width: 0; }
+.wish-link strong { display: block; font: 700 .95rem var(--font-ui); }
+.wish-link small { display: block; font: .8rem var(--font-ui); color: var(--muted); }
+.wish-link > .i { color: var(--muted); }
+.wish-link:hover, .wish-link:focus-visible { border-color: var(--gold); }
+
+/* ---------- Lista de deseos pública: llamada a crear la tuya ---------- */
+.pw-cta { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; }
+.pw-cta h2 { font-size: 1rem; margin-bottom: 6px; }
+
+/* ---------- Admin: de dónde vienen ---------- */
+.table-scroll { overflow-x: auto; }
+.acq-table { width: 100%; border-collapse: collapse; font: .9rem var(--font-ui); }
+.acq-help code { white-space: nowrap; word-break: normal; }
+.acq-table th, .acq-table td { padding: 8px 4px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.acq-table th:first-child, .acq-table td:first-child { text-align: left; white-space: normal; }
+.acq-table th { font-weight: 700; color: var(--muted); font-size: .8rem; }

@@ -27,7 +27,7 @@ export function downloadLibraryCsv() {
   download(`biblioteca-marca-${stamp()}.csv`, csv, 'text/csv;charset=utf-8');
 }
 
-/** Todos tus datos en un JSON: perfil, biblioteca, sugerencias y, si eres Mecenas, deseos, préstamos y partidas. */
+/** Todos tus datos en un JSON: perfil, biblioteca, lista de deseos, sugerencias y, si eres Mecenas, préstamos y partidas. */
 export async function downloadAllJson() {
   const uid = user().id;
   const title = (id) => bookById(id)?.title ?? id;
@@ -38,10 +38,10 @@ export async function downloadAllJson() {
     logros: state.achievements.map((a) => ({ logro: a.key, nivel: a.level, conseguido: a.earned_at, detalle: a.meta })),
     sugerencias: state.suggestions.filter((s) => s.created_by === uid)
       .map((s) => ({ libro: title(s.catalog_id), cambios: s.changes, nota: s.note, estado: s.status, fecha: s.created_at })),
+    lista_de_deseos: [...state.wishlist].map(title),
   };
   if (isSupporter()) {
     const [loans, plays] = await Promise.all([api.getLoans(uid).catch(() => []), api.getPlays(uid).catch(() => [])]);
-    data.lista_de_deseos = [...state.wishlist].map(title);
     data.prestamos = loans.map((l) => ({ libro: title(l.catalog_id), a: l.lent_to, desde: l.lent_at, devuelto: l.returned_at }));
     data.diario_de_partidas = plays.map((p) => ({ libro: title(p.catalog_id), rol: p.role, fecha: p.played_on, grupo: p.group_name, notas: p.notes }));
   }

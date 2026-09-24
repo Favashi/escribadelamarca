@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Fuente de assets/og-image.jpg (vista previa al compartir el enlace). Regenerar: node docs/og/render.mjs -->
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../css/fonts.css">
+<style>
+  html, body { margin: 0; }
+  .card {
+    width: 1200px; height: 630px; box-sizing: border-box; position: relative; overflow: hidden;
+    background: radial-gradient(ellipse at 30% 20%, #8f4ea8, #55276a 70%);
+    color: #fbf5ea; font-family: 'Source Serif 4', Georgia, serif;
+    display: grid; grid-template-columns: 330px 1fr; align-items: center; gap: 44px; padding: 0 90px 0 80px;
+  }
+  .card::before { content: ''; position: absolute; inset: 22px; border: 2px solid rgb(244 236 221 / .35); border-radius: 18px; }
+  .card::after { content: ''; position: absolute; inset: 30px; border: 1px solid rgb(244 236 221 / .2); border-radius: 12px; }
+  .ribbon {
+    position: absolute; top: 44px; right: -78px; transform: rotate(35deg); width: 340px; text-align: center;
+    background: linear-gradient(#f06a23, #e2451d); color: #fff; font: 700 17px/1.2 'Source Serif 4', serif; padding: 9px 0;
+    box-shadow: 0 4px 14px rgb(0 0 0 / .25);
+  }
+  .seal { width: 330px; height: 330px; filter: drop-shadow(0 16px 26px rgb(20 5 25 / .5)); }
+  h1 { font: 700 76px/1.02 'Cinzel', serif; margin: 0 0 18px; letter-spacing: .01em; text-shadow: 0 3px 0 rgb(40 10 50 / .45); }
+  .rule { height: 3px; width: 140px; background: #f3c02f; border-radius: 2px; margin: 0 0 24px; }
+  .lead { font-size: 34px; line-height: 1.25; margin: 0 0 22px; }
+  .lead strong { color: #f3c02f; }
+  .points { font: 600 23px/1.5 system-ui, sans-serif; color: rgb(251 245 234 / .85); margin: 0; padding: 0; list-style: none; }
+  .points li::before { content: '✦ '; color: #f3c02f; }
+</style>
+<div class="card">
+  <div class="ribbon">Proyecto de fans · Gratis</div>
+  <img class="seal" src="../../assets/icons/seal.svg" alt="">
+  <div>
+    <h1>Escriba de la Marca</h1>
+    <div class="rule"></div>
+    <p class="lead">Tu colección de <strong>Aventuras en la Marca del Este</strong>, siempre en el bolsillo</p>
+    <ul class="points">
+      <li>Escanea tus libros y mira qué módulos te faltan</li>
+      <li>No vuelvas a comprar uno repetido</li>
+      <li>Lista de deseos para compartir con tu grupo</li>
+    </ul>
+  </div>
+</div>

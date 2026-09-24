@@ -107,6 +107,7 @@ export const tradeMatches = async () =>
 
 // --- Administración (las funciones comprueban en la base de datos que el usuario es admin) ---
 export const adminMetrics = async () => ok(await supabase.rpc('admin_metrics'));
+export const adminAcquisition = async () => ok(await supabase.rpc('admin_acquisition'));
 export const adminUsers = async () => ok(await supabase.rpc('admin_users'));
 export const adminDonations = async () => ok(await supabase.rpc('admin_donations'));
 export const adminSetSupporter = async (userId, value) =>

@@ -1,6 +1,6 @@
 // Flujo principal: portada, bienvenida, escanear con la entrada manual, añadir, quitar y deshacer, modo marcar.
 // Usa el libro de prueba de supabase/seed.sql (T1, EAN 9780306406157) y el catálogo real de las migraciones (serie B).
-import { test, expect, api } from './fixtures.js';
+import { test, expect, api, useLocalSupabase } from './fixtures.js';
 
 const TEST_EAN = '9780306406157';
 const TEST_TITLE = '[Prueba] Aventura de test';
@@ -131,4 +131,45 @@ test('«Nuevos en el catálogo» muestra las publicaciones recientes', async ({ 
   } finally {
     await api(`/rest/v1/catalog?id=eq.${book.id}`, { method: 'DELETE' });
   }
+});
+
+test('lista de deseos para todos: añadir, compartir y ver el enlace público', async ({ page, account, browser }) => {
+  const id = await bookId('ref=eq.test:T1');
+  await page.goto(`/#/libro/${id}`);
+  await page.getByRole('button', { name: '☆ Lo quiero' }).click();
+  await expect(page.getByRole('button', { name: '★ En tu lista de deseos' })).toBeVisible();
+
+  await page.goto('/#/deseos');
+  await expect(page.locator('.row-title', { hasText: TEST_TITLE })).toBeVisible();
+  await page.getByRole('button', { name: 'Crear enlace para compartir' }).click();
+  const link = await page.getByRole('textbox', { name: 'Enlace de tu lista de deseos' }).inputValue();
+  expect(link).toMatch(/#\/deseos\/[0-9a-f-]{36}$/);
+
+  // Quien abre el enlace (sin sesión) ve la lista y la invitación a crear la suya
+  const guest = await browser.newContext();
+  const gp = await guest.newPage();
+  await useLocalSupabase(gp);
+  await gp.goto(link);
+  await expect(gp.getByRole('heading', { name: /Lista de deseos de Prueba E2E/ })).toBeVisible();
+  await expect(gp.getByText(TEST_TITLE)).toBeVisible();
+  await expect(gp.getByRole('link', { name: 'Crea tu biblioteca con Escriba de la Marca' })).toBeVisible();
+  await guest.close();
+});
+
+test('el canal de llegada (?ref=) se guarda al registrarse y se quita de la URL', async ({ page, account }) => {
+  await page.goto('/?ref=Reddit#/biblioteca');
+  await expect(page.getByRole('heading', { name: 'Mi biblioteca' })).toBeVisible();
+  expect(page.url()).not.toContain('ref=');
+  await expect.poll(async () => (await api(`/rest/v1/profiles?id=eq.${account.user.id}&select=signup_ref`))[0].signup_ref)
+    .toBe('reddit');
+});
+
+test('la portada cuenta una visita anónima por canal', async ({ page }) => {
+  const ref = `e2e-${Date.now().toString(36)}`;
+  await page.goto(`/?ref=${ref}`);
+  await expect(page.getByRole('button', { name: 'Entrar con Google' }).first()).toBeVisible();
+  await expect.poll(async () => (await api(`/rest/v1/landing_visits?ref=eq.${ref}&select=visits`))[0]?.visits).toBe(1);
+  await page.reload();   // mismo navegador y día: no suma otra
+  await page.waitForTimeout(500);
+  expect((await api(`/rest/v1/landing_visits?ref=eq.${ref}&select=visits`))[0].visits).toBe(1);
 });

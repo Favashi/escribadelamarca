@@ -39,16 +39,20 @@ async function newUserSession(name) {
   return { user, session };
 }
 
+/** js/config.js apuntando al Supabase local. */
+const CONFIG_JS = `export const SUPABASE_URL = '${SB.url}';
+  export const SUPABASE_ANON_KEY = '${SB.anon}';
+  export const DONATION_URL = 'https://buymeacoffee.com/toniruiz';
+  export const SUPPORTER_MIN_AMOUNT = 5;`;
+
+/** Hace que una página (o contexto) use el Supabase local. */
+export const useLocalSupabase = (target) =>
+  target.route('**/js/config.js', (route) => route.fulfill({ contentType: 'application/javascript', body: CONFIG_JS }));
+
 export const test = base.extend({
   /** Página con la app apuntando al Supabase local (sin sesión). */
   page: async ({ page }, use) => {
-    await page.route('**/js/config.js', (route) => route.fulfill({
-      contentType: 'application/javascript',
-      body: `export const SUPABASE_URL = '${SB.url}';
-        export const SUPABASE_ANON_KEY = '${SB.anon}';
-        export const DONATION_URL = 'https://buymeacoffee.com/toniruiz';
-        export const SUPPORTER_MIN_AMOUNT = 5;`,
-    }));
+    await useLocalSupabase(page);
     await use(page);
   },
 

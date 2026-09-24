@@ -3,7 +3,7 @@
 -- Ejecutar: supabase test db   (cada fichero corre en una transacción que se deshace al final)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(25);
 
 -- ---------- Datos de prueba (como postgres) ----------
 insert into auth.users (id, email) values
@@ -56,8 +56,10 @@ select throws_ok($$ insert into public.events (user_id, type) values ('22222222-
   '42501', null, 'métricas: no puede registrar eventos de otro');
 select is_empty($$ select 1 from public.events $$, 'métricas: no puede leerlas (solo agregadas para admin)');
 
-select throws_ok($$ insert into public.wishlist (user_id, catalog_id) values ('11111111-1111-1111-1111-111111111111', 'b0000000-0000-0000-0000-00000000000b') $$,
-  '42501', null, 'Mecenas: sin serlo no puede usar la lista de deseos');
+select lives_ok($$ insert into public.wishlist (user_id, catalog_id) values ('11111111-1111-1111-1111-111111111111', 'b0000000-0000-0000-0000-00000000000b') $$,
+  'lista de deseos: disponible para todos (no solo Mecenas)');
+select throws_ok($$ insert into public.wishlist (user_id, catalog_id) values ('22222222-2222-2222-2222-222222222222', 'b0000000-0000-0000-0000-00000000000b') $$,
+  '42501', null, 'lista de deseos: no puede añadir a la de otro');
 select throws_ok($$ insert into public.plays (user_id, catalog_id) values ('11111111-1111-1111-1111-111111111111', 'b0000000-0000-0000-0000-00000000000b') $$,
   '42501', null, 'Mecenas: sin serlo no puede usar el diario de partidas');
 select throws_ok($$ insert into public.loans (user_id, catalog_id, lent_to) values ('11111111-1111-1111-1111-111111111111', 'b0000000-0000-0000-0000-00000000000a', 'Ana') $$,

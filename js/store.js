@@ -8,7 +8,7 @@ export const state = {
   catalog: [],          // libros visibles (aprobados + mis propuestas; admin: todos)
   barcodes: [],         // filas de catalog_barcodes visibles (aprobadas + mis propuestas; admin: todas)
   library: new Map(),   // catalog_id -> fila de library
-  wishlist: new Set(),  // catalog_id (solo Mecenas)
+  wishlist: new Set(),  // catalog_id de la lista de deseos
   people: new Map(),    // user id -> { display_name } (solo admin)
   suggestions: [],      // sugerencias de cambios: las mías (usuario) o todas (admin)
   achievements: [],     // logros guardados del usuario (user_achievements)
@@ -38,9 +38,7 @@ export async function loadAll() {
     try { state.feedback = await api.getFeedback(); } catch { state.feedback = []; }
     try { state.people = new Map((await api.getPeople()).map((p) => [p.id, p])); } catch { /* RLS */ }
   }
-  if (profile?.is_supporter) {
-    try { state.wishlist = new Set((await api.getWishlist(uid)).map((r) => r.catalog_id)); } catch { /* RLS */ }
-  }
+  try { state.wishlist = new Set((await api.getWishlist(uid)).map((r) => r.catalog_id)); } catch { /* sin conexión */ }
 }
 
 export async function refreshCatalog() {

@@ -17,6 +17,11 @@ export async function renderPublicWishlist(root, token) {
         <ul class="rows">${rows.map((r) => raw(html`<li class="row"><span class="row-title">${r.code ? raw(html`<span class="code">${r.code}</span> `) : ''}${r.title}<small>${r.category ?? ''}</small></span></li>`))}</ul>`)
       : raw(html`<h1>Lista no disponible</h1>
         <p class="muted">El enlace no es válido, ya no se comparte o la lista está vacía.</p>`)}
-      <p class="small center pad">Hecha con <a href="./">Escriba de la Marca</a>, la app para coleccionistas de la Marca del Este.</p>
+      <div class="pw-cta">
+        <h2>¿También coleccionas la Marca del Este?</h2>
+        <p class="small muted">Escanea tus libros, mira qué módulos te faltan y no vuelvas a comprar uno repetido.
+          Y haz tu propia lista de deseos para compartirla. Es gratis.</p>
+        <a class="btn btn-primary" href="./">Crea tu biblioteca con Escriba de la Marca</a>
+      </div>
     </article>`;
 }

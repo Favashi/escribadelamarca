@@ -71,7 +71,7 @@ export async function renderAdmin(root, params = {}) {
 }
 
 async function renderSummary(body) {
-  const m = await api.adminMetrics();
+  const [m, acq] = await Promise.all([api.adminMetrics(), api.adminAcquisition().catch(() => null)]);
   const u = m.users, l = m.library, s = m.scans, c = m.catalog, d = m.donations;
   const weekly = m.weekly || [];
   const list = (rows, empty) => rows.length
@@ -120,11 +120,28 @@ async function renderSummary(body) {
       </section>
     </div>
 
+    ${acq ? raw(acquisitionPanel(acq)) : ''}
+
     <div class="admin-cols">
       <section class="panel"><h2>Más coleccionados</h2>${raw(list(m.top_owned || [], 'Aún no hay libros en bibliotecas.'))}</section>
       <section class="panel"><h2>Más deseados</h2>${raw(list(m.top_wished || [], 'Aún no hay listas de deseos.'))}</section>
     </div>
     <p class="muted small center">Datos a ${fmtDate(m.generated_at)}. Los eventos de uso se borran a los 12 meses.</p>`;
+}
+
+/** ¿De dónde vienen? Visitas anónimas a la portada y altas por canal (?ref=…). */
+function acquisitionPanel(rows) {
+  const name = (r) => ({ directo: 'Directo / sin canal', otro: 'Otros', 'lista-compartida': 'Listas de deseos compartidas' }[r] || r);
+  return html`<section class="panel">
+    <h2>¿De dónde vienen?</h2>
+    <p class="muted small acq-help">Comparte enlaces con <code>?ref=canal</code> (p. ej. <code>?ref=reddit</code> o
+      <code>?ref=jornadas</code>) para saber qué difusión funciona. Visitas: una por navegador y día a la portada o a una
+      lista compartida, últimos 30 días. Altas: nuevas cuentas en 30 y 90 días.</p>
+    ${rows.length ? raw(html`<div class="table-scroll"><table class="acq-table">
+      <thead><tr><th>Canal</th><th>Visitas</th><th>Altas 30 d</th><th>90 d</th></tr></thead>
+      <tbody>${rows.map((r) => raw(html`<tr><td>${name(r.ref)}</td><td>${r.visits_30d}</td><td>${r.signups_30d}</td><td>${r.signups_90d}</td></tr>`))}</tbody>
+    </table></div>`) : raw('<p class="muted small">Aún no hay datos.</p>')}
+  </section>`;
 }
 
 async function renderUsers(body) {

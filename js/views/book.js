@@ -102,7 +102,7 @@ export async function renderBook(root, { id }) {
       <section class="panel">
         <p>No tienes este libro.</p>
         <div class="actions">
-          ${supporter ? raw(html`<button class="btn btn-ghost btn-perk" data-wish title="Extra de Mecenas">${wished ? '★ En deseos' : '☆ Lo quiero'}</button>`) : ''}
+          <button class="btn btn-ghost" data-wish>${wished ? '★ En tu lista de deseos' : '☆ Lo quiero'}</button>
           <button class="btn btn-primary" data-add>Añadir a mi biblioteca</button>
         </div>
       </section>`)}

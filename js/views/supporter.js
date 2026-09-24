@@ -1,18 +1,15 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast, download } from '../util.js';
 import { icon } from '../icons.js';
-import { state, user, isSupporter, groupByCategory, bookById, categoryName, barcodesOf, compareBooks, loadAll } from '../store.js';
+import { state, user, isSupporter, groupByCategory, bookById, barcodesOf, compareBooks, loadAll } from '../store.js';
 import { viewHeader } from '../ui.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import { settings } from '../settings.js';
 import * as api from '../api.js';
 import { downloadAllJson, downloadLibraryCsv } from '../export.js';
-import { track } from '../track.js';
 
 const PERKS = [
   ['★', 'Insignia de Mecenas', 'En tu perfil, para que se vea que apoyas el proyecto.'],
-  ['☆', 'Lista de deseos', 'Marca los libros que te faltan y quieres conseguir.'],
   ['✎', 'Diario de partidas', 'Apunta qué módulos has dirigido o jugado, cuándo y con qué grupo.'],
-  ['⚑', 'Lista de deseos compartible', 'Un enlace para que tus amigos sepan qué regalarte.'],
   ['⇄', 'Repetidos e intercambio', 'Marca tus repetidos y descubre qué Mecenas tienen los que te faltan.'],
   ['↔', 'Registro de préstamos', 'Apunta a quién prestas cada libro y cuándo vuelve.'],
   ['▤', 'Estadísticas y valor', 'Porcentaje de colección completa y valor según el precio de catálogo.'],
@@ -36,16 +33,14 @@ export async function renderSupporter(root, params = {}) {
   const approved = state.catalog.filter((b) => b.status === 'approved');
   const ownedApproved = approved.filter((b) => state.library.has(b.id));
   const pct = approved.length ? Math.round((ownedApproved.length / approved.length) * 100) : 0;
-  const wishes = [...state.wishlist].map(bookById).filter(Boolean);
   const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
   const ownedValue = ownedApproved.reduce((t, b) => t + Number(b.price_eur || 0), 0);
   const missingValue = approved.filter((b) => !state.library.has(b.id)).reduce((t, b) => t + Number(b.price_eur || 0), 0);
-  const shareUrl = profile.share_token ? `${location.origin}${location.pathname}#/deseos/${profile.share_token}` : '';
 
   root.innerHTML = html`
     ${raw(viewHeader('Mecenas', `Gracias por apoyar el proyecto desde el ${fmtDate(state.profile.supporter_since) || 'principio'} ✦`))}
     <nav class="perk-index" aria-label="Extras de Mecenas">
-      ${[['coleccion', 'Estadísticas'], ['diario', 'Diario'], ['deseos', 'Deseos'], ['intercambio', 'Intercambio'], ['prestamos', 'Préstamos'], ['exportar', 'Exportar']]
+      ${[['coleccion', 'Estadísticas'], ['diario', 'Diario'], ['intercambio', 'Intercambio'], ['prestamos', 'Préstamos'], ['exportar', 'Exportar']]
         .map(([id, label]) => raw(html`<a href="#/mecenas/${id}" class="${params.section === id ? 'active' : ''}">${label}</a>`))}
     </nav>
 
@@ -80,19 +75,6 @@ export async function renderSupporter(root, params = {}) {
         return raw(html`<li class="row"><a class="row-title" href="#/libro/${p.catalog_id}">${b?.code ? `${b.code} · ` : ''}${b?.title ?? '—'}
           <small>${p.role === 'dirigido' ? 'Dirigido' : 'Jugado'} el ${fmtShort(p.played_on)}${p.group_name ? ` · ${p.group_name}` : ''}</small></a></li>`);
       })}</ul>`) : raw('<p class="muted">Aún vacío. Desde la ficha de un libro puedes apuntar cuándo lo dirigiste o jugaste.</p>')}
-    </section>
-
-    <section class="panel" id="sec-deseos">
-      <h2>Lista de deseos</h2>
-      <p class="muted small how">Añade libros desde su ficha con «☆ Lo quiero». Puedes compartir la lista con un enlace.</p>
-      ${wishes.length ? raw(html`<ul class="rows">${wishes.map((b) => raw(html`<li class="row">${raw(cover(b, 'cover-xs'))}<a class="row-title" href="#/libro/${b.id}">${b.title}<small>${categoryName(b.category_id)}</small></a></li>`))}</ul>`)
-        : raw('<p class="muted">Vacía. Abre un libro que te falte y pulsa «☆ Lo quiero».</p>')}
-      <div class="share-box">
-        ${shareUrl ? raw(html`<p class="small">Cualquiera con este enlace puede ver tu lista de deseos (solo tu nombre y los títulos):</p>
-          <div class="inline-form"><input readonly value="${shareUrl}" aria-label="Enlace de tu lista de deseos"><button class="btn btn-ghost" data-share-copy>Copiar</button></div>
-          <button class="link btn-danger-text" data-share-off>Dejar de compartir</button>`)
-        : raw('<button class="btn btn-ghost" data-share-on>Crear enlace para compartir</button>')}
-      </div>
     </section>
 
     <section class="panel" id="sec-intercambio">
@@ -146,11 +128,6 @@ export async function renderSupporter(root, params = {}) {
       renderSupporter(root);
     } catch (err) { toast(err.message, 'error'); }
   };
-  $('[data-share-on]', root)?.addEventListener('click', () => { track('wishlist_share'); setProfile({ share_token: crypto.randomUUID() }, 'Enlace creado'); });
-  $('[data-share-off]', root)?.addEventListener('click', () => setProfile({ share_token: null }, 'Ya no se comparte'));
-  $('[data-share-copy]', root)?.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(shareUrl); toast('Enlace copiado', 'ok'); } catch { /* sin portapapeles */ }
-  });
   $('.trade-form', root).addEventListener('submit', (e) => {
     e.preventDefault();
     const f = new FormData(e.target);

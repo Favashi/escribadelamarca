@@ -20,11 +20,13 @@ import { renderPublicWishlist } from './views/wishlist-public.js';
 import { renderAdmin } from './views/admin.js';
 import { renderHelp } from './views/help.js';
 import { renderScribes } from './views/scribes.js';
+import { renderWishlist } from './views/wishlist.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
 import { trackOpen } from './track.js';
 import { watchForUpdates } from './update.js';
 import { reportError } from './errors.js';
+import { captureRef, rememberRef, trackLandingVisit, saveSignupRef } from './referral.js';
 
 const view = $('#view');
 const nav = $('#nav');
@@ -32,7 +34,7 @@ const nav = $('#nav');
 function setActiveNav() {
   const path = location.hash.slice(1) || '/biblioteca';
   const section = path.startsWith('/revision') ? '/admin'
-    : /^\/(ayuda|escribas)/.test(path) ? '/perfil' : path;
+    : /^\/(ayuda|escribas|deseos)/.test(path) ? '/perfil' : path;
   $$('#nav a').forEach((a) => a.classList.toggle('active', section.startsWith(a.getAttribute('href').slice(1))));
   if (state.session) updateAdminBadge();
 }
@@ -119,7 +121,7 @@ function renderLanding() {
     ${settings.donations_enabled ? raw(html`<section class="landing-panel coffee">
       <h2>Gratis, y con extras para Mecenas</h2>
       <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
-        desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
+        desbloqueas el diario de partidas, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
       <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
     </section>`) : ''}
 
@@ -145,6 +147,7 @@ function renderLanding() {
     }
   } catch { /* sin storage */ }
   showCoffeeWidget();
+  trackLandingVisit();
   view.querySelectorAll('[data-login]').forEach((btn) => (btn.onclick = async () => {
     view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = true));
     try { await signInWithGoogle(); } catch (err) {
@@ -214,6 +217,7 @@ async function enterApp(session) {
     return;
   }
   restoreTheme(isSupporter());
+  saveSignupRef(state.profile);
   nav.hidden = false;
   updateAdminBadge();
   showWhatsNewIfUpdated();
@@ -263,8 +267,10 @@ route('/admin', mount(renderAdmin));
 route('/admin/:section', mount(renderAdmin));
 route('/ayuda', mount(renderHelp));
 route('/escribas', mount(renderScribes));
+route('/deseos', mount(renderWishlist));
 
 async function boot() {
+  captureRef();
   restoreTheme(false);
   applyTextSize(getTextSize());
   if (!isConfigured) return renderSetup();
@@ -276,6 +282,8 @@ async function boot() {
   if (shared) {
     document.body.classList.add('landing');
     nav.hidden = true;
+    rememberRef('lista-compartida');   // si se registra tras ver una lista compartida
+    trackLandingVisit();
     return renderPublicWishlist(view, shared[1]);
   }
 

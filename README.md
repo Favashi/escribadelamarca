@@ -70,7 +70,7 @@ Es una **app web gratuita, instalable en el móvil**, hecha por un aficionado pa
 
 | | |
 |---|---|
-| 📚 **Tu colección, ordenada** | Más de 100 publicaciones por categorías o **por series** (B, X, C, G…), con los huecos a la vista: «te faltan B7, B13…». |
+| 📚 **Tu colección, ordenada** | Casi 100 publicaciones, con sus portadas, por categorías o **por series** (B, X, C, G…), con los huecos a la vista: «te faltan B7, B13…». |
 | 📷 **Escáner de códigos de barras** | Escaneo continuo con la cámara (Android e iPhone). Te dice si ya tienes el libro; si no, lo añades con un toque. Los módulos antiguos se buscan por el código de portada (B1, X2…). |
 | 🎲 **Buscador de aventuras** | Filtra por nivel del grupo, número de jugadores, duración y tipo (mazmorra, exploración, investigación…), en tu biblioteca o en todo el catálogo. |
 | 🏆 **Logros y rangos** | Celebra cuando completas una serie o llegas a 10, 25 o 50 libros. Sube de *Aprendiz de escriba* a *Gran Escriba de la Marca* ayudando a mejorar el catálogo. |
@@ -174,7 +174,7 @@ docs/DESARROLLO.md                        guía técnica
 
 ## 🗺️ Hoja de ruta
 
-- [x] Biblioteca, escáner y catálogo con más de 100 publicaciones
+- [x] Biblioteca, escáner y catálogo con casi 100 publicaciones y sus portadas
 - [x] Buscador de aventuras con datos del Codex LMDE
 - [x] Sugerencias de la comunidad con historial de cambios
 - [x] Logros, rangos de escriba y series que crecen

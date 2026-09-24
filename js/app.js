@@ -96,7 +96,7 @@ function renderLanding() {
       <article>
         <span class="feature-icon" aria-hidden="true">${raw(icon('books'))}</span>
         <h2>Toda la Marca, ordenada</h2>
-        <p>Más de 100 publicaciones catalogadas por serie y categoría: módulos B, X, C, Gazetteer, Xorandor…
+        <p>Casi 100 publicaciones catalogadas por serie y categoría, con sus portadas: módulos B, X, C, Gazetteer, Xorandor…
           Con el recuento de lo que tienes y lo que te falta.</p>
       </article>
       <article>

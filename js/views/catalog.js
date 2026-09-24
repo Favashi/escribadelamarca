@@ -1,10 +1,11 @@
-import { html, raw, $, cover, toast } from '../util.js';
+import { html, raw, $, cover, toast, fmtDate } from '../util.js';
 import { state, user, isAdmin, groupByCategory, refreshCatalog, refreshLibrary, bookById, matches, pendingCount } from '../store.js';
 import { bookFormDialog, confirmDialog, viewHeader, errMsg } from '../ui.js';
 import * as api from '../api.js';
 import { setNavList } from '../navlist.js';
 import { icon } from '../icons.js';
 import { removeWithUndo } from '../library-actions.js';
+import { isNewBook } from '../achievements.js';
 
 /** Filtros de calidad de datos (solo admin). Cada uno: [id, etiqueta, test(libro, ctx)]. */
 const DATA_FILTERS = [
@@ -13,6 +14,36 @@ const DATA_FILTERS = [
   ['nobarcode', 'Sin código de barras', (b, c) => !c.codesOf(b.id).length],
   ['nogame', 'Sin datos de juego', (b) => !(b.min_level || b.max_level || b.min_players || b.sessions || (b.tags && b.tags.length))],
 ];
+
+/** Fecha que hace «nuevo» a un libro: la de publicación o, si no la tiene, la de alta en la app. */
+const newDate = (b) => b.catalog_date || b.created_at;
+
+/** Fila de libro con el botón de añadir/quitar (catálogo y «Nuevos en el catálogo»). */
+function bookRow(b, extra = '') {
+  const have = state.library.has(b.id);
+  return html`<li class="row" data-id="${b.id}">
+    ${raw(cover(b, 'cover-xs'))}
+    <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}${b.status === 'pending' ? raw(' <span class="badge badge-warn">pendiente</span>') : ''}${b.author ? raw(html`<small>${b.author}</small>`) : ''}${extra ? raw(extra) : ''}</a>
+    <button class="toggle ${have ? 'on' : ''}" data-toggle aria-pressed="${String(have)}" aria-label="${have ? 'Quitar de' : 'Añadir a'} mi biblioteca">
+      ${have ? '✓ Lo tengo' : '+ Añadir'}
+    </button>
+  </li>`;
+}
+
+/** Publicaciones recién llegadas (las mismas que se marcan «Nuevo» en la vista por series), la más reciente primero. */
+function newSection() {
+  const books = state.catalog.filter(isNewBook).sort((a, z) => String(newDate(z)).localeCompare(String(newDate(a))));
+  if (!books.length) return '';
+  const today = new Date().toISOString().slice(0, 10);
+  const when = (b) => {
+    const d = String(newDate(b)).slice(0, 10);
+    return html`<small class="new-date">${d > today ? `Sale el ${fmtDate(d)}` : b.catalog_date ? `Publicado el ${fmtDate(d)}` : `Añadido el ${fmtDate(d)}`}</small>`;
+  };
+  return html`<details class="group new-group" open>
+    <summary><span>${raw(icon('star'))} Nuevos en el catálogo</span><span class="count">${books.length}</span></summary>
+    <ul class="rows">${books.map((b) => raw(bookRow(b, when(b))))}</ul>
+  </details>`;
+}
 
 function dataContext() {
   const byBook = new Map();
@@ -54,20 +85,10 @@ export function renderCatalog(root) {
 
     root.querySelector('.groups').innerHTML = html`
       ${raw(pendingSection())}
+      ${query || dataFilter ? '' : raw(newSection())}
       ${groups.length ? groups.map((g) => raw(html`<details class="group" ${query || dataFilter ? 'open' : ''}>
         <summary><span>${g.category.name}</span><span class="count">${g.books.length}</span></summary>
-        <ul class="rows">
-          ${g.books.map((b) => {
-            const have = state.library.has(b.id);
-            return raw(html`<li class="row" data-id="${b.id}">
-              ${raw(cover(b, 'cover-xs'))}
-              <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}${b.status === 'pending' ? raw(' <span class="badge badge-warn">pendiente</span>') : ''}${b.author ? raw(html`<small>${b.author}</small>`) : ''}</a>
-              <button class="toggle ${have ? 'on' : ''}" data-toggle aria-pressed="${String(have)}" aria-label="${have ? 'Quitar de' : 'Añadir a'} mi biblioteca">
-                ${have ? '✓ Lo tengo' : '+ Añadir'}
-              </button>
-            </li>`);
-          })}
-        </ul>
+        <ul class="rows">${g.books.map((b) => raw(bookRow(b)))}</ul>
       </details>`)) : raw(html`<p class="muted pad">Sin resultados.</p>`)}`;
   }
 

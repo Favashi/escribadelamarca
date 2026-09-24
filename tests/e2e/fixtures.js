@@ -18,7 +18,8 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)/.test(SB.url)) throw new Error(`Los tes
 async function api(path, { key = SB.service, method = 'GET', body } = {}) {
   const res = await fetch(SB.url + path, {
     method,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json',
+      ...(method === 'POST' && path.startsWith('/rest/') ? { Prefer: 'return=representation' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => null);

@@ -109,3 +109,26 @@ test.describe('admin', () => {
     await api(`/rest/v1/catalog?id=eq.${id}`, { method: 'PATCH', body: { catalog_date: null, price_eur: null, binding: null } });
   });
 });
+
+test('«Nuevos en el catálogo» muestra las publicaciones recientes', async ({ page, account }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const [book] = await api('/rest/v1/catalog?select=id', {
+    method: 'POST',
+    body: { title: '[Prueba] Novedad e2e', code: 'ZZ1', status: 'approved', source: 'app', catalog_date: today },
+  });
+  try {
+    await page.goto('/#/catalogo');
+    const news = page.locator('.new-group');
+    await expect(news.locator('summary')).toContainText('Nuevos en el catálogo');
+    const row = news.locator('.row', { hasText: '[Prueba] Novedad e2e' });
+    await expect(row).toContainText('Publicado el');
+    await row.getByRole('button', { name: 'Añadir a mi biblioteca' }).click();
+    await expect(row.getByRole('button', { name: 'Quitar de mi biblioteca' })).toBeVisible();
+
+    // Al buscar, la sección se oculta
+    await page.getByRole('searchbox', { name: 'Buscar' }).fill('B1');
+    await expect(news).toBeHidden();
+  } finally {
+    await api(`/rest/v1/catalog?id=eq.${book.id}`, { method: 'DELETE' });
+  }
+});

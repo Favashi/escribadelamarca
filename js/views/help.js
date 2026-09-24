@@ -47,7 +47,8 @@ function sections() {
         `<p>Muestra cada serie (B, X, C, G…) con una casilla por módulo, resaltadas las que tienes,
         con la lista de huecos («Te faltan: B7, B13»).</p>`],
       ['¿Qué quieren decir «Nuevo», «Al día» y «Completa»?',
-        `<ul><li><strong>Nuevo</strong>: publicación recién llegada al catálogo (unas semanas).</li>
+        `<ul><li><strong>Nuevo</strong>: publicación recién llegada al catálogo (unas semanas). Las tienes todas juntas
+        en <a href="#/catalogo">Catálogo</a> → «Nuevos en el catálogo».</li>
         <li><strong>● Al día</strong>: ahora mismo tienes todos los módulos publicados de la serie.</li>
         <li><strong>✦ Completa</strong>: logro permanente. Si la serie crece deja de estar «al día», pero el logro no se pierde,
         y cuando consigas las novedades sube de nivel (×2, ×3…).</li></ul>`],

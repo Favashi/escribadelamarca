@@ -532,3 +532,8 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .scribe-total { font: 700 1.1rem var(--font-display); color: var(--purple); }
 .scribes-empty { display: grid; justify-items: center; gap: 6px; padding: 18px 0; text-align: center; }
 .scribes-empty .i { width: 32px; height: 32px; color: var(--gold); }
+
+/* ---------- Catálogo: nuevos ---------- */
+.new-group summary > span:first-child { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); }
+.new-group summary .i { color: var(--gold); }
+.row-title .new-date { color: var(--accent); font-weight: 600; }

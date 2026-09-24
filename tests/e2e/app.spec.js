@@ -80,3 +80,12 @@ test('modo marcar: añadir desde la vista por series', async ({ page, account })
   await page.getByRole('button', { name: 'Listo' }).click();
   await expect(page.getByText('Modo marcar:')).toBeHidden();
 });
+
+test('un error de JavaScript llega a client_errors', async ({ page, account }) => {
+  await page.goto('/#/biblioteca');
+  await expect(page.getByRole('heading', { name: 'Mi biblioteca' })).toBeVisible();
+  await page.evaluate(() => setTimeout(() => { throw new Error('e2e: error de prueba'); }));
+  await expect.poll(async () => (await api(
+    `/rest/v1/client_errors?user_id=eq.${account.user.id}&select=kind,message,page,app_version`)), { timeout: 10_000 })
+    .toEqual([expect.objectContaining({ kind: 'error', message: 'Uncaught Error: e2e: error de prueba', page: '#/biblioteca' })]);
+});

@@ -24,6 +24,7 @@ import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
 import { trackOpen } from './track.js';
 import { watchForUpdates } from './update.js';
+import { reportError } from './errors.js';
 
 const view = $('#view');
 const nav = $('#nav');
@@ -207,6 +208,7 @@ async function enterApp(session) {
     await loadAll();
   } catch (e) {
     console.error(e);
+    reportError('error', `No se pudieron cargar los datos: ${e?.message || e}`, { stack: e?.stack });
     view.innerHTML = html`<div class="empty"><h2>No se pudieron cargar los datos</h2><p class="muted">${e.message}</p>
       <button class="btn btn-primary" onclick="location.reload()">Reintentar</button></div>`;
     return;

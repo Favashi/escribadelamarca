@@ -1,0 +1,42 @@
+# Informe de Supabase por Telegram (scripts/supabase_report.py), con la Management API:
+#   · cada día: errores de las últimas 24 h en los logs (API 5xx, Edge Functions, Auth, Postgres); solo avisa si hay algo.
+#   · los lunes: Advisors de seguridad y rendimiento.
+#
+# Secretos:
+#   SUPABASE_ACCESS_TOKEN   token personal: Supabase → Account → Access Tokens (ponle caducidad y renuévalo).
+#   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+# Para probarlo: pestaña Actions → «Informe de Supabase» → Run workflow (con «advisors» marcado).
+
+name: Informe de Supabase
+
+on:
+  schedule:
+    - cron: '30 6 * * *'   # 06:30 UTC (08:30 en verano / 07:30 en invierno en España)
+  workflow_dispatch:
+    inputs:
+      advisors:
+        description: 'Incluir los Advisors'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            js/config.js
+            scripts/supabase_report.py
+          sparse-checkout-cone-mode: false
+
+      - name: Generar el informe
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/supabase_report.py ${{ inputs.advisors && '--advisors' || '' }}

@@ -18,3 +18,4 @@ test-results/
 playwright-report/
 supabase/.branches/
 reports/
+.health/

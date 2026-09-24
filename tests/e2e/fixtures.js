@@ -65,7 +65,11 @@ export const test = base.extend({
       if (skip) localStorage.setItem('edm.onboarded', '1');
     }, [storageKey, JSON.stringify(session), onboarded]);
     await use({ user, session });
+    // Ningún flujo debe dejar errores de JavaScript registrados (salvo los provocados a propósito, «e2e: …»)
+    const errors = await api(`/rest/v1/client_errors?user_id=eq.${user.id}&select=kind,message,source`).catch(() => []);
     await api(`/auth/v1/admin/users/${user.id}`, { method: 'DELETE' }).catch(() => {});
+    const unexpected = errors.filter((e) => !e.message.includes('e2e:'));
+    if (unexpected.length) throw new Error(`La app registró errores durante el test: ${JSON.stringify(unexpected)}`);
   },
 });
 

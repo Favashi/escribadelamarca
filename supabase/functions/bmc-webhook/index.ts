@@ -37,14 +37,35 @@ const pick = (obj: Record<string, unknown>, ...keys: string[]) => {
   return undefined;
 };
 
+const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+  // Aviso por Telegram (notify_admin_once: no repite la misma clave dentro del intervalo). Nunca lanza.
+  const alert = async (key: string, text: string, within = "6 hours") => {
+    const { error } = await supabase.rpc("notify_admin_once", {
+      p_key: `bmc:${key}`, p_text: `☕⚠️ <b>Webhook de Buy Me a Coffee</b>\n${text}`, p_within: within,
+    });
+    if (error) console.error("notify_admin_once", error);
+  };
+
   const secret = Deno.env.get("BMC_WEBHOOK_SECRET");
-  if (!secret) return new Response("Webhook secret not configured", { status: 500 });
+  if (!secret) {
+    await alert("no_secret", "Falta el secreto BMC_WEBHOOK_SECRET: las donaciones no se están registrando.");
+    return new Response("Webhook secret not configured", { status: 500 });
+  }
 
   const rawBody = await req.text();
   if (!(await validSignature(rawBody, req.headers.get("x-signature-sha256"), secret))) {
+    // Puede ser ruido de internet, o que el secreto de BMC haya cambiado: un aviso cada 6 h como mucho
+    await alert("bad_signature", "Llegó una petición con la firma incorrecta. Si no llegan las donaciones, " +
+      "comprueba que BMC_WEBHOOK_SECRET coincide con el de la página del webhook en Buy Me a Coffee.");
     return new Response("Invalid signature", { status: 401 });
   }
 
@@ -63,18 +84,16 @@ Deno.serve(async (req) => {
   const currency = String(pick(data, "currency", "support_currency") ?? "");
   const externalId = String(pick(data, "id", "support_id", "transaction_id") ?? event.event_id ?? crypto.randomUUID());
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } },
-  );
-
   const { error: insErr } = await supabase.from("donations").upsert(
     { external_id: `${type}:${externalId}`, provider: "bmc", type, email: payEmail || null, emails,
       amount, currency, live_mode: liveMode, raw: event },
     { onConflict: "external_id", ignoreDuplicates: true },
   );
-  if (insErr) console.error("donations insert", insErr);
+  if (insErr) {
+    console.error("donations insert", insErr);
+    await alert(`insert:${externalId}`, `No se pudo guardar el evento <code>${esc(type)}</code> (${esc(amount)} ${esc(currency)}): ` +
+      `<code>${esc(insErr.message)}</code>\nRevisa Admin → Donaciones y los logs de la función.`, "7 days");
+  }
 
   // Los eventos de prueba (live_mode=false) se registran pero no activan Mecenas
   let matched = false;
@@ -82,7 +101,11 @@ Deno.serve(async (req) => {
   if (liveMode && SUPPORT_EVENTS.has(type) && amount >= minAmount) {
     for (const email of emails) {
       const { data: ok, error } = await supabase.rpc("mark_supporter_by_email", { p_email: email });
-      if (error) console.error("mark_supporter_by_email", error);
+      if (error) {
+        console.error("mark_supporter_by_email", error);
+        await alert(`match:${externalId}`, `No se pudo activar Mecenas tras una donación: <code>${esc(error.message)}</code>\n` +
+          "Actívalo a mano en Admin → Usuarios.", "7 days");
+      }
       if (ok === true) matched = true;
     }
     if (matched) {

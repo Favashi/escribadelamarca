@@ -225,7 +225,7 @@ Usan `pg_net` para llamar a la API de Telegram; el token vive cifrado en **Vault
 - **Resumen semanal** (`weekly_admin_digest`, `pg_cron` `weekly-admin-digest`, lunes 07:00 UTC): usuarios, escaneos,
   libros añadidos, donaciones, pendientes de revisar (con la antigüedad si pasa de 3 días) y avisos que no llegaron.
   Probarlo: `select public.weekly_admin_digest();`
-- **Fallos de las Actions** (publicación, copia de seguridad, keepalive): avisan por Telegram si existen los secretos
+- **Fallos de las Actions** (publicación, copia de seguridad, tests): avisan por Telegram si existen los secretos
   del repositorio `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` (los mismos valores que en Vault).
 - En `notify_on_event()` las condiciones sobre `new.<columna>` van **anidadas** dentro del `if` de cada tabla:
   PL/pgSQL evalúa la expresión entera y falla si la tabla no tiene esa columna.
@@ -265,9 +265,24 @@ pg_restore --no-owner --clean --if-exists -d "$NUEVA_DB_URL" backup/public.dump
 psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 ```
 
-## Mantener el proyecto activo
-`.github/workflows/keepalive.yml` consulta la API lunes y jueves para que el plan gratuito no pause el proyecto.
-GitHub desactiva los workflows programados tras 60 días sin commits: reactívalos desde Actions si pasa.
+## Monitorización (Supabase + GitHub + Telegram, sin servicios externos)
+| Qué | Dónde | Aviso |
+|---|---|---|
+| **¿Funciona la app?** Web, código, API, Auth, Edge Function y supabase-js del CDN | `.github/workflows/health.yml` + `scripts/health_check.py`, cada 15 min | Telegram al caer, cada 2 h si sigue caída y al recuperarse. Estado en la caché de Actions; resumen en cada run |
+| **Errores del navegador** (`error`, promesas sin gestionar, ficheros que no cargan, app que no arranca en 20 s) | `js/errors.js` (se carga antes que `app.js`, sin supabase-js) → tabla `client_errors` | Telegram la primera vez que aparece cada error (por firma, 1 vez al día, máx. 10 avisos/h). Total en el resumen semanal. Se purgan a los 90 días |
+| **Errores del backend** (logs de las últimas 24 h: API 5xx, Edge Functions, Auth, Postgres) | `.github/workflows/supabase-report.yml` + `scripts/supabase_report.py`, a diario | Telegram solo si hay algo que mirar. Los ERROR de Postgres cuentan a partir de 50 (muchos son normales: RLS, duplicados) |
+| **Advisors** de seguridad y rendimiento | el mismo informe, los lunes | Telegram siempre (✓ o la lista) |
+| **Webhook de Buy Me a Coffee** (firma incorrecta, secreto que falta, fallo al guardar o al activar Mecenas) | `supabase/functions/bmc-webhook` → `notify_admin_once()` | Telegram (la firma incorrecta, como mucho cada 6 h) |
+| **Tamaño de la base de datos** frente a los 500 MB del plan gratuito | resumen semanal (`weekly_admin_digest`) | ⚠️ desde el 80 % |
+
+- Ver los errores del navegador: Supabase → Table Editor → `client_errors` (o `select * from client_errors order by id desc`).
+- El informe de Supabase necesita el secreto **`SUPABASE_ACCESS_TOKEN`** (Supabase → Account → Access Tokens; ponle
+  caducidad). Usa la Management API: `…/analytics/endpoints/logs` (SQL de ClickHouse sobre la tabla `logs`) y
+  `…/advisors/{security,performance}` (experimental). Pruébalo con Actions → «Informe de Supabase» → Run workflow.
+- `notify_admin_once(clave, texto, intervalo)` evita repetir un aviso con la misma clave dentro del intervalo.
+- El chequeo cada 15 min también mantiene activo el proyecto (el plan gratuito se pausa tras ~7 días sin peticiones);
+  sustituye al antiguo `keepalive.yml`. GitHub desactiva los workflows programados tras 60 días sin commits:
+  reactívalos desde Actions si pasa.
 
 ## Publicar una versión
 1. En `js/version.js`, sube `APP_VERSION` (semver: `1.1.0` funciones nuevas, `1.0.1` arreglos) y añade una entrada

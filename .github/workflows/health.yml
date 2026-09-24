@@ -1,0 +1,55 @@
+# Comprueba cada 15 minutos que la app funciona: web (GitHub Pages), API y Auth de Supabase, Edge Function de
+# donaciones y la librería supabase-js del CDN. Avisa por Telegram cuando algo se cae, cada 2 h mientras siga
+# caído y cuando se recupera (scripts/health_check.py). El estado se guarda en la caché de Actions.
+# De paso mantiene activo el proyecto de Supabase (el plan gratuito se pausa tras ~7 días sin peticiones).
+#
+# Secretos: TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID (sin ellos solo queda el resumen en la página del run).
+# Nota: GitHub desactiva los workflows programados si el repositorio pasa 60 días sin commits;
+# en ese caso reactívalo desde la pestaña Actions.
+
+name: Estado de la app
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            js/config.js
+            js/supabase.js
+            scripts/health_check.py
+          sparse-checkout-cone-mode: false
+
+      - name: Recuperar el estado anterior
+        uses: actions/cache/restore@v4
+        with:
+          path: .health
+          key: health-state-${{ github.run_id }}
+          restore-keys: health-state-
+
+      - name: Comprobar servicios
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/health_check.py
+
+      - name: Guardar el estado
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .health
+          key: health-state-${{ github.run_id }}

@@ -31,32 +31,47 @@ jobs:
           version: 2.117.0
 
       - name: Levantar Supabase local (migraciones + seed)
+        id: supabase
         run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
 
       - name: Tests de base de datos (pgTAP)
         run: supabase test db
 
+      - name: Detalle de los tests de base de datos
+        if: always() && steps.supabase.outcome == 'success'
+        run: tests/pgtap-report.sh
+
       - uses: actions/setup-node@v4
+        if: always() && steps.supabase.outcome == 'success'
         with:
           node-version: 22
           cache: npm
 
       - name: Instalar Playwright
+        if: always() && steps.supabase.outcome == 'success'
         run: |
           npm ci
           npx playwright install --with-deps chromium
 
       - name: Tests del flujo principal (Playwright)
+        if: always() && steps.supabase.outcome == 'success'
         run: npx playwright test
 
+      - name: Resumen en la página del run
+        if: always()
+        run: node tests/ci-summary.js >> "$GITHUB_STEP_SUMMARY"
+
+      # Informe HTML de Playwright (y trazas de los fallos) + detalle de pgTAP, siempre
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: playwright-report
+          name: informe-tests
           path: |
             playwright-report
             test-results
+            reports
           retention-days: 14
+          if-no-files-found: ignore
 
       # Aviso por Telegram si algo falla (secretos TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID; sin ellos no hace nada)
       - name: Avisar por Telegram del fallo

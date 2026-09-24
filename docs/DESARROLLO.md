@@ -303,6 +303,11 @@ npm ci && npx playwright install chromium
 npx playwright test         # flujo principal (sirve la app con tests/e2e/serve.js)
 supabase stop
 ```
+**Resultados en GitHub**: la página de cada run (*Summary*) muestra una tabla por suite y la lista de pruebas con ✅/❌
+(`tests/ci-summary.js`, que lee `reports/pgtap/*.tap` de `tests/pgtap-report.sh` y `reports/playwright.json`).
+El artefacto **informe-tests** trae siempre el informe HTML de Playwright (`playwright-report/index.html`) y, si algo
+falla, las trazas (ábrelas con `npx playwright show-trace <zip>`).
+
 Al añadir una tabla, una política o una función `security definer`, añade su test. Si la migración nueva cambia
 algo que ya se comprueba, el test fallará: es la idea.
 

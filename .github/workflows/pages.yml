@@ -81,3 +81,22 @@ jobs:
             gh release create "$V" --target "$GITHUB_SHA" --title "$V" --notes-file notes.md
             echo "Creada la release $V"
           fi
+
+  # Aviso por Telegram si falla la publicación (secretos TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID; sin ellos no hace nada)
+  notify-failure:
+    needs: [build, deploy, release]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar por Telegram del fallo
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          test -n "$TG_TOKEN" -a -n "$TG_CHAT" || { echo "Sin secretos de Telegram: no se avisa"; exit 0; }
+          curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text=🚨 Ha fallado «$WORKFLOW» en Escriba de la Marca." \
+            --data-urlencode "reply_markup={\"inline_keyboard\":[[{\"text\":\"Ver el registro\",\"url\":\"$RUN_URL\"}]]}"

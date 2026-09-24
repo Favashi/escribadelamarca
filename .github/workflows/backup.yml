@@ -71,3 +71,18 @@ jobs:
           path: ${{ env.NAME }}.tar.gz.gpg
           retention-days: 90
           if-no-files-found: error
+
+      # Aviso por Telegram si algo falla (secretos TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID; sin ellos no hace nada)
+      - name: Avisar por Telegram del fallo
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          test -n "$TG_TOKEN" -a -n "$TG_CHAT" || { echo "Sin secretos de Telegram: no se avisa"; exit 0; }
+          curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text=🚨 Ha fallado «$WORKFLOW» en Escriba de la Marca." \
+            --data-urlencode "reply_markup={\"inline_keyboard\":[[{\"text\":\"Ver el registro\",\"url\":\"$RUN_URL\"}]]}"

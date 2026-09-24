@@ -215,7 +215,20 @@ Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/
 
 ## Avisos por Telegram
 Triggers en la base de datos envían un mensaje al administrador cuando hay un **usuario nuevo**, un **libro o código
-propuesto** o una **donación**. Usan `pg_net` para llamar a la API de Telegram; el token vive cifrado en **Vault**.
+propuesto**, una **sugerencia**, un **comentario** o un evento de **Buy Me a Coffee** (donación, reembolso, cancelación).
+Usan `pg_net` para llamar a la API de Telegram; el token vive cifrado en **Vault**.
+
+- Formato HTML y un botón que abre la pantalla de la app correspondiente (`tg_button`, `app_url`). Todo texto de usuario
+  pasa por `tg_esc()`. `notify_admin(texto, opts)` admite `{silent, buttons, plain}`; los nuevos usuarios llegan sin sonido.
+- Contexto: EAN válido y otros libros con el mismo código, aportaciones aceptadas de quien propone (`tg_who`),
+  antes → después de cada campo sugerido, y si una donación activa Mecenas y a quién (mirando `auth.users`).
+- **Resumen semanal** (`weekly_admin_digest`, `pg_cron` `weekly-admin-digest`, lunes 07:00 UTC): usuarios, escaneos,
+  libros añadidos, donaciones, pendientes de revisar (con la antigüedad si pasa de 3 días) y avisos que no llegaron.
+  Probarlo: `select public.weekly_admin_digest();`
+- **Fallos de las Actions** (publicación, copia de seguridad, keepalive): avisan por Telegram si existen los secretos
+  del repositorio `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` (los mismos valores que en Vault).
+- En `notify_on_event()` las condiciones sobre `new.<columna>` van **anidadas** dentro del `if` de cada tabla:
+  PL/pgSQL evalúa la expresión entera y falla si la tabla no tiene esa columna.
 
 1. En Telegram, habla con **@BotFather** → `/newbot` → copia el token.
 2. Envía cualquier mensaje a tu bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`: el `chat.id` es tu chat.
@@ -230,7 +243,7 @@ Sin esos secretos no se envía nada y la app funciona igual. Los mensajes no inc
 
 Fiabilidad: cada aviso queda en `admin_notifications` y un trabajo de `pg_cron` (`retry-admin-notifications`, cada
 5 minutos) comprueba la respuesta de Telegram en `net._http_response` y reintenta los fallidos hasta 3 veces
-(timeout de 15 s). Para revisar: `select * from admin_notifications order by created_at desc;`
+(timeout de 15 s); si Telegram rechaza el HTML (400), el reintento lo manda como texto plano. Para revisar: `select * from admin_notifications order by created_at desc;`
 
 ## Copias de seguridad
 `.github/workflows/backup.yml` hace cada domingo, con `pg_dump` 17 (sin Docker):

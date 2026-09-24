@@ -197,6 +197,7 @@ async function enterApp(session) {
   showWhatsNewIfUpdated();
   trackOpen(session.user.id);
   maybeOnboard();
+  import('./achievements.js').then((m) => m.checkAchievements()).catch(() => {});
   if (!routerStarted) {
     routerStarted = true;
     window.addEventListener('hashchange', setActiveNav);

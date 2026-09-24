@@ -343,3 +343,15 @@ export function typeToConfirmDialog(message, { word = 'ELIMINAR', ok = 'Eliminar
     setTimeout(() => form.word.focus(), 50);
   });
 }
+
+/** Celebración de un logro: sello con destellos. Resuelve al cerrarla. */
+export function celebrateDialog({ icon: name = 'trophy', title, text }) {
+  return openDialog(html`
+    <div class="sheet celebrate" role="alertdialog" aria-labelledby="celebrate-title">
+      <div class="cel-burst" aria-hidden="true">${[...Array(12)].map((_, i) => raw(`<i style="--i:${i}"></i>`))}</div>
+      <div class="cel-art" aria-hidden="true">${raw(icon(name))}</div>
+      <h2 class="sheet-title" id="celebrate-title">${title}</h2>
+      <p>${text}</p>
+      <div class="actions"><button class="btn btn-primary" data-close>¡Genial!</button></div>
+    </div>`, (d, close) => { $('[data-close]', d).onclick = () => close(true); });
+}

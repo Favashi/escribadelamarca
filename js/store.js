@@ -11,6 +11,7 @@ export const state = {
   wishlist: new Set(),  // catalog_id (solo Mecenas)
   people: new Map(),    // user id -> { display_name } (solo admin)
   suggestions: [],      // sugerencias de cambios: las mías (usuario) o todas (admin)
+  achievements: [],     // logros guardados del usuario (user_achievements)
 };
 
 export const user = () => state.session?.user ?? null;
@@ -45,6 +46,8 @@ export async function refreshCatalog() {
 }
 export async function refreshLibrary() {
   state.library = new Map((await api.getLibrary(user().id)).map((r) => [r.catalog_id, r]));
+  // Cada cambio en la biblioteca puede desbloquear logros (import dinámico: evita dependencia circular)
+  import('./achievements.js').then((m) => m.checkAchievements()).catch(() => {});
 }
 
 /** Nombre legible de un usuario (solo admin tiene la lista). */

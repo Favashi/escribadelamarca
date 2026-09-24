@@ -1,66 +1,223 @@
-<p align="center">
-  <img src="assets/icons/icon.svg" alt="" width="96" height="96">
-</p>
+<div align="center">
 
-<h1 align="center">Escriba de la Marca</h1>
+<img src="assets/icons/seal.svg" alt="Sello de Escriba de la Marca" width="110" height="110">
 
-<p align="center">
-  Tu biblioteca de <em>Aventuras en la Marca del Este</em>, siempre en el bolsillo.<br>
-  <strong><a href="https://favashi.github.io/escribadelamarca/">Abrir la app →</a></strong>
-</p>
+# Escriba de la Marca
+
+**La biblioteca de bolsillo para coleccionistas de *Aventuras en la Marca del Este*.**<br>
+Escanea tus módulos, descubre qué te falta de cada serie y encuentra la aventura perfecta para tu próxima partida.
+
+[![Versión](https://img.shields.io/github/v/release/Favashi/escribadelamarca?label=versi%C3%B3n&color=74398a)](https://github.com/Favashi/escribadelamarca/releases)
+[![Publicación](https://github.com/Favashi/escribadelamarca/actions/workflows/pages.yml/badge.svg)](https://github.com/Favashi/escribadelamarca/actions/workflows/pages.yml)
+[![Licencia AGPL-3.0](https://img.shields.io/github/license/Favashi/escribadelamarca?label=licencia&color=b02a1f)](LICENSE)
+[![Último commit](https://img.shields.io/github/last-commit/Favashi/escribadelamarca?label=%C3%BAltimo%20cambio)](https://github.com/Favashi/escribadelamarca/commits/main)
+<br>
+[![PWA](https://img.shields.io/badge/PWA-instalable-5A0FC8?logo=pwa&logoColor=white)](#-empezar-a-usarla)
+[![Supabase](https://img.shields.io/badge/Supabase-backend-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![JavaScript](https://img.shields.io/badge/JavaScript-sin%20build-F7DF1E?logo=javascript&logoColor=black)](#%EF%B8%8F-tecnología)
+[![Idioma](https://img.shields.io/badge/idioma-espa%C3%B1ol-c9951f)](#-qué-es)
+[![Buy Me a Coffee](https://img.shields.io/badge/Inv%C3%ADtame%20a%20un%20caf%C3%A9-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/toniruiz)
+
+### [🔗 Abrir la app](https://favashi.github.io/escribadelamarca/) · [📰 Novedades](https://github.com/Favashi/escribadelamarca/releases) · [🐞 Informar de un problema](https://github.com/Favashi/escribadelamarca/issues)
+
+</div>
 
 ---
 
+## Índice
+
+- [¿Qué es?](#-qué-es) · capturas
+- [Funcionalidades](#-funcionalidades)
+- [Empezar a usarla](#-empezar-a-usarla)
+- [Mecenas](#-mecenas)
+- [De dónde salen los datos](#%EF%B8%8F-de-dónde-salen-los-datos)
+- [Tecnología](#%EF%B8%8F-tecnología)
+- [Arquitectura](#-arquitectura)
+- [Desarrollo](#-desarrollo)
+- [Hoja de ruta](#%EF%B8%8F-hoja-de-ruta)
+- [Contribuir](#-contribuir)
+- [Privacidad y seguridad](#-privacidad-y-seguridad)
+- [Licencia y avisos](#%EF%B8%8F-licencia-y-avisos)
+- [Agradecimientos](#-agradecimientos)
+
+---
+
+## 📜 ¿Qué es?
+
 ¿Estás en una tienda o en unas jornadas, con un módulo en la mano, y no recuerdas si ya lo tienes?
-Escanea el código de barras y **Escriba de la Marca** te dice al momento si está en tu colección y desde cuándo.
+**Escriba de la Marca** responde en un segundo: apunta la cámara al código de barras y te dice si está en tu
+colección y desde cuándo. Además te enseña los huecos de cada serie y te ayuda a elegir aventura según el nivel de
+tu grupo.
 
-## Qué puedes hacer
+Es una **app web gratuita, instalable en el móvil**, hecha por un aficionado para la comunidad de la Marca del Este.
 
-- **Toda tu colección, ordenada.** Más de 100 publicaciones de la Marca del Este catalogadas por serie y categoría
-  (módulos B, X, C, Gazetteer, Xorandor…), con el recuento de lo que tienes y lo que te falta.
-- **Escanear y listo.** Con la cámara del móvil: si ya lo tienes, te dice la fecha en que lo registraste; si no, lo añades con un toque.
-  Para los módulos antiguos sin código de barras, basta con escribir el código de la portada (B1, X2, G0…).
-- **En todos tus dispositivos.** Entras con tu cuenta de Google y tu biblioteca se sincroniza entre móvil y ordenador.
-  Se puede instalar en la pantalla de inicio como una app más.
-- **Buscador de aventuras.** ¿Qué módulo preparo para la próxima partida? Filtra por nivel del grupo, número de jugadores,
-  duración y tipo de aventura (mazmorra, exploración, investigación…), y combínalo con lo que tienes o te falta.
-- **Catálogo de la comunidad.** ¿Falta un libro, o un código de barras no lo reconoce? Proponlo desde la app y, tras revisarlo, lo tendrán todos.
+<table>
+  <tr>
+    <td align="center"><img src="docs/img/biblioteca-series.png" width="200" alt="Biblioteca por series con los huecos de cada serie"></td>
+    <td align="center"><img src="docs/img/escaner.png" width="200" alt="Escáner de códigos de barras"></td>
+    <td align="center"><img src="docs/img/buscador-retro.png" width="200" alt="Buscador de aventuras con el tema Retro EGA"></td>
+    <td align="center"><img src="docs/img/perfil-mecenas-pergamino.png" width="200" alt="Extras de Mecenas con el tema Pergamino"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Tu colección por series</b><br>tema oscuro</sub></td>
+    <td align="center"><sub><b>Escáner</b><br>tema claro</sub></td>
+    <td align="center"><sub><b>Buscador de aventuras</b><br>tema Retro EGA</sub></td>
+    <td align="center"><sub><b>Extras de Mecenas</b><br>tema Pergamino</sub></td>
+  </tr>
+</table>
 
-## Gratis, con extras para Mecenas
+## ✨ Funcionalidades
 
-La app es gratuita. Si te resulta útil, puedes invitarme a un café en
-**[Buy Me a Coffee](https://buymeacoffee.com/toniruiz)**. Con un café (5 €) te conviertes en **Mecenas**
-y desbloqueas: diario de partidas, lista de deseos compartible, repetidos e intercambio entre Mecenas, registro de préstamos,
-estadísticas y valor de tu colección, exportación a CSV/JSON y los temas Pergamino y Retro EGA.
+| | |
+|---|---|
+| 📚 **Tu colección, ordenada** | Más de 100 publicaciones por categorías o **por series** (B, X, C, G…), con los huecos a la vista: «te faltan B7, B13…». |
+| 📷 **Escáner de códigos de barras** | Escaneo continuo con la cámara (Android e iPhone). Te dice si ya tienes el libro; si no, lo añades con un toque. Los módulos antiguos se buscan por el código de portada (B1, X2…). |
+| 🎲 **Buscador de aventuras** | Filtra por nivel del grupo, número de jugadores, duración y tipo (mazmorra, exploración, investigación…), en tu biblioteca o en todo el catálogo. |
+| 🏆 **Logros y rangos** | Celebra cuando completas una serie o llegas a 10, 25 o 50 libros. Sube de *Aprendiz de escriba* a *Gran Escriba de la Marca* ayudando a mejorar el catálogo. |
+| 🆕 **Series que crecen** | Las novedades se marcan como «Nuevo» y la app te avisa de los módulos recién publicados en las series que coleccionas. |
+| 🤝 **Catálogo de la comunidad** | Propón libros o códigos que falten y sugiere correcciones desde cada ficha; se revisan antes de publicarse. |
+| ☁️ **En todos tus dispositivos** | Entras con Google y tu biblioteca se sincroniza entre el móvil y el ordenador. |
+| 🎨 **Temas** | Automático, claro y oscuro, más *Pergamino* y *Retro EGA* para Mecenas. |
+| 🔐 **Tus datos, tuyos** | Descarga todo en JSON cuando quieras, o elimina la cuenta y todos sus datos desde el perfil. |
 
-## De dónde salen los datos
+## 🚀 Empezar a usarla
 
-El catálogo se ha elaborado a partir de fuentes públicas:
-[Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM),
-[Tesoros de la Marca](https://tesorosdelamarca.com/) y
-[Codex LMDE](https://github.com/diacritica/codexlmde) (niveles, personajes, sesiones, etiquetas y resúmenes de los módulos).
-Algunos datos pueden tener errores (sobre todo los códigos de barras, que se van verificando con ejemplares reales).
-Si ves algo mal, propón la corrección desde la app o abre un [issue](https://github.com/Favashi/escribadelamarca/issues).
+1. Abre **<https://favashi.github.io/escribadelamarca/>** y entra con tu cuenta de Google.
+2. **Instálala en el móvil** para usarla como una app más:
+   - **iPhone (Safari):** botón Compartir → *Añadir a pantalla de inicio*.
+   - **Android (Chrome):** menú ⋮ → *Instalar aplicación*.
+3. Escanea tus primeros libros desde la pestaña **Escanear**. La bienvenida te guía en tres pasos.
 
-## Más proyectos
+> [!TIP]
+> La app te avisa cuando hay una versión nueva. También puedes comprobarlo en **Perfil → Acerca de → Buscar actualizaciones**.
 
-¿Diriges partidas OSR? Prueba también **[OSR Manager](https://favashi.github.io/osr-manager/)**, una ayuda de mesa
-para directores de juego (turnos, luz, encuentros, viaje por hexes…).
+## ⭐ Mecenas
 
-## Para desarrolladores
+La app es y seguirá siendo **gratuita**. Si te resulta útil, puedes [invitarme a un café](https://buymeacoffee.com/toniruiz):
+con **un café (5 €, pago único)** te haces **Mecenas para siempre** y desbloqueas, como agradecimiento:
 
-HTML y JavaScript sin build, [Supabase](https://supabase.com) como backend y GitHub Pages para publicar.
-Cómo está montado, cómo desplegar tu propia instancia y cómo mantener el catálogo:
-**[docs/DESARROLLO.md](docs/DESARROLLO.md)**.
+- ✎ **Diario de partidas**: qué módulos has dirigido o jugado, cuándo y con qué grupo.
+- ☆ **Lista de deseos** y un enlace para compartirla.
+- ⇄ **Repetidos e intercambio** con otros Mecenas (voluntario).
+- ↔ **Registro de préstamos**.
+- ▤ **Estadísticas** y valor de tu colección.
+- ⤓ **Exportación a CSV** y los temas **Pergamino** y **Retro EGA**.
 
-## Licencia y avisos
+Las aportaciones ayudan a pagar el servidor y el tiempo dedicado a mejorar la app.
+
+## 🗂️ De dónde salen los datos
+
+El catálogo se ha construido a partir de fuentes públicas:
+
+| Fuente | Qué aporta |
+|---|---|
+| [Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM) | Título, autor, formato, páginas, códigos de barras, precio y fecha de catálogo. |
+| [Codex LMDE](https://github.com/diacritica/codexlmde) | Códigos históricos (B19, C4, H1…) y datos de juego: niveles, personajes, sesiones, etiquetas y resúmenes. |
+| [Tesoros de la Marca](https://tesorosdelamarca.com/) | Referencias (SKU) de tienda. |
+| **La comunidad** | Códigos verificados escaneando ejemplares reales y correcciones validadas. |
+
+¿Ves un dato mal? Abre el libro en la app y pulsa **«✎ Sugerir cambios»**.
+
+## 🛠️ Tecnología
+
+| Capa | Tecnología |
+|---|---|
+| Web | HTML, CSS y JavaScript (módulos ES) **sin paso de compilación**; PWA con *service worker* |
+| Backend | [Supabase](https://supabase.com): Postgres con **RLS** en todas las tablas, Auth con Google, Edge Functions y Vault |
+| Escáner | [`BarcodeDetector`](https://developer.mozilla.org/docs/Web/API/BarcodeDetector) nativo con [ZXing](https://github.com/zxing-js/browser) como alternativa |
+| Publicación | GitHub Pages mediante GitHub Actions, con *release* automática en cada versión |
+| Donaciones | Buy Me a Coffee con webhook firmado (HMAC) |
+| Operación | Copias de seguridad cifradas semanales, avisos al administrador por Telegram y migraciones versionadas |
+
+## 🧭 Arquitectura
+
+```mermaid
+flowchart LR
+  U["📱 Usuario<br>(PWA)"] -->|HTML/CSS/JS| GP["GitHub Pages"]
+  U -->|"datos · Auth Google"| SB[("Supabase<br>Postgres + RLS")]
+  BMC["☕ Buy Me a Coffee"] -->|"webhook firmado"| EF["Edge Function<br>bmc-webhook"]
+  EF --> SB
+  SB -->|"avisos (pg_net)"| TG["✈️ Telegram<br>administrador"]
+  GH["GitHub Actions"] -->|"publica · release"| GP
+  GH -->|"migraciones"| SB
+  GH -->|"copia cifrada semanal"| BK["🔒 Artefacto<br>de copia"]
+```
+
+## 💻 Desarrollo
+
+```bash
+git clone https://github.com/Favashi/escribadelamarca.git
+cd escribadelamarca
+python3 -m http.server 8000   # abre http://localhost:8000
+```
+
+Para montar tu propia instancia (proyecto de Supabase, login con Google, webhook de donaciones, copias de seguridad,
+sincronización del catálogo…) consulta la **[guía de desarrollo](docs/DESARROLLO.md)**.
+
+<details>
+<summary><strong>Estructura del repositorio</strong></summary>
+
+```
+index.html, sw.js, manifest.webmanifest   aplicación y PWA
+css/                                      tokens, base, layout, componentes, vistas y temas
+js/                                       lógica de la app (vistas en js/views/)
+assets/                                   iconos y tipografías
+supabase/migrations/                      esquema de la base de datos (versionado)
+supabase/functions/                       Edge Functions
+data/                                     CSV fuente del catálogo y datos del Codex
+scripts/                                  sincronización del catálogo (CSV ⇄ base de datos)
+docs/DESARROLLO.md                        guía técnica
+```
+</details>
+
+## 🗺️ Hoja de ruta
+
+- [x] Biblioteca, escáner y catálogo con más de 100 publicaciones
+- [x] Buscador de aventuras con datos del Codex LMDE
+- [x] Sugerencias de la comunidad con historial de cambios
+- [x] Logros, rangos de escriba y series que crecen
+- [ ] Modo sin conexión (escanear sin cobertura en tiendas y jornadas)
+- [ ] Compartir tu colección como imagen
+- [ ] Aviso automático de novedades del catálogo
+- [ ] Portadas de los módulos (pendiente de permiso de la editorial)
+
+Las novedades de cada versión están en [Releases](https://github.com/Favashi/escribadelamarca/releases).
+
+## 🤝 Contribuir
+
+- **Datos del catálogo:** la forma más útil de ayudar es desde la propia app, escaneando tus libros y usando
+  «Sugerir cambios». Cada aportación aceptada cuenta para tu rango de escriba.
+- **Fallos e ideas:** abre un [issue](https://github.com/Favashi/escribadelamarca/issues) describiendo qué pasó,
+  en qué dispositivo y navegador, y cómo reproducirlo.
+- **Código:** los *pull requests* son bienvenidos. Para cambios grandes, abre antes un issue para comentarlo.
+
+## 🔒 Privacidad y seguridad
+
+- Cada usuario solo puede acceder a sus propios datos (políticas RLS en la base de datos).
+- Sin publicidad, sin cookies de seguimiento y con las tipografías servidas desde la propia web.
+- Detalle completo en la **[política de privacidad](https://favashi.github.io/escribadelamarca/privacidad.html)**.
+- Si encuentras una vulnerabilidad, **no abras un issue público**: escríbeme a **info@toniruiz.es**.
+
+## ⚖️ Licencia y avisos
 
 - Código bajo **[GNU AGPL-3.0](LICENSE)**: puedes usarlo, modificarlo y publicarlo, pero si ofreces una versión
-  modificada debes compartir su código bajo la misma licencia.
+  modificada (también como servicio web) debes compartir su código bajo la misma licencia.
 - **Proyecto de fans, no oficial.** *Aventuras en la Marca del Este*, sus títulos, logotipos e ilustraciones pertenecen
   a sus respectivos autores y no se incluyen en este repositorio.
-- [Política de privacidad](https://favashi.github.io/escribadelamarca/privacidad.html).
+- Tipografías Cinzel, Uncial Antiqua y Source Serif 4 bajo SIL Open Font License.
 
-Hecho por Toni Ruiz ([Favashi](https://github.com/Favashi)), también autor de [OSR Manager](https://favashi.github.io/osr-manager/).
+## 🙏 Agradecimientos
 
-Copyright (C) 2026 Favashi
+- A **La Marca del Este** y a sus autores, por años de aventuras.
+- Al **[Codex LMDE](https://github.com/diacritica/codexlmde)**, por su trabajo documentando cada módulo.
+- A **Distribuciones Sombra** y **Tesoros de la Marca**, cuyos catálogos sirvieron de base.
+- A quienes ya usan la app, verifican códigos y sugieren correcciones.
+
+---
+
+<div align="center">
+
+Hecho con ☕ por **Toni Ruiz ([Favashi](https://github.com/Favashi))**, también autor de
+**[OSR Manager](https://favashi.github.io/osr-manager/)**, ayuda de mesa para directores de juego OSR.
+
+</div>

@@ -450,3 +450,22 @@ span.book-nav-btn { visibility: hidden; }
 .verify-ok { color: var(--ok); }
 .verify-warn { color: var(--warn); }
 .verify-muted { color: var(--muted); }
+
+/* ---------- Series que crecen ---------- */
+.series-status { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 10px; }
+.st { font: 700 .72rem var(--font-ui); padding: 2px 10px; border-radius: 99px; }
+.st-complete { background: var(--gold-soft); color: var(--gold); }
+.st-uptodate { background: var(--ok-soft); color: var(--ok); }
+.st-new { background: var(--accent-soft); color: var(--accent); }
+.tile.is-new { box-shadow: 0 0 0 2px var(--accent); }
+.tile.is-new::before {
+  content: 'Nuevo'; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+  font: 800 .5rem var(--font-ui); letter-spacing: .04em; text-transform: uppercase;
+  padding: 1px 4px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); white-space: nowrap;
+}
+.news-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; font: .88rem var(--font-ui);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+.news-banner b { color: var(--accent); }

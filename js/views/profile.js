@@ -1,9 +1,11 @@
-import { html, raw, $, toast } from '../util.js';
+import { html, raw, $, toast, fmtShort } from '../util.js';
 import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
 import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog } from '../ui.js';
 import { icon, ribbon } from '../icons.js';
 import { downloadAllJson } from '../export.js';
+import { contributions, rankOf, RANKS, describe } from '../achievements.js';
+import { getAchievements } from '../api.js';
 import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
 import { resetLibrary, deleteMyAccount } from '../api.js';
@@ -33,6 +35,13 @@ export function renderProfile(root) {
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Cerrar sesión
       </button>
+    </section>
+
+    ${raw(rankCard())}
+
+    <section class="panel achievements">
+      <h2>Logros</h2>
+      <div class="ach-grid"><p class="muted small">Cargando…</p></div>
     </section>
 
     ${supporter ? raw(html`
@@ -138,6 +147,8 @@ export function renderProfile(root) {
     } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
   };
 
+  fillAchievements($('.ach-grid', root));
+
   $('[data-export-all]', root).onclick = () => downloadAllJson().catch((err) => toast(errMsg(err), 'error'));
   $('[data-changelog]', root).onclick = () => releaseNotesDialog();
   $('[data-onboarding]', root).onclick = async () => {
@@ -181,3 +192,40 @@ const HUB = [
   ['prestamos', '↔', 'Préstamos', 'Qué tienes prestado'],
   ['exportar', '⤓', 'Exportar', 'CSV o JSON'],
 ];
+
+/** Tarjeta de rango de escriba: aportaciones aceptadas y progreso hasta el siguiente. */
+function rankCard() {
+  const c = contributions();
+  const r = rankOf(c.total);
+  const prevMin = RANKS[r.index].min;
+  const pct = r.next ? Math.round(((c.total - prevMin) / (r.next.min - prevMin)) * 100) : 100;
+  return html`<section class="panel rank-card">
+    <div class="rank-head">
+      <span class="rank-icon" aria-hidden="true">${raw(icon('quill'))}</span>
+      <div><p class="eyebrow">Rango de escriba</p><h2>${r.name}</h2></div>
+    </div>
+    <span class="bar" role="img" aria-label="${c.total} aportaciones aceptadas"><span style="width:${pct}%"></span></span>
+    <p class="small muted">${r.next
+      ? `${r.toNext} ${r.toNext === 1 ? 'aportación aceptada más' : 'aportaciones aceptadas más'} para ser ${r.next.name}.`
+      : 'Has alcanzado el rango más alto. ¡Gracias por tanto!'}
+      Sube proponiendo códigos al escanear, sugiriendo correcciones o proponiendo libros que falten.</p>
+    ${c.total ? raw(html`<p class="small rank-detail">${c.suggestions} sugerencias · ${c.codes} códigos · ${c.books} libros aceptados</p>`) : ''}
+  </section>`;
+}
+
+/** Vitrina de logros conseguidos (se cargan de la base de datos). */
+async function fillAchievements(box) {
+  if (!box) return;
+  let rows = state.achievements;
+  if (!rows.length) { try { rows = await getAchievements(); state.achievements = rows; } catch { rows = []; } }
+  const order = (k) => (k.startsWith('series:') ? 0 : k.startsWith('rank:') ? 1 : k.startsWith('books:') ? 2 : 3);
+  rows = [...rows].sort((a, b) => order(a.key) - order(b.key) || String(b.earned_at).localeCompare(String(a.earned_at)));
+  box.innerHTML = rows.length ? rows.map((r) => {
+    const d = describe(r.key, r);
+    return html`<div class="ach">
+      <span class="ach-icon" aria-hidden="true">${raw(icon(d.icon))}</span>
+      <div><strong>${d.title}${r.level > 1 ? raw(html` <span class="ach-level">×${r.level}</span>`) : ''}</strong>
+        <small>${d.text}</small><small class="muted">${fmtShort(r.earned_at)}</small></div>
+    </div>`;
+  }).join('') : html`<p class="muted small">Aún no tienes logros. Escanea tus primeros libros o completa una serie. ✦</p>`;
+}

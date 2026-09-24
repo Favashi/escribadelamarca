@@ -2,6 +2,7 @@ import { html, raw, $, cover, fmtShort } from '../util.js';
 import { state, groupByCategory, matches, compareBooks, categoryName } from '../store.js';
 import { viewHeader } from '../ui.js';
 import { setNavList } from '../navlist.js';
+import { isNewBook, newInMySeries } from '../achievements.js';
 
 const LS_KEY = 'edm.showMissing';
 const VIEW_KEY = 'edm.libView';
@@ -28,6 +29,7 @@ export function renderLibrary(root) {
       <input type="search" class="search" placeholder="Buscar título, código o autor…" aria-label="Buscar">
       <label class="switch missing-toggle" ${mode === 'series' ? 'hidden' : ''}><input type="checkbox" ${showMissing ? 'checked' : ''}> <span>Ver los que me faltan</span></label>
     </div>
+    <div class="news-slot"></div>
     <div class="groups"></div>`;
 
   const list = $('.groups', root);
@@ -89,18 +91,33 @@ export function renderLibrary(root) {
       const have = state.library.has(b.id);
       const wished = !have && state.wishlist.has(b.id);
       const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}`;
-      return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''}" href="#/libro/${b.id}" title="${label}" aria-label="${label}">${b.code ?? '?'}</a>`;
+      const fresh = isNewBook(b);
+      return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''}" href="#/libro/${b.id}"
+        title="${label}${fresh ? ' · novedad' : ''}" aria-label="${label}${fresh ? ', novedad' : ''}">${b.code ?? '?'}</a>`;
     };
-    const section = (title, sub, books) => {
+    const achievements = new Map(state.achievements.map((a) => [a.key, a]));
+    const section = (title, sub, books, seriesCode = null) => {
       const have = books.filter((b) => state.library.has(b.id)).length;
       const missing = books.filter((b) => !state.library.has(b.id));
+      const missingNew = missing.filter(isNewBook);
+      const missingOld = missing.filter((b) => !isNewBook(b));
+      const newCount = books.filter(isNewBook).length;
       const p = Math.round((have / books.length) * 100);
+      const ach = seriesCode ? achievements.get(`series:${seriesCode}`) : null;
+      const upToDate = !missing.length;
+      const codes = (list) => list.map((b) => b.code).filter(Boolean).join(', ');
       return html`<section class="series-block panel">
         <header class="series-head"><h2>${title}${sub ? raw(html` <small>${sub}</small>`) : ''}</h2><span class="count">${have} / ${books.length}</span></header>
+        ${seriesCode && (ach || upToDate || newCount) ? raw(html`<p class="series-status">
+          ${ach ? raw(html`<span class="st st-complete" title="Logro permanente">✦ Completa${ach.level > 1 ? ` ×${ach.level}` : ''}</span>`) : ''}
+          ${upToDate ? raw('<span class="st st-uptodate">● Al día</span>') : ''}
+          ${newCount ? raw(html`<span class="st st-new">${newCount} ${newCount === 1 ? 'nuevo' : 'nuevos'}</span>`) : ''}
+        </p>`) : ''}
         <span class="bar" role="img" aria-label="${have} de ${books.length}"><span style="width:${p}%"></span></span>
         <div class="tiles">${books.map((b) => raw(tile(b)))}</div>
         <p class="series-missing">${missing.length
-          ? raw(html`Te faltan: <strong>${missing.map((b) => b.code).filter(Boolean).join(', ')}</strong>`)
+          ? raw(html`${missingNew.length ? raw(html`Novedades que te faltan: <strong>${codes(missingNew)}</strong>${missingOld.length ? raw('<br>') : ''}`) : ''}
+              ${missingOld.length ? raw(html`Te faltan: <strong>${codes(missingOld)}</strong>`) : ''}`)
           : raw('<span class="complete">✦ ¡Serie completa!</span>')}</p>
       </section>`;
     };
@@ -111,8 +128,24 @@ export function renderLibrary(root) {
       <p class="muted small legend"><span class="tile owned sample">B1</span> lo tienes
         <span class="tile missing sample">B2</span> te falta
         ${state.wishlist.size ? raw('<span class="tile missing wished sample">B3</span> en tu lista de deseos') : ''}</p>
-      ${multi.map((sr) => raw(section(`Serie ${sr.code}`, categoryName(sr.books[0].category_id), sr.books)))}
+      ${multi.map((sr) => raw(section(`Serie ${sr.code}`, categoryName(sr.books[0].category_id), sr.books, sr.code)))}
       ${singles.length ? raw(section('Otras publicaciones', '', singles)) : ''}`;
+  }
+
+  // Novedades en series que coleccionas
+  const news = newInMySeries();
+  if (news.length) {
+    const total = news.reduce((t, n) => t + n.books.length, 0);
+    const list = news.map((n) => n.books.map((b) => b.code).join(', ')).join(', ');
+    $('.news-slot', root).innerHTML = html`<div class="news-banner">
+      <span>${raw('<b>✦</b>')} Han salido <strong>${total} ${total === 1 ? 'módulo nuevo' : 'módulos nuevos'}</strong> en series que coleccionas: ${list}.</span>
+      ${mode === 'series' ? '' : raw('<button type="button" class="btn btn-sm btn-ghost" data-see-series>Ver por series</button>')}
+    </div>`;
+    $('[data-see-series]', root)?.addEventListener('click', () => {
+      const radio = root.querySelector('input[name=mode][value=series]');
+      radio.checked = true; radio.dispatchEvent(new Event('change'));
+      $('[data-see-series]', root)?.remove();
+    });
   }
 
   root.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', () => {

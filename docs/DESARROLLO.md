@@ -159,6 +159,17 @@ La app los lee al arrancar (`js/settings.js`); si fallan, usa los valores por de
 Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/settings.js` y su interruptor en `FLAGS`
 (`js/views/admin.js`).
 
+## Logros y rangos (gamificación)
+- `js/achievements.js` calcula en la app qué logros se cumplen (primer libro, 10/25/50/100 libros, explorador = algo de
+  cada categoría, series completas, rangos de escriba) y guarda los nuevos en `user_achievements` (RLS por usuario).
+  Se comprueba al entrar y cada vez que cambia la biblioteca (`refreshLibrary`).
+- **Los logros son permanentes**: si una serie crece, el logro «Completa» se mantiene y el estado pasa a no estar
+  «Al día»; al volver a completarla sube de nivel (×2…) y se celebra de nuevo (`meta.count` e `history`).
+- La primera comprobación de cada usuario registra en silencio lo que ya tenía (un solo aviso), sin celebraciones en cadena.
+- Rangos por aportaciones **aceptadas**: sugerencias validadas + códigos propuestos aprobados + libros propuestos
+  aprobados. Umbrales en `RANKS` (0, 1, 5, 15, 40).
+- «Nuevo»: publicaciones con `catalog_date` (o alta en la app) de los últimos 45 días.
+
 ## Herramientas de admin para el catálogo
 - **Catálogo → filtros de calidad** (solo admin): sin verificar, códigos duplicados, sin código de barras, sin datos
   de juego y editados en la app, cada uno con su recuento.

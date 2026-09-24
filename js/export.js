@@ -35,6 +35,7 @@ export async function downloadAllJson() {
     exportado: new Date().toISOString(),
     cuenta: { email: user().email, nombre: state.profile?.display_name ?? null, mecenas: isSupporter() },
     biblioteca: libraryRows(),
+    logros: state.achievements.map((a) => ({ logro: a.key, nivel: a.level, conseguido: a.earned_at, detalle: a.meta })),
     sugerencias: state.suggestions.filter((s) => s.created_by === uid)
       .map((s) => ({ libro: title(s.catalog_id), cambios: s.changes, nota: s.note, estado: s.status, fecha: s.created_at })),
   };

@@ -136,3 +136,10 @@ export const getHistory = async (catalogId) =>
 
 export const adminRestoreVersion = async (historyId) =>
   ok(await supabase.rpc('admin_restore_version', { p_history: historyId }));
+
+// --- Logros ---
+export const getAchievements = async () =>
+  ok(await supabase.from('user_achievements').select('*'));
+
+export const saveAchievement = async (row) =>
+  ok(await supabase.from('user_achievements').upsert(row));

@@ -18,3 +18,6 @@ playwright-report/
 supabase/.branches/
 reports/
 .health/
+
+# Borradores de difusión (privados)
+difusion/

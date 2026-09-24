@@ -220,6 +220,10 @@ propuesto** o una **donación**. Usan `pg_net` para llamar a la API de Telegram;
 
 Sin esos secretos no se envía nada y la app funciona igual. Los mensajes no incluyen emails.
 
+Fiabilidad: cada aviso queda en `admin_notifications` y un trabajo de `pg_cron` (`retry-admin-notifications`, cada
+5 minutos) comprueba la respuesta de Telegram en `net._http_response` y reintenta los fallidos hasta 3 veces
+(timeout de 15 s). Para revisar: `select * from admin_notifications order by created_at desc;`
+
 ## Copias de seguridad
 `.github/workflows/backup.yml` hace cada domingo, con `pg_dump` 17 (sin Docker):
 - `public.dump`: todo el esquema `public` (tablas, RLS, funciones, triggers, permisos y datos), formato custom;

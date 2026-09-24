@@ -61,7 +61,7 @@ export async function renderFinder(root) {
       </div>
       <input name="text" type="search" class="search" placeholder="Título, código o autor…" value="${f.text}">
       ${allTags.length ? raw(html`<div class="chips" role="group" aria-label="Etiquetas">
-        ${allTags.map((t) => raw(html`<button type="button" class="chip ${f.tags.includes(t) ? 'on' : ''}" data-tag="${t}" aria-pressed="${f.tags.includes(t)}">${t}</button>`))}
+        ${allTags.map((t) => raw(html`<button type="button" class="chip ${f.tags.includes(t) ? 'on' : ''}" data-tag="${t}" aria-pressed="${String(f.tags.includes(t))}">${t}</button>`))}
       </div>`) : ''}
       <div class="finder-foot">
         <div class="finder-switches">

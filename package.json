@@ -1,0 +1,13 @@
+{
+  "name": "escribadelamarca",
+  "private": true,
+  "type": "module",
+  "description": "Solo herramientas de desarrollo (tests). La app no tiene build: se publica tal cual.",
+  "scripts": {
+    "test:db": "supabase test db",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

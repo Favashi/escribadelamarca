@@ -1,0 +1,74 @@
+# Tests en cada push y pull request:
+#   · Base de datos (pgTAP, supabase/tests/database): RLS, permisos de funciones, interruptores y borrado de cuenta.
+#   · Flujo principal (Playwright, tests/e2e): portada, bienvenida, escanear, añadir, quitar/deshacer y modo marcar.
+# Ambos corren contra un Supabase local levantado en el propio runner con las migraciones y supabase/seed.sql;
+# nunca tocan producción.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Levantar Supabase local (migraciones + seed)
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+
+      - name: Tests de base de datos (pgTAP)
+        run: supabase test db
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Tests del flujo principal (Playwright)
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 14
+
+      # Aviso por Telegram si algo falla (secretos TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID; sin ellos no hace nada)
+      - name: Avisar por Telegram del fallo
+        if: failure() && github.event_name != 'pull_request'
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          test -n "$TG_TOKEN" -a -n "$TG_CHAT" || { echo "Sin secretos de Telegram: no se avisa"; exit 0; }
+          curl -s -o /dev/null --max-time 20 "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text=🚨 Ha fallado «$WORKFLOW» en Escriba de la Marca." \
+            --data-urlencode "reply_markup={\"inline_keyboard\":[[{\"text\":\"Ver el registro\",\"url\":\"$RUN_URL\"}]]}"

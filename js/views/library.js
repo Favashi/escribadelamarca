@@ -125,7 +125,7 @@ export function renderLibrary(root) {
       const fresh = isNewBook(b);
       if (markMode) {
         return html`<button type="button" class="tile marking ${have ? 'owned' : 'missing'} ${fresh ? 'is-new' : ''}" data-mark="${b.id}"
-          aria-pressed="${have}" aria-label="${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
+          aria-pressed="${String(have)}" aria-label="${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
       }
       return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''}" href="#/libro/${b.id}"
         title="${label}${fresh ? ' · novedad' : ''}" aria-label="${label}${fresh ? ', novedad' : ''}">${b.code ?? '?'}</a>`;

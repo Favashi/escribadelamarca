@@ -280,6 +280,32 @@ GitHub desactiva los workflows programados tras 60 días sin commits: reactíval
 
 Los cambios sin nueva versión (arreglos menores) se publican igual; simplemente no generan release ni aviso.
 
+## Tests
+Se ejecutan en cada push y pull request (`.github/workflows/tests.yml`) contra un **Supabase local** levantado en el
+runner con todas las migraciones y `supabase/seed.sql`; nunca tocan producción.
+
+- **Base de datos** (`supabase/tests/database/*.test.sql`, pgTAP): RLS de cada tabla (cada uno solo lo suyo, extras de
+  Mecenas, catálogo aprobado/pendiente, visitantes sin sesión), columnas protegidas del perfil (`is_admin`,
+  `is_supporter`), funciones `admin_*` rechazadas a no-admin, funciones internas no ejecutables desde la API,
+  interruptores `suggestions_enabled` / `feedback_enabled`, lista compartida, intercambio, Escribas y borrado de cuenta.
+  Cada fichero es una transacción que se deshace; para cambiar de usuario usan `_test_login(uid)` / `_test_anon()`
+  (el mismo `request.jwt.claims` que pone PostgREST).
+- **Flujo principal** (`tests/e2e/*.spec.js`, Playwright, móvil emulado): portada, bienvenida, escanear con la entrada
+  manual (libro T1 del seed), añadir, quitar y deshacer, y modo marcar. El login con Google se simula: `fixtures.js`
+  crea un usuario con contraseña en el Supabase local y deja su sesión en `localStorage`; `js/config.js` se sustituye
+  al vuelo por la URL local. Se niegan a correr contra algo que no sea `127.0.0.1`/`localhost`.
+
+En local (Docker u OrbStack):
+```bash
+supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+supabase test db            # pgTAP
+npm ci && npx playwright install chromium
+npx playwright test         # flujo principal (sirve la app con tests/e2e/serve.js)
+supabase stop
+```
+Al añadir una tabla, una política o una función `security definer`, añade su test. Si la migración nueva cambia
+algo que ya se comprueba, el test fallará: es la idea.
+
 ## Desarrollo local
 ```bash
 python3 -m http.server 8000

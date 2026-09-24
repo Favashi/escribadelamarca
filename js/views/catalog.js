@@ -63,7 +63,7 @@ export function renderCatalog(root) {
             return raw(html`<li class="row" data-id="${b.id}">
               ${raw(cover(b, 'cover-xs'))}
               <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}${b.status === 'pending' ? raw(' <span class="badge badge-warn">pendiente</span>') : ''}${b.author ? raw(html`<small>${b.author}</small>`) : ''}</a>
-              <button class="toggle ${have ? 'on' : ''}" data-toggle aria-pressed="${have}" aria-label="${have ? 'Quitar de' : 'Añadir a'} mi biblioteca">
+              <button class="toggle ${have ? 'on' : ''}" data-toggle aria-pressed="${String(have)}" aria-label="${have ? 'Quitar de' : 'Añadir a'} mi biblioteca">
                 ${have ? '✓ Lo tengo' : '+ Añadir'}
               </button>
             </li>`);

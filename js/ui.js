@@ -355,3 +355,35 @@ export function celebrateDialog({ icon: name = 'trophy', title, text }) {
       <div class="actions"><button class="btn btn-primary" data-close>¡Genial!</button></div>
     </div>`, (d, close) => { $('[data-close]', d).onclick = () => close(true); });
 }
+
+/** Formulario «Enviar comentario». Resuelve con { kind, message } o null. */
+export function feedbackDialog() {
+  return openDialog(html`
+    <form class="sheet form" novalidate>
+      <h2 class="sheet-title">Enviar comentario</h2>
+      <p class="muted small">¿Algo no funciona, echas algo en falta o tienes una idea? Lo leo todo. Se envía junto con la versión
+        de la app y el tipo de dispositivo, para poder reproducir los fallos.</p>
+      <div class="seg kind-seg" role="radiogroup" aria-label="Tipo">
+        <label><input type="radio" name="kind" value="fallo"><span>🐞 Un fallo</span></label>
+        <label><input type="radio" name="kind" value="idea" checked><span>💡 Una idea</span></label>
+        <label><input type="radio" name="kind" value="otro"><span>💬 Otro</span></label>
+      </div>
+      <label>Cuéntame <textarea name="message" rows="5" maxlength="2000" required
+        placeholder="Qué pasó, qué esperabas, en qué pantalla…"></textarea></label>
+      <p class="form-error" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-cancel>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Enviar</button>
+      </div>
+    </form>`, (d, close) => {
+    const form = $('form', d);
+    $('[data-cancel]', d).onclick = () => close(null);
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const message = form.message.value.trim();
+      if (message.length < 3) { const err = $('.form-error', d); err.textContent = 'Escribe un poco más, por favor.'; err.hidden = false; return; }
+      close({ kind: form.kind.value, message });
+    };
+    setTimeout(() => form.message.focus(), 50);
+  });
+}

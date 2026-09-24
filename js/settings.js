@@ -5,6 +5,7 @@ const DEFAULTS = {
   covers_enabled: true,
   suggestions_enabled: true,
   donations_enabled: true,
+  feedback_enabled: true,
   announcement: { enabled: false, text: '', level: 'info' },
 };
 

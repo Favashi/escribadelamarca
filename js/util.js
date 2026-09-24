@@ -28,14 +28,26 @@ const shortFmt = new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-di
 export const fmtDate = (d) => (d ? dateFmt.format(new Date(d)) : '');
 export const fmtShort = (d) => (d ? shortFmt.format(new Date(d)) : '');
 
-export function toast(msg, kind = 'info') {
+/**
+ * Aviso breve. Con `action` ({ label, onClick }) muestra un botón (p. ej. «Deshacer») y dura más.
+ */
+export function toast(msg, kind = 'info', { action = null, duration = action ? 7000 : 2600 } = {}) {
   const el = document.createElement('div');
-  el.className = `toast toast-${kind}`;
+  el.className = `toast toast-${kind}${action ? ' toast-action' : ''}`;
   el.setAttribute('role', 'status');
-  el.textContent = msg;
+  const text = document.createElement('span');
+  text.textContent = msg;
+  el.append(text);
+  const hide = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = action.label;
+    btn.onclick = async () => { btn.disabled = true; hide(); await action.onClick(); };
+    el.append(btn);
+  }
   document.getElementById('toasts').append(el);
-  setTimeout(() => el.classList.add('out'), 2600);
-  setTimeout(() => el.remove(), 3000);
+  setTimeout(hide, duration);
 }
 
 export function initials(title) {

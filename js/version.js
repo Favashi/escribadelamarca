@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 
 export const RELEASES = [
+  {
+    version: '1.5.0',
+    date: '2026-09-24',
+    notes: [
+      'Da de alta tu colección de golpe: en «Mi biblioteca → Por series», pulsa «Marcar los libros que tengo» y toca las casillas (o marca una serie entera).',
+      'Quitar un libro ya no pide confirmación: aparece «Deshacer» durante unos segundos y lo recuperas con su fecha y sus notas.',
+      'Nuevo «Enviar comentario» en Perfil: cuéntame fallos o ideas directamente desde la app mientras está en pruebas.',
+    ],
+  },
   {
     version: '1.4.0',
     date: '2026-09-24',

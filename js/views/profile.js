@@ -1,7 +1,10 @@
 import { html, raw, $, toast, fmtShort } from '../util.js';
 import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
-import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog } from '../ui.js';
+import { sendFeedback } from '../api.js';
+
+const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
 import { icon, ribbon } from '../icons.js';
 import { downloadAllJson } from '../export.js';
 import { contributions, rankOf, RANKS, describe } from '../achievements.js';
@@ -107,6 +110,10 @@ export function renderProfile(root) {
         <button class="btn btn-ghost" data-changelog>Novedades</button>
         <button class="btn btn-ghost" data-update>Buscar actualizaciones</button>
       </div>
+      ${settings.feedback_enabled
+        ? raw('<button class="btn btn-primary btn-feedback" data-feedback>💬 Enviar comentario o informar de un fallo</button>')
+        : raw(html`<a class="btn btn-ghost btn-feedback" href="${ISSUES_URL}" target="_blank" rel="noopener">🐞 Informar de un fallo o proponer una idea en GitHub</a>
+          <p class="muted small center">Los comentarios se gestionan en GitHub: así puedes ver si alguien ya ha informado del mismo fallo.</p>`)}
     </section>
 
     <p class="muted small center pad">
@@ -151,6 +158,14 @@ export function renderProfile(root) {
 
   $('[data-export-all]', root).onclick = () => downloadAllJson().catch((err) => toast(errMsg(err), 'error'));
   $('[data-changelog]', root).onclick = () => releaseNotesDialog();
+  $('[data-feedback]', root)?.addEventListener('click', async () => {
+    const res = await feedbackDialog();
+    if (!res) return;
+    try {
+      await sendFeedback({ ...res, page: 'perfil', app_version: APP_VERSION, user_agent: navigator.userAgent.slice(0, 300) });
+      toast('¡Gracias! Tu comentario ha llegado', 'ok');
+    } catch (err) { toast(errMsg(err), 'error'); }
+  });
   $('[data-onboarding]', root).onclick = async () => {
     const choice = await onboardingDialog();
     if (choice === 'scan') location.hash = '#/escanear';

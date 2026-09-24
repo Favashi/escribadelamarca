@@ -1,5 +1,6 @@
 import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
-import { isAdmin, pendingCount, loadAll } from '../store.js';
+import { state, isAdmin, pendingCount, loadAll, personName } from '../store.js';
+import { updateAdminBadge } from '../nav.js';
 import { viewHeader, confirmDialog, errMsg } from '../ui.js';
 import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
@@ -16,6 +17,7 @@ export function adminTabs(active) {
     ['revision', '#/revision', `Revisión${n ? ` (${n})` : ''}`],
     ['usuarios', '#/admin/usuarios', 'Usuarios'],
     ['donaciones', '#/admin/donaciones', 'Donaciones'],
+    ['comentarios', '#/admin/comentarios', `Comentarios${state.feedback.filter((f) => f.status === 'new').length ? ` (${state.feedback.filter((f) => f.status === 'new').length})` : ''}`],
     ['ajustes', '#/admin/ajustes', 'Ajustes'],
   ];
   return html`<nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, href, label]) =>
@@ -57,6 +59,7 @@ export async function renderAdmin(root, params = {}) {
   const body = $('.admin-body', root);
   try {
     if (section === 'ajustes') renderSettings(body);
+    else if (section === 'comentarios') await renderFeedback(body);
     else if (section === 'usuarios') await renderUsers(body);
     else if (section === 'donaciones') await renderDonations(body);
     else await renderSummary(body);
@@ -220,6 +223,7 @@ async function renderDonations(body) {
 const FLAGS = [
   ['covers_enabled', 'Portadas', 'Muestra las portadas de los libros. Desactivado, todos ven las mini-portadas con iniciales. (Ocultarlas no las borra del almacenamiento.)'],
   ['suggestions_enabled', 'Sugerencias de cambios', 'Permite a los usuarios proponer correcciones. Desactivado, el botón desaparece y la base de datos rechaza sugerencias nuevas.'],
+  ['feedback_enabled', 'Comentarios desde la app', 'Los usuarios envían fallos e ideas con un formulario que te llega por Telegram. Desactivado, el botón enlaza a los issues de GitHub y la base de datos rechaza comentarios nuevos.'],
   ['donations_enabled', 'Donaciones y Mecenas', 'Muestra los botones de café y la invitación a hacerse Mecenas. Los Mecenas actuales conservan sus extras.'],
 ];
 
@@ -276,4 +280,46 @@ function renderSettings(body) {
       toast(value.enabled ? 'Aviso publicado' : 'Aviso retirado', 'ok');
     } catch (err) { toast(errMsg(err), 'error'); }
   });
+}
+
+const KIND = { fallo: '🐞 Fallo', idea: '💡 Idea', otro: '💬 Otro' };
+const FB_STATUS = { new: 'Nuevo', read: 'Leído', done: 'Resuelto' };
+
+/** Comentarios de los usuarios: nuevos primero; marcar como leído / resuelto o borrar. */
+async function renderFeedback(body) {
+  state.feedback = await api.getFeedback();
+  const device = (ua = '') => (/iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'otro');
+  const draw = () => {
+    const rows = [...state.feedback].sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1)
+      || String(b.created_at).localeCompare(String(a.created_at)));
+    body.innerHTML = rows.length ? html`<ul class="user-list">${rows.map((f) => raw(html`<li class="feedback-row fb-${f.status}" data-fb="${f.id}">
+      <div class="user-info">
+        <strong>${KIND[f.kind] || f.kind} <span class="badge ${f.status === 'new' ? 'badge-warn' : ''}">${FB_STATUS[f.status]}</span></strong>
+        <p class="fb-message">${f.message}</p>
+        <small>${f.user_id ? personName(f.user_id) : 'usuario borrado'} · ${fmtDate(f.created_at)} · v${f.app_version || '?'} · ${device(f.user_agent)}</small>
+      </div>
+      <div class="review-actions">
+        ${f.status !== 'read' && f.status !== 'done' ? raw('<button class="btn btn-sm btn-ghost" data-fb-status="read">Leído</button>') : ''}
+        ${f.status !== 'done' ? raw('<button class="btn btn-sm btn-primary" data-fb-status="done">Resuelto</button>') : ''}
+        <button class="btn btn-sm btn-ghost btn-danger-text" data-fb-del>Borrar</button>
+      </div>
+    </li>`))}</ul>` : html`<p class="muted">Aún no ha llegado ningún comentario.</p>`;
+  };
+  body.onclick = async (e) => {
+    const row = e.target.closest('[data-fb]');
+    if (!row) return;
+    const id = Number(row.dataset.fb);
+    try {
+      const st = e.target.closest('[data-fb-status]')?.dataset.fbStatus;
+      if (st) await api.setFeedbackStatus(id, st);
+      else if (e.target.closest('[data-fb-del]')) {
+        if (!(await confirmDialog('¿Borrar este comentario?', { ok: 'Borrar', danger: true }))) return;
+        await api.deleteFeedback(id);
+      } else return;
+      state.feedback = await api.getFeedback();
+      updateAdminBadge();
+      draw();
+    } catch (err) { toast(errMsg(err), 'error'); }
+  };
+  draw();
 }

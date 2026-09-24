@@ -153,3 +153,11 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 
 /* ---------- Pestaña Perfil de un Mecenas: icono dorado con estrella ---------- */
 #nav a.is-supporter svg { color: var(--gold); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--gold) 55%, transparent)); }
+
+/* Aviso con acción («Deshacer») */
+.toast-action { display: flex; align-items: center; gap: 14px; pointer-events: auto; }
+.toast-action span { flex: 1; }
+.toast-action button {
+  flex: none; background: none; border: 0; padding: 4px 2px; cursor: pointer;
+  color: #f3c02f; font: 800 .9rem var(--font-ui); text-transform: uppercase; letter-spacing: .04em;
+}

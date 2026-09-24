@@ -4,6 +4,7 @@ import { bookFormDialog, confirmDialog, viewHeader, errMsg } from '../ui.js';
 import * as api from '../api.js';
 import { setNavList } from '../navlist.js';
 import { icon } from '../icons.js';
+import { removeWithUndo } from '../library-actions.js';
 
 /** Filtros de calidad de datos (solo admin). Cada uno: [id, etiqueta, test(libro, ctx)]. */
 const DATA_FILTERS = [
@@ -112,8 +113,8 @@ export function renderCatalog(root) {
     try {
       if (btn.hasAttribute('data-toggle')) {
         if (state.library.has(book.id)) {
-          if (!(await confirmDialog(`¿Quitar «${book.title}» de tu biblioteca?`, { ok: 'Quitar', danger: true }))) { btn.disabled = false; return; }
-          await api.removeFromLibrary(user().id, book.id);
+          await removeWithUndo(book.id, draw);   // sin confirmación: el aviso permite deshacer
+          return;
         } else {
           await api.addToLibrary(user().id, book.id);
         }

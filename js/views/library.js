@@ -1,8 +1,10 @@
-import { html, raw, $, cover, fmtShort } from '../util.js';
-import { state, groupByCategory, matches, compareBooks, categoryName } from '../store.js';
-import { viewHeader } from '../ui.js';
+import { html, raw, $, cover, fmtShort, toast } from '../util.js';
+import { state, user, groupByCategory, matches, compareBooks, categoryName, refreshLibrary } from '../store.js';
+import { viewHeader, errMsg } from '../ui.js';
 import { setNavList } from '../navlist.js';
 import { isNewBook, newInMySeries } from '../achievements.js';
+import { removeWithUndo, addMany } from '../library-actions.js';
+import * as api from '../api.js';
 
 const LS_KEY = 'edm.showMissing';
 const VIEW_KEY = 'edm.libView';
@@ -11,6 +13,7 @@ export function renderLibrary(root) {
   let query = '';
   let showMissing = false;
   let mode = 'categories';
+  let markMode = false;   // «Marcar lo que tengo»: las casillas de las series se tocan para añadir/quitar
   try {
     showMissing = localStorage.getItem(LS_KEY) === '1';
     mode = localStorage.getItem(VIEW_KEY) === 'series' ? 'series' : 'categories';
@@ -42,10 +45,10 @@ export function renderLibrary(root) {
       list.innerHTML = html`<div class="empty">
         <div class="empty-icon" aria-hidden="true">📜</div>
         <h2>Tu biblioteca está vacía</h2>
-        <p class="muted">Escanea el código de barras de tu primera aventura o márcala desde el catálogo.</p>
+        <p class="muted">Escanea el código de barras de tus libros o, si tienes muchos, márcalos de golpe por series.</p>
         <div class="actions center">
           <a class="btn btn-primary" href="#/escanear">Escanear libro</a>
-          <a class="btn btn-ghost" href="#/catalogo">Ver catálogo</a>
+          <button type="button" class="btn btn-ghost" data-start-marking>✎ Marcar por series</button>
         </div>
       </div>`;
       return;
@@ -92,6 +95,10 @@ export function renderLibrary(root) {
       const wished = !have && state.wishlist.has(b.id);
       const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}`;
       const fresh = isNewBook(b);
+      if (markMode) {
+        return html`<button type="button" class="tile marking ${have ? 'owned' : 'missing'} ${fresh ? 'is-new' : ''}" data-mark="${b.id}"
+          aria-pressed="${have}" aria-label="${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
+      }
       return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''}" href="#/libro/${b.id}"
         title="${label}${fresh ? ' · novedad' : ''}" aria-label="${label}${fresh ? ', novedad' : ''}">${b.code ?? '?'}</a>`;
     };
@@ -115,6 +122,8 @@ export function renderLibrary(root) {
         </p>`) : ''}
         <span class="bar" role="img" aria-label="${have} de ${books.length}"><span style="width:${p}%"></span></span>
         <div class="tiles">${books.map((b) => raw(tile(b)))}</div>
+        ${markMode && missing.length ? raw(html`<button type="button" class="btn btn-sm btn-ghost mark-all" data-mark-all="${missing.map((b) => b.id).join(',')}">
+          ✓ Marcar ${seriesCode ? `toda la serie ${seriesCode}` : 'todas'} (${missing.length})</button>`) : ''}
         <p class="series-missing">${missing.length
           ? raw(html`${missingNew.length ? raw(html`Novedades que te faltan: <strong>${codes(missingNew)}</strong>${missingOld.length ? raw('<br>') : ''}`) : ''}
               ${missingOld.length ? raw(html`Te faltan: <strong>${codes(missingOld)}</strong>`) : ''}`)
@@ -125,6 +134,10 @@ export function renderLibrary(root) {
     if (!multi.length && !singles.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
     setNavList([...multi.flatMap((sr) => sr.books), ...singles].map((b) => b.id), 'Series');
     list.innerHTML = html`
+      ${markMode ? raw(html`<div class="mark-bar" role="status">
+          <span><strong>Modo marcar:</strong> toca las casillas de los libros que tienes. Toca de nuevo para quitarlos.</span>
+          <button type="button" class="btn btn-sm btn-primary" data-mark-off>Listo</button>
+        </div>`) : raw(html`<button type="button" class="btn btn-ghost btn-block mark-start" data-mark-on>✎ Marcar los libros que tengo</button>`)}
       <p class="muted small legend"><span class="tile owned sample">B1</span> lo tienes
         <span class="tile missing sample">B2</span> te falta
         ${state.wishlist.size ? raw('<span class="tile missing wished sample">B3</span> en tu lista de deseos') : ''}</p>
@@ -148,8 +161,52 @@ export function renderLibrary(root) {
     });
   }
 
+  // Modo marcar (vista por series): añadir o quitar tocando casillas, sin abrir cada ficha
+  list.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-mark-on]')) { markMode = true; draw(); return; }
+    if (e.target.closest('[data-start-marking]')) {
+      mode = 'series';
+      try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
+      root.querySelector('input[name=mode][value=series]').checked = true;
+      $('.missing-toggle', root).hidden = true;
+      markMode = true;
+      draw();
+      return;
+    }
+    if (e.target.closest('[data-mark-off]')) { markMode = false; draw(); return; }
+    const all = e.target.closest('[data-mark-all]');
+    if (all) {
+      all.disabled = true;
+      try {
+        const n = await addMany(all.dataset.markAll.split(','));
+        toast(`${n} ${n === 1 ? 'libro añadido' : 'libros añadidos'}`, 'ok');
+      } catch (err) { toast(errMsg(err), 'error'); }
+      draw();
+      return;
+    }
+    const tileBtn = e.target.closest('[data-mark]');
+    if (!tileBtn || tileBtn.disabled) return;
+    const id = tileBtn.dataset.mark;
+    tileBtn.disabled = true;
+    try {
+      if (state.library.has(id)) {
+        await removeWithUndo(id, draw);
+      } else {
+        tileBtn.classList.replace('missing', 'owned');   // respuesta inmediata
+        await api.addToLibrary(user().id, id);
+        await refreshLibrary();
+        draw();
+      }
+    } catch (err) {
+      if (err?.code === '23505') { await refreshLibrary(); draw(); return; }
+      toast(errMsg(err), 'error');
+      tileBtn.disabled = false;
+    }
+  });
+
   root.querySelectorAll('input[name=mode]').forEach((r) => r.addEventListener('change', () => {
     mode = r.value;
+    markMode = false;
     try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
     $('.missing-toggle', root).hidden = mode === 'series';
     draw();

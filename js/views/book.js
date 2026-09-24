@@ -5,6 +5,7 @@ import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { icon, ribbon } from '../icons.js';
 import { settings } from '../settings.js';
+import { removeWithUndo } from '../library-actions.js';
 import { gameInfo } from './finder.js';
 import { neighbors, onSwipe } from '../navlist.js';
 import * as api from '../api.js';
@@ -200,11 +201,8 @@ export async function renderBook(root, { id }) {
   }));
 
   $('[data-remove]', root)?.addEventListener('click', run(async () => {
-    if (!(await confirmDialog(`¿Quitar «${book.title}» de tu biblioteca? Se perderán la fecha de registro y las notas.`, { ok: 'Quitar', danger: true }))) return;
-    await api.removeFromLibrary(uid, book.id);
-    await refreshLibrary();
-    toast('Quitado de tu biblioteca');
-    rerender();
+    // Sin confirmación: el aviso ofrece «Deshacer» y recupera fecha de registro, estado y notas
+    await removeWithUndo(book.id, () => { if (location.hash === `#/libro/${book.id}`) rerender(); });
   }));
 
   $('.play-form', root)?.addEventListener('submit', run(async (e) => {

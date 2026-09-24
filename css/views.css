@@ -469,3 +469,20 @@ span.book-nav-btn { visibility: hidden; }
   background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 .news-banner b { color: var(--accent); }
+
+/* ---------- Modo marcar (vista por series) ---------- */
+.mark-start { margin: 0 0 12px; }
+.mark-bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; align-items: center; gap: 12px;
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; font: .86rem var(--font-ui);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 1px solid var(--accent);
+  box-shadow: var(--shadow);
+}
+.mark-bar span { flex: 1; }
+.tile.marking { cursor: pointer; font-family: var(--font-ui); border-width: 1.5px; }
+.tile.marking.missing { border-style: dashed; background: transparent; }
+.tile.marking:active { transform: scale(.94); }
+.tile.marking:disabled { opacity: .6; }
+.mark-all { margin-top: 12px; }
+button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
+.tile.marking.owned { border: 1.5px solid transparent; }

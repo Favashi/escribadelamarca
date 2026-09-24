@@ -269,3 +269,11 @@ details.danger-zone[open] .dz-chevron { transform: rotate(90deg); }
 .ach strong { display: block; font: 700 .88rem var(--font-ui); }
 .ach small { display: block; font: .76rem var(--font-ui); color: var(--muted); }
 .ach-level { color: var(--gold); font-weight: 800; }
+
+/* ---------- Comentarios ---------- */
+.btn-feedback { width: 100%; margin-top: 12px; }
+.kind-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.feedback-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.feedback-row.fb-new { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.feedback-row.fb-done { opacity: .6; }
+.fb-message { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .92rem; }

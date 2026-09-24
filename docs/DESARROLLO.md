@@ -154,7 +154,7 @@ update public.profiles set is_supporter = true, supporter_since = now() where em
 ## Ajustes de la app (feature flags)
 Tabla `app_settings` (clave → valor jsonb), de lectura pública y escritura solo admin, que se cambia en
 **Admin → Ajustes** sin publicar versión: `covers_enabled`, `suggestions_enabled` (también se aplica en la política RLS
-de `catalog_suggestions` con `setting_enabled()`), `donations_enabled` y `announcement` (franja de aviso general).
+de `catalog_suggestions` con `setting_enabled()`), `donations_enabled`, `feedback_enabled` (formulario de comentarios o, desactivado, enlace a los issues de GitHub; también en RLS) y `announcement` (franja de aviso general).
 La app los lee al arrancar (`js/settings.js`); si fallan, usa los valores por defecto (todo activado, sin aviso).
 Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/settings.js` y su interruptor en `FLAGS`
 (`js/views/admin.js`).

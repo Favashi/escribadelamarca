@@ -12,6 +12,7 @@ export const state = {
   people: new Map(),    // user id -> { display_name } (solo admin)
   suggestions: [],      // sugerencias de cambios: las mías (usuario) o todas (admin)
   achievements: [],     // logros guardados del usuario (user_achievements)
+  feedback: [],         // comentarios de usuarios (solo admin)
 };
 
 export const user = () => state.session?.user ?? null;
@@ -34,6 +35,7 @@ export async function loadAll() {
   state.people = new Map();
   try { state.suggestions = await api.getSuggestions(); } catch { state.suggestions = []; }
   if (profile?.is_admin) {
+    try { state.feedback = await api.getFeedback(); } catch { state.feedback = []; }
     try { state.people = new Map((await api.getPeople()).map((p) => [p.id, p])); } catch { /* RLS */ }
   }
   if (profile?.is_supporter) {
@@ -61,7 +63,8 @@ export const personName = (id) => {
 export const pendingCount = () =>
   state.catalog.filter((b) => b.status === 'pending').length
   + state.barcodes.filter((b) => b.status === 'pending').length
-  + state.suggestions.filter((s) => s.status === 'pending').length;
+  + state.suggestions.filter((s) => s.status === 'pending').length
+  + state.feedback.filter((f) => f.status === 'new').length;
 
 export async function refreshSuggestions() {
   try { state.suggestions = await api.getSuggestions(); } catch { /* sin migración aún */ }

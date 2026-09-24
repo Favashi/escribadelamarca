@@ -143,3 +143,28 @@ export const getAchievements = async () =>
 
 export const saveAchievement = async (row) =>
   ok(await supabase.from('user_achievements').upsert(row));
+
+// --- Biblioteca en bloque y deshacer ---
+export const addManyToLibrary = async (uid, catalogIds) =>
+  ok(await supabase.from('library').upsert(catalogIds.map((id) => ({ user_id: uid, catalog_id: id })),
+    { onConflict: 'user_id,catalog_id', ignoreDuplicates: true }));
+
+/** Vuelve a poner una entrada quitada, con su fecha de registro, estado, notas y repetidos originales. */
+export const restoreLibraryEntry = async (entry) =>
+  ok(await supabase.from('library').upsert({
+    user_id: entry.user_id, catalog_id: entry.catalog_id, added_at: entry.added_at,
+    condition: entry.condition ?? null, notes: entry.notes ?? null, spares: entry.spares ?? 0,
+  }));
+
+// --- Comentarios ---
+export const sendFeedback = async (fields) =>
+  ok(await supabase.from('feedback').insert(fields));
+
+export const getFeedback = async () =>
+  ok(await supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(200));
+
+export const setFeedbackStatus = async (id, status) =>
+  ok(await supabase.from('feedback').update({ status }).eq('id', id));
+
+export const deleteFeedback = async (id) =>
+  ok(await supabase.from('feedback').delete().eq('id', id));

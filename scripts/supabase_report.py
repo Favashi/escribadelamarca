@@ -41,9 +41,14 @@ def api(path, params=None):
         return json.load(res)
 
 
+def iso(dt):
+    """Fecha UTC con «Z» (la API rechaza el formato «+00:00» de isoformat())."""
+    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+
+
 def logs(sql, start, end):
     data = api(f'/v1/projects/{REF}/analytics/endpoints/logs', {
-        'sql': sql, 'iso_timestamp_start': start.isoformat(), 'iso_timestamp_end': end.isoformat()})
+        'sql': sql, 'iso_timestamp_start': iso(start), 'iso_timestamp_end': iso(end)})
     if data.get('error'):
         raise RuntimeError(f'Error en la consulta de logs: {data["error"]}')
     return data.get('result') or []
@@ -156,6 +161,7 @@ def main():
         return 0
     with_advisors = '--advisors' in sys.argv or datetime.now(timezone.utc).weekday() == 0
     problems = []
+    auth_failed = False
     for name, fn in (('logs', logs_report), ('advisors', advisors_report if with_advisors else None)):
         if not fn:
             continue
@@ -163,10 +169,12 @@ def main():
             fn()
         except (urllib.error.HTTPError, urllib.error.URLError, RuntimeError, KeyError, IndexError, ValueError) as e:
             detail = e.read().decode('utf-8', 'replace')[:300] if isinstance(e, urllib.error.HTTPError) else str(e)[:300]
+            auth_failed |= isinstance(e, urllib.error.HTTPError) and e.code in (401, 403)
             problems.append(f'{name}: {e} {detail}'.strip())
     if problems:
         telegram('⚠️ <b>No se pudo generar el informe de Supabase</b>\n' + '\n'.join(f'• <code>{esc(p)}</code>' for p in problems)
-                 + '\n¿Ha caducado el token SUPABASE_ACCESS_TOKEN?')
+                 + ('\nEl token SUPABASE_ACCESS_TOKEN no es válido o ha caducado: crea otro y actualiza el secreto en GitHub.'
+                    if auth_failed else ''))
         return 1
     return 0
 

@@ -277,3 +277,18 @@ details.danger-zone[open] .dz-chevron { transform: rotate(90deg); }
 .feedback-row.fb-new { background: color-mix(in srgb, var(--warn) 6%, transparent); }
 .feedback-row.fb-done { opacity: .6; }
 .fb-message { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .92rem; }
+
+/* ---------- Tamaño de letra (Perfil → Apariencia) ---------- */
+.setting-title { display: flex; align-items: center; gap: 8px; margin: 22px 0 10px; font: 700 .95rem var(--font-ui); }
+.text-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.text-seg span { flex-direction: column; gap: 2px; padding: 8px 4px; font-size: .78rem; text-align: center; line-height: 1.2; }
+.text-seg b { font-family: var(--font-display); line-height: 1; }
+
+/* ---------- Iconos propios en lugar de emojis ---------- */
+.feature-icon .i { width: 22px; height: 22px; color: #f3c02f; }
+.empty-icon .i { color: var(--purple); }
+.avatar-ph .i { width: 34px; height: 34px; color: var(--muted); }
+.torch { display: grid; place-items: center; }
+.torch .i { width: 22px; height: 22px; }
+.ob-help { margin: 14px 0 0; text-align: center; }
+.ob-help .link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }

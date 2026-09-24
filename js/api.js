@@ -168,3 +168,6 @@ export const setFeedbackStatus = async (id, status) =>
 
 export const deleteFeedback = async (id) =>
   ok(await supabase.from('feedback').delete().eq('id', id));
+
+/** Página «Escribas»: quienes han aceptado aparecer, con sus aportaciones aceptadas. */
+export const getScribes = async () => ok(await supabase.rpc('scribes'));

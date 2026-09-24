@@ -303,18 +303,19 @@ export function onboardingDialog() {
   return openDialog('<div class="sheet onboarding"></div>', (d, close) => {
     const box = $('.onboarding', d);
     const draw = () => {
-      const [icon, title, text] = steps[i];
+      const [art, title, text] = steps[i];
       const last = i === steps.length - 1;
       box.innerHTML = html`
         <button type="button" class="ob-close" data-v="skip" aria-label="Cerrar la bienvenida">×</button>
-        <div class="ob-art" aria-hidden="true">${raw(icon)}</div>
+        <div class="ob-art" aria-hidden="true">${raw(art)}</div>
         <h2 class="sheet-title">${title}</h2>
         <p>${text}</p>
         <div class="ob-dots" aria-label="Paso ${i + 1} de ${steps.length}">${steps.map((_, j) => raw(`<span class="${j === i ? 'on' : ''}"></span>`))}</div>
         <div class="actions">
-          ${last ? raw('<button class="btn btn-ghost" data-v="catalog">Ver el catálogo</button><button class="btn btn-primary" data-v="scan">📷 Escanear mi primer libro</button>')
+          ${last ? raw(`<button class="btn btn-ghost" data-v="catalog">Ver el catálogo</button><button class="btn btn-primary" data-v="scan">${icon('camera')} Escanear mi primer libro</button>`)
             : raw('<button class="btn btn-ghost" data-v="skip">Saltar</button><button class="btn btn-primary" data-next>Siguiente</button>')}
-        </div>`;
+        </div>
+        <p class="ob-help small"><button type="button" class="link" data-v="help">${raw(icon('help'))} ¿Dudas? Consulta la ayuda</button></p>`;
       box.querySelector('[data-next]')?.addEventListener('click', () => { i += 1; draw(); });
       box.querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => close(b.dataset.v === 'skip' ? null : b.dataset.v)));
     };
@@ -364,9 +365,9 @@ export function feedbackDialog() {
       <p class="muted small">¿Algo no funciona, echas algo en falta o tienes una idea? Lo leo todo. Se envía junto con la versión
         de la app y el tipo de dispositivo, para poder reproducir los fallos.</p>
       <div class="seg kind-seg" role="radiogroup" aria-label="Tipo">
-        <label><input type="radio" name="kind" value="fallo"><span>🐞 Un fallo</span></label>
-        <label><input type="radio" name="kind" value="idea" checked><span>💡 Una idea</span></label>
-        <label><input type="radio" name="kind" value="otro"><span>💬 Otro</span></label>
+        <label><input type="radio" name="kind" value="fallo"><span>${raw(icon('bug'))} Un fallo</span></label>
+        <label><input type="radio" name="kind" value="idea" checked><span>${raw(icon('bulb'))} Una idea</span></label>
+        <label><input type="radio" name="kind" value="otro"><span>${raw(icon('chat'))} Otro</span></label>
       </div>
       <label>Cuéntame <textarea name="message" rows="5" maxlength="2000" required
         placeholder="Qué pasó, qué esperabas, en qué pantalla…"></textarea></label>

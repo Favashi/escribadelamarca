@@ -21,7 +21,7 @@ css/themes.css                            ajustes estructurales de Pergamino y R
 js/config.js                              ← TUS CLAVES AQUÍ
 js/app.js                                 arranque, sesión, rutas
 js/{api,store,router,ui,util,isbn,scanner,auth,theme}.js
-js/views/                                 biblioteca, escanear, catálogo, ficha, perfil, mecenas
+js/views/                                 biblioteca, escanear, catálogo, ficha, perfil, mecenas, ayuda, escribas
 supabase/config.toml                      config CLI + funciones que despliega la integración GitHub
 supabase/migrations/                      esquema (tablas, RLS, triggers) y catálogo inicial
 supabase/seed.sql                         datos de prueba (solo local / ramas preview)
@@ -169,6 +169,10 @@ Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/
 - Rangos por aportaciones **aceptadas**: sugerencias validadas + códigos propuestos aprobados + libros propuestos
   aprobados. Umbrales en `RANKS` (0, 1, 5, 15, 40).
 - «Nuevo»: publicaciones con `catalog_date` (o alta en la app) de los últimos 45 días.
+- **Página «Escribas»** (`#/escribas`, `js/views/scribes.js`): opt-in con `profiles.show_in_scribes` (Perfil → Rango de
+  escriba). La función `scribes()` (`security definer`, solo `authenticated`) devuelve únicamente a quienes lo activan,
+  con el nombre abreviado («Toni R.») y sus aportaciones aceptadas, contadas igual que `contributions()`. Si cambia la
+  forma de contar en `js/achievements.js`, hay que cambiarla también en la función (migración nueva).
 
 ## Herramientas de admin para el catálogo
 - **Catálogo → filtros de calidad** (solo admin): sin verificar, códigos duplicados, sin código de barras, sin datos
@@ -194,6 +198,10 @@ Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/
 ## Estilos
 - Cada tema es un bloque de **variables** en `css/tokens.css`; lo que un tema cambia de estructura (bordes, tipografía,
   sombras) va en `css/themes.css`, que se carga el último para prevalecer.
+- **Tamaño de letra** (Perfil → Apariencia, `applyTextSize` en `js/theme.js`): cambia `--text-scale`, que escala el
+  `font-size` de `html`. Por eso los tamaños de texto van en **rem**, no en px. La barra de pestañas limita los suyos con
+  `min(… rem, … px)` para que quepa con letra grande.
+- **Iconos**: SVG propios en `js/icons.js` (`icon('nombre')`); no uses emojis en la interfaz.
 - Para un tema nuevo: añade sus variables en `tokens.css`, su bloque en `themes.css` y la entrada en `THEMES` (`js/theme.js`).
 - Estilos de una pantalla nueva → `views.css`; si se reutilizan en varias → `components.css`.
 

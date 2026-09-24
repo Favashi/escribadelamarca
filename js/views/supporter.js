@@ -1,4 +1,5 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast, download } from '../util.js';
+import { icon } from '../icons.js';
 import { state, user, isSupporter, groupByCategory, bookById, categoryName, barcodesOf, compareBooks, loadAll } from '../store.js';
 import { viewHeader } from '../ui.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
@@ -129,7 +130,7 @@ export async function renderSupporter(root, params = {}) {
 
     ${settings.donations_enabled ? raw(html`<section class="panel coffee">
       <p>¿Quieres volver a invitar a un café? Siempre se agradece.</p>
-      <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
+      <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
     </section>`) : ''}`;
 
   if (params.section) {
@@ -187,7 +188,7 @@ function renderPitch(root) {
       </ol>
       <div class="actions">
         <button class="btn btn-ghost" data-check>Ya he donado</button>
-        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Ir a Buy Me a Coffee</a>
+        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Ir a Buy Me a Coffee</a>
       </div>
     </section>`;
 

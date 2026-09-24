@@ -65,7 +65,7 @@ export async function renderBook(root, { id }) {
           ${book.price_eur ? raw(html`<dt>PVP</dt><dd>${Number(book.price_eur).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}${book.catalog_date ? ` (catálogo ${fmtShort(book.catalog_date)})` : ''}</dd>`) : ''}
           ${codes.length ? raw(html`<dt>Código de barras</dt><dd>${codes.map((c) => raw(html`<span class="barcode">${formatCode(c.code)}${c.status === 'pending' ? raw(' <span class="badge badge-warn">propuesto</span>') : ''}${admin && c.status === 'approved' && !c.verified ? raw(' <span class="badge">sin verificar</span>') : ''}</span>`))}</dd>`) : ''}
         </dl>
-        ${gameInfo(book) ? raw(html`<p class="game-info">🎲 ${gameInfo(book)}</p>`) : ''}
+        ${gameInfo(book) ? raw(html`<p class="game-info">${raw(icon('dice'))} ${gameInfo(book)}</p>`) : ''}
         ${(book.tags || []).length ? raw(html`<p class="tags">${book.tags.map((t) => raw(html`<span class="tag">${t}</span>`))}</p>`) : ''}
         ${book.summary ? raw(html`<p class="desc">${book.summary}</p>`) : ''}
         ${book.description ? raw(html`<p class="desc">${book.description}</p>`) : ''}

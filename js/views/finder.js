@@ -4,6 +4,9 @@ import { viewHeader, PERK_TAG } from '../ui.js';
 import * as api from '../api.js';
 import { track } from '../track.js';
 import { setNavList } from '../navlist.js';
+import { icon } from '../icons.js';
+
+const LAST_PICK = 'edm.surprise';
 
 const KEY = 'edm.finder2';
 const EMPTY = { scope: 'mine', text: '', level: '', players: '', duration: '', tags: [], fresh: false, nodata: false };
@@ -68,7 +71,10 @@ export async function renderFinder(root) {
         <button type="button" class="link" data-clear>Limpiar filtros</button>
       </div>
     </form>
-    <p class="finder-count muted small"></p>
+    <div class="finder-bar">
+      <p class="finder-count muted small"></p>
+      <button type="button" class="btn btn-sm btn-ghost" data-surprise>${raw(icon('shuffle'))} Sorpréndeme</button>
+    </div>
     <ul class="finder-results"></ul>
     <p class="muted small center pad">Datos de juego: <a href="https://github.com/diacritica/codexlmde" target="_blank" rel="noopener">Codex LMDE</a>.
       ¿Falta o está mal algún dato? Ábrelo y pulsa «✎ Sugerir cambios».</p>`;
@@ -76,6 +82,8 @@ export async function renderFinder(root) {
   const form = $('.finder', root);
   const list = $('.finder-results', root);
   const count = $('.finder-count', root);
+  const surprise = $('[data-surprise]', root);
+  let results = [];
 
   function draw() {
     const lvl = Number(f.level) || null;
@@ -102,6 +110,8 @@ export async function renderFinder(root) {
       return compareBooks(a, b);
     });
 
+    results = res;
+    surprise.disabled = !res.length;
     setNavList(res.map((b) => b.id), 'Buscador');
     count.textContent = `${res.length} ${res.length === 1 ? 'resultado' : 'resultados'} en ${f.scope === 'mine' ? 'tu biblioteca' : 'todo el catálogo'}`;
     list.innerHTML = res.length ? res.map((b) => {
@@ -134,6 +144,16 @@ export async function renderFinder(root) {
     save(); draw(); noteSearch();
   });
   form.addEventListener('submit', (e) => e.preventDefault());
+  // Aventura al azar entre los resultados (sin repetir la anterior si hay más de una)
+  surprise.addEventListener('click', () => {
+    let last = null;
+    try { last = sessionStorage.getItem(LAST_PICK); } catch { /* sin storage */ }
+    const pool = results.length > 1 ? results.filter((b) => b.id !== last) : results;
+    if (!pool.length) return;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    try { sessionStorage.setItem(LAST_PICK, pick.id); } catch { /* sin storage */ }
+    location.hash = `#/libro/${pick.id}`;
+  });
   list.addEventListener('click', (e) => {
     if (!e.target.closest('[data-all]')) return;
     f.scope = 'all'; save();

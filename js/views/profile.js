@@ -2,7 +2,7 @@ import { html, raw, $, toast, fmtShort } from '../util.js';
 import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
 import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog } from '../ui.js';
-import { sendFeedback } from '../api.js';
+import { sendFeedback, updateProfile } from '../api.js';
 
 const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
 import { icon, ribbon } from '../icons.js';
@@ -14,7 +14,7 @@ import { checkForUpdate, reloadApp } from '../update.js';
 import { resetLibrary, deleteMyAccount } from '../api.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import { settings } from '../settings.js';
-import { applyTheme, getTheme, THEMES } from '../theme.js';
+import { applyTheme, getTheme, THEMES, TEXT_SIZES, getTextSize, applyTextSize } from '../theme.js';
 
 export function renderProfile(root) {
   const p = state.profile ?? {};
@@ -25,7 +25,7 @@ export function renderProfile(root) {
   root.innerHTML = html`
     ${raw(viewHeader('Perfil'))}
     <section class="panel profile">
-      ${p.avatar_url ? raw(html`<img class="avatar" src="${p.avatar_url}" alt="" referrerpolicy="no-referrer">`) : raw('<div class="avatar avatar-ph" aria-hidden="true">🧙</div>')}
+      ${p.avatar_url ? raw(html`<img class="avatar" src="${p.avatar_url}" alt="" referrerpolicy="no-referrer">`) : raw(`<div class="avatar avatar-ph" aria-hidden="true">${icon('user')}</div>`)}
       <div class="profile-main">
         <h2>${p.display_name ?? email}</h2>
         <p class="muted small">${email}</p>
@@ -55,7 +55,7 @@ export function renderProfile(root) {
           <span class="hub-icon" aria-hidden="true">${icon}</span><span class="hub-title">${title}</span><span class="hub-sub">${sub}</span>
         </a>`))}
       </div>
-      ${settings.donations_enabled ? raw(html`<div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a otro café</a></div>`) : ''}
+      ${settings.donations_enabled ? raw(html`<div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a otro café</a></div>`) : ''}
     </section>`) : !settings.donations_enabled ? '' : raw(html`
     <section class="panel coffee">
       <h2>¿Te es útil la app?</h2>
@@ -63,7 +63,7 @@ export function renderProfile(root) {
         desbloqueas diario de partidas, lista de deseos compartible, intercambio, estadísticas y temas extra.</p>
       <div class="actions">
         <a class="btn btn-perk-cta" href="#/mecenas">★ Ver ventajas de Mecenas</a>
-        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
+        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
       </div>
     </section>`)}
 
@@ -75,6 +75,11 @@ export function renderProfile(root) {
       <p class="theme-sub">Temas de Mecenas ${supporter ? '' : raw('<a href="#/mecenas">¿Cómo desbloquearlos?</a>')}</p>
       <div class="theme-row two" role="radiogroup" aria-label="Temas de Mecenas">
         ${THEMES.filter((t) => t.supporter).map((t) => raw(themeOption(t, theme, !supporter)))}
+      </div>
+      <h3 class="setting-title">${raw(icon('text'))} Tamaño de letra</h3>
+      <div class="seg text-seg" role="radiogroup" aria-label="Tamaño de letra">
+        ${TEXT_SIZES.map((t) => raw(html`<label><input type="radio" name="text-size" value="${t.id}" ${getTextSize() === t.id ? 'checked' : ''}>
+          <span><b style="font-size:${t.scale * 1.15}rem" aria-hidden="true">Aa</b>${t.label}</span></label>`))}
       </div>
     </section>
 
@@ -107,12 +112,13 @@ export function renderProfile(root) {
       <h2>Acerca de</h2>
       <p class="about-version"><strong>Escriba de la Marca</strong> <span class="badge">v${APP_VERSION}</span></p>
       <div class="actions">
+        <a class="btn btn-ghost" href="#/ayuda">${raw(icon('help'))} Ayuda</a>
         <button class="btn btn-ghost" data-changelog>Novedades</button>
         <button class="btn btn-ghost" data-update>Buscar actualizaciones</button>
       </div>
       ${settings.feedback_enabled
-        ? raw('<button class="btn btn-primary btn-feedback" data-feedback>💬 Enviar comentario o informar de un fallo</button>')
-        : raw(html`<a class="btn btn-ghost btn-feedback" href="${ISSUES_URL}" target="_blank" rel="noopener">🐞 Informar de un fallo o proponer una idea en GitHub</a>
+        ? raw(`<button class="btn btn-primary btn-feedback" data-feedback>${icon('chat')} Enviar comentario o informar de un fallo</button>`)
+        : raw(html`<a class="btn btn-ghost btn-feedback" href="${ISSUES_URL}" target="_blank" rel="noopener">${raw(icon('bug'))} Informar de un fallo o proponer una idea en GitHub</a>
           <p class="muted small center">Los comentarios se gestionan en GitHub: así puedes ver si alguien ya ha informado del mismo fallo.</p>`)}
     </section>
 
@@ -121,9 +127,20 @@ export function renderProfile(root) {
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
       Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a> ·
       <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
-    <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>👋 Ver la bienvenida otra vez</button></div>`;
+    <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
+  root.querySelectorAll('input[name=text-size]').forEach((r) => r.addEventListener('change', () => applyTextSize(r.value, true)));
+  $('[data-scribes-opt]', root)?.addEventListener('change', async (e) => {
+    const on = e.target.checked;
+    e.target.disabled = true;
+    try {
+      await updateProfile(user().id, { show_in_scribes: on });
+      state.profile.show_in_scribes = on;
+      toast(on ? 'Tu nombre aparecerá en la página de Escribas' : 'Ya no apareces en la página de Escribas', 'ok');
+    } catch (err) { e.target.checked = !on; toast(errMsg(err), 'error'); }
+    e.target.disabled = false;
+  });
   $('[data-reset]', root).onclick = async (e) => {
     const n = state.library.size;
     const ok = await confirmDialog(
@@ -170,6 +187,7 @@ export function renderProfile(root) {
     const choice = await onboardingDialog();
     if (choice === 'scan') location.hash = '#/escanear';
     if (choice === 'catalog') location.hash = '#/catalogo';
+    if (choice === 'help') location.hash = '#/ayuda';
   };
   $('[data-update]', root).onclick = async (e) => {
     e.target.disabled = true;
@@ -225,6 +243,11 @@ function rankCard() {
       : 'Has alcanzado el rango más alto. ¡Gracias por tanto!'}
       Sube proponiendo códigos al escanear, sugiriendo correcciones o proponiendo libros que falten.</p>
     ${c.total ? raw(html`<p class="small rank-detail">${c.suggestions} sugerencias · ${c.codes} códigos · ${c.books} libros aceptados</p>`) : ''}
+    <div class="scribes-opt">
+      <label class="switch"><input type="checkbox" data-scribes-opt ${state.profile?.show_in_scribes ? 'checked' : ''}>
+        <span>Mostrar mi nombre en la página de Escribas</span></label>
+      <a href="#/escribas">Ver los Escribas ${raw(icon('chevron'))}</a>
+    </div>
   </section>`;
 }
 

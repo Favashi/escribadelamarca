@@ -30,7 +30,7 @@
   border-radius: 12px;
   color: var(--muted);
   text-decoration: none;
-  font: 600 .72rem var(--font-ui);
+  font: 600 min(.72rem, 13px) var(--font-ui);   /* la barra no crece con la letra grande: no cabría */
   position: relative;
 }
 .tabbar svg { width: 24px; height: 24px; fill: currentColor; }
@@ -137,11 +137,11 @@ body.landing .toasts { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 
 /* ---------- Revisión (admin) ---------- */
 .tabbar.has-admin { grid-template-columns: repeat(6, 1fr); }
-.tabbar.has-admin a span { font-size: .64rem; }
+.tabbar.has-admin a span { font-size: min(.64rem, 11.5px); }
 .tab-badge {
   position: absolute; top: 2px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 99px; background: var(--accent); color: var(--accent-ink);
-  font: 700 .66rem/18px var(--font-ui); text-align: center;
+  font: 700 min(.66rem, 11px)/18px var(--font-ui); text-align: center;
 }
 
 /* ---------- Marcas de Mecenas y de administración ---------- */

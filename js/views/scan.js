@@ -1,4 +1,5 @@
 import { html, raw, $, cover, fmtDate, toast } from '../util.js';
+import { icon } from '../icons.js';
 import {
   state, user, isAdmin, refreshCatalog, refreshLibrary,
   booksForBarcode, booksForPubCode, barcodesOf, matches, compareBooks,
@@ -54,7 +55,7 @@ const VERIFY_KEY = 'edm.verifyMode';
       <video playsinline muted></video>
       <div class="scan-frame" aria-hidden="true"><span></span></div>
       <div class="scan-status" role="status">Iniciando cámara…</div>
-      <button class="btn-icon torch" hidden aria-label="Linterna" title="Linterna">🔦</button>
+      <button class="btn-icon torch" hidden aria-label="Linterna" title="Linterna">${raw(icon('torch'))}</button>
       <button class="btn btn-primary cam-retry" hidden>Activar cámara</button>
     </div>
     <form class="manual" autocomplete="off">

@@ -1,4 +1,5 @@
 import { isConfigured } from './supabase.js';
+import { icon } from './icons.js';
 import { getSession, onAuthChange, signInWithGoogle } from './auth.js';
 import { state, loadAll, isSupporter } from './store.js';
 import { route, start, resolve } from './router.js';
@@ -6,7 +7,7 @@ import { html, raw, $, $$, toast } from './util.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from './config.js';
 import { settings, loadSettings } from './settings.js';
 import { renderAnnouncement } from './announcement.js';
-import { restoreTheme } from './theme.js';
+import { restoreTheme, applyTextSize, getTextSize } from './theme.js';
 import { renderLibrary } from './views/library.js';
 import { renderScan } from './views/scan.js';
 import { renderCatalog } from './views/catalog.js';
@@ -17,6 +18,8 @@ import { renderReview } from './views/review.js';
 import { renderFinder } from './views/finder.js';
 import { renderPublicWishlist } from './views/wishlist-public.js';
 import { renderAdmin } from './views/admin.js';
+import { renderHelp } from './views/help.js';
+import { renderScribes } from './views/scribes.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
 import { trackOpen } from './track.js';
@@ -27,7 +30,8 @@ const nav = $('#nav');
 
 function setActiveNav() {
   const path = location.hash.slice(1) || '/biblioteca';
-  const section = path.startsWith('/revision') ? '/admin' : path;
+  const section = path.startsWith('/revision') ? '/admin'
+    : /^\/(ayuda|escribas)/.test(path) ? '/perfil' : path;
   $$('#nav a').forEach((a) => a.classList.toggle('active', section.startsWith(a.getAttribute('href').slice(1))));
   if (state.session) updateAdminBadge();
 }
@@ -87,25 +91,25 @@ function renderLanding() {
 
     <section class="features">
       <article>
-        <span class="feature-icon" aria-hidden="true">📚</span>
+        <span class="feature-icon" aria-hidden="true">${raw(icon('books'))}</span>
         <h2>Toda la Marca, ordenada</h2>
         <p>Más de 100 publicaciones catalogadas por serie y categoría: módulos B, X, C, Gazetteer, Xorandor…
           Con el recuento de lo que tienes y lo que te falta.</p>
       </article>
       <article>
-        <span class="feature-icon" aria-hidden="true">📷</span>
+        <span class="feature-icon" aria-hidden="true">${raw(icon('camera'))}</span>
         <h2>Escanea y listo</h2>
         <p>Enfoca el código de barras: si ya lo tienes te dice desde cuándo; si no, lo añades con un toque.
           ¿Un módulo antiguo sin código? Escribe el de la portada (B1, X2…).</p>
       </article>
       <article>
-        <span class="feature-icon" aria-hidden="true">☁️</span>
+        <span class="feature-icon" aria-hidden="true">${raw(icon('cloud'))}</span>
         <h2>En todos tus dispositivos</h2>
         <p>Tu colección se guarda en tu cuenta y se sincroniza entre el móvil y el ordenador.
           Instálala en la pantalla de inicio como una app más.</p>
       </article>
       <article>
-        <span class="feature-icon" aria-hidden="true">🤝</span>
+        <span class="feature-icon" aria-hidden="true">${raw(icon('people'))}</span>
         <h2>Catálogo de la comunidad</h2>
         <p>¿Falta un libro o un código? Proponlo desde la app y, tras revisarlo, lo tendrán todos.</p>
       </article>
@@ -115,7 +119,7 @@ function renderLanding() {
       <h2>Gratis, y con extras para Mecenas</h2>
       <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
         desbloqueas el diario de partidas, la lista de deseos compartible, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
-      <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">☕ Invítame a un café</a>
+      <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
     </section>`) : ''}
 
     <section class="landing-cta">
@@ -218,6 +222,7 @@ function maybeOnboard() {
     try { localStorage.setItem('edm.onboarded', '1'); } catch { /* sin storage */ }
     if (choice === 'scan') location.hash = '#/escanear';
     if (choice === 'catalog') location.hash = '#/catalogo';
+    if (choice === 'help') location.hash = '#/ayuda';
   }, 400);
 }
 
@@ -238,9 +243,12 @@ route('/revision', mount(renderReview));
 route('/buscar', mount(renderFinder));
 route('/admin', mount(renderAdmin));
 route('/admin/:section', mount(renderAdmin));
+route('/ayuda', mount(renderHelp));
+route('/escribas', mount(renderScribes));
 
 async function boot() {
   restoreTheme(false);
+  applyTextSize(getTextSize());
   if (!isConfigured) return renderSetup();
   await loadSettings();
   renderAnnouncement();

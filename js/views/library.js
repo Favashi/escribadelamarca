@@ -1,4 +1,5 @@
 import { html, raw, $, cover, fmtShort, toast } from '../util.js';
+import { icon } from '../icons.js';
 import { state, user, groupByCategory, matches, compareBooks, categoryName, refreshLibrary } from '../store.js';
 import { viewHeader, errMsg } from '../ui.js';
 import { setNavList } from '../navlist.js';
@@ -8,15 +9,23 @@ import * as api from '../api.js';
 
 const LS_KEY = 'edm.showMissing';
 const VIEW_KEY = 'edm.libView';
+const SORT_KEY = 'edm.libSort';
+const SORTS = [
+  { id: 'code', label: 'Serie y número' },
+  { id: 'recent', label: 'Añadidos recientemente' },
+  { id: 'title', label: 'Título (A–Z)' },
+];
 
 export function renderLibrary(root) {
   let query = '';
   let showMissing = false;
   let mode = 'categories';
   let markMode = false;   // «Marcar lo que tengo»: las casillas de las series se tocan para añadir/quitar
+  let sort = 'code';
   try {
     showMissing = localStorage.getItem(LS_KEY) === '1';
     mode = localStorage.getItem(VIEW_KEY) === 'series' ? 'series' : 'categories';
+    sort = SORTS.some((o) => o.id === localStorage.getItem(SORT_KEY)) ? localStorage.getItem(SORT_KEY) : 'code';
   } catch { /* sin storage */ }
 
   const owned = state.catalog.filter((b) => state.library.has(b.id));
@@ -30,6 +39,9 @@ export function renderLibrary(root) {
     </div>
     <div class="toolbar">
       <input type="search" class="search" placeholder="Buscar título, código o autor…" aria-label="Buscar">
+      <label class="lib-sort" ${mode === 'series' ? 'hidden' : ''}><span>Ordenar por</span>
+        <select name="sort">${SORTS.map((o) => raw(html`<option value="${o.id}" ${sort === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
+      </label>
       <label class="switch missing-toggle" ${mode === 'series' ? 'hidden' : ''}><input type="checkbox" ${showMissing ? 'checked' : ''}> <span>Ver los que me faltan</span></label>
     </div>
     <div class="news-slot"></div>
@@ -43,7 +55,7 @@ export function renderLibrary(root) {
 
     if (!owned.length && !showMissing) {
       list.innerHTML = html`<div class="empty">
-        <div class="empty-icon" aria-hidden="true">📜</div>
+        <div class="empty-icon" aria-hidden="true">${raw(icon('scroll'))}</div>
         <h2>Tu biblioteca está vacía</h2>
         <p class="muted">Escanea el código de barras de tus libros o, si tienes muchos, márcalos de golpe por series.</p>
         <div class="actions center">
@@ -54,8 +66,33 @@ export function renderLibrary(root) {
       return;
     }
 
+    if (!pool.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
+
+    const card = (b) => {
+      const entry = state.library.get(b.id);
+      return raw(html`<a class="card ${entry ? '' : 'missing'}" href="#/libro/${b.id}">
+        ${raw(cover(b))}
+        <span class="card-title">${b.title}</span>
+        <span class="card-meta">${b.code ? `${b.code} · ` : ''}${entry ? fmtShort(entry.added_at) : 'No lo tengo'}</span>
+      </a>`);
+    };
+
+    // Por fecha o por título: una sola lista, sin agrupar por categoría (lo que falta, al final)
+    if (sort !== 'code') {
+      const added = (b) => state.library.get(b.id)?.added_at ?? '';
+      const books = [...pool].sort(sort === 'recent'
+        ? (a, z) => String(added(z)).localeCompare(String(added(a))) || compareBooks(a, z)
+        : (a, z) => (state.library.has(z.id) - state.library.has(a.id)) || a.title.localeCompare(z.title, 'es'));
+      setNavList(books.map((b) => b.id), 'Mi biblioteca');
+      const title = SORTS.find((o) => o.id === sort).label;
+      list.innerHTML = html`<section class="group flat">
+        <h2 class="group-flat-title"><span>${title}</span><span class="count">${books.filter((b) => state.library.has(b.id)).length}</span></h2>
+        <div class="grid">${books.map(card)}</div>
+      </section>`;
+      return;
+    }
+
     const groups = groupByCategory(pool).filter((g) => g.books.length);
-    if (!groups.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
     setNavList(groups.flatMap((g) => g.books.map((b) => b.id)), 'Mi biblioteca');
 
     list.innerHTML = groups.map((g) => {
@@ -63,16 +100,7 @@ export function renderLibrary(root) {
       const have = owned.filter((b) => b.category_id === g.category.id).length;
       return html`<details class="group" open>
         <summary><span>${g.category.name}</span><span class="count">${have}${total ? ` / ${total}` : ''}</span></summary>
-        <div class="grid">
-          ${g.books.map((b) => {
-            const entry = state.library.get(b.id);
-            return raw(html`<a class="card ${entry ? '' : 'missing'}" href="#/libro/${b.id}">
-              ${raw(cover(b))}
-              <span class="card-title">${b.title}</span>
-              <span class="card-meta">${b.code ? `${b.code} · ` : ''}${entry ? fmtShort(entry.added_at) : 'No lo tengo'}</span>
-            </a>`);
-          })}
-        </div>
+        <div class="grid">${g.books.map(card)}</div>
       </details>`;
     }).join('');
   }
@@ -169,6 +197,7 @@ export function renderLibrary(root) {
       try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
       root.querySelector('input[name=mode][value=series]').checked = true;
       $('.missing-toggle', root).hidden = true;
+      $('.lib-sort', root).hidden = true;
       markMode = true;
       draw();
       return;
@@ -209,8 +238,14 @@ export function renderLibrary(root) {
     markMode = false;
     try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
     $('.missing-toggle', root).hidden = mode === 'series';
+    $('.lib-sort', root).hidden = mode === 'series';
     draw();
   }));
+  $('.lib-sort select', root).addEventListener('change', (e) => {
+    sort = e.target.value;
+    try { localStorage.setItem(SORT_KEY, sort); } catch { /* sin storage */ }
+    draw();
+  });
   $('.search', root).addEventListener('input', (e) => { query = e.target.value.trim(); draw(); });
   $('.switch input', root).addEventListener('change', (e) => {
     showMissing = e.target.checked;

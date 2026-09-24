@@ -1,4 +1,5 @@
 import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
+import { icon } from '../icons.js';
 import { state, isAdmin, pendingCount, loadAll, personName } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
 import { viewHeader, confirmDialog, errMsg } from '../ui.js';
@@ -282,7 +283,7 @@ function renderSettings(body) {
   });
 }
 
-const KIND = { fallo: '🐞 Fallo', idea: '💡 Idea', otro: '💬 Otro' };
+const KIND = { fallo: `${icon('bug')} Fallo`, idea: `${icon('bulb')} Idea`, otro: `${icon('chat')} Otro` };
 const FB_STATUS = { new: 'Nuevo', read: 'Leído', done: 'Resuelto' };
 
 /** Comentarios de los usuarios: nuevos primero; marcar como leído / resuelto o borrar. */
@@ -294,7 +295,7 @@ async function renderFeedback(body) {
       || String(b.created_at).localeCompare(String(a.created_at)));
     body.innerHTML = rows.length ? html`<ul class="user-list">${rows.map((f) => raw(html`<li class="feedback-row fb-${f.status}" data-fb="${f.id}">
       <div class="user-info">
-        <strong>${KIND[f.kind] || f.kind} <span class="badge ${f.status === 'new' ? 'badge-warn' : ''}">${FB_STATUS[f.status]}</span></strong>
+        <strong>${KIND[f.kind] ? raw(KIND[f.kind]) : f.kind} <span class="badge ${f.status === 'new' ? 'badge-warn' : ''}">${FB_STATUS[f.status]}</span></strong>
         <p class="fb-message">${f.message}</p>
         <small>${f.user_id ? personName(f.user_id) : 'usuario borrado'} · ${fmtDate(f.created_at)} · v${f.app_version || '?'} · ${device(f.user_agent)}</small>
       </div>

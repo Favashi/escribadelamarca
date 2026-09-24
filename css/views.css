@@ -163,6 +163,8 @@ body.landing {
 .features h2 { font: 700 1.02rem var(--font-display); margin: 10px 0 6px; color: #fbf5ea; }
 .features p { margin: 0; font-size: .95rem; color: rgb(241 231 243 / .78); }
 .feature-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: rgb(243 192 47 / .16); font-size: 1.25rem; }
+/* Widget de Buy Me a Coffee: solo en la portada */
+body:not(.landing) [id^="bmc-"] { display: none !important; }
 body.landing .landing-panel {
   border: 1px solid rgb(244 236 221 / .18); border-radius: 8px; padding: 22px; margin: 24px 0; text-align: center;
   background: rgb(255 221 0 / .06); color: #f1e7f3;

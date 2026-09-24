@@ -3,9 +3,16 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.6.1';
+export const APP_VERSION = '1.6.2';
 
 export const RELEASES = [
+  {
+    version: '1.6.2',
+    date: '2026-09-24',
+    notes: [
+      'La portada tiene un botón flotante para invitarme a un café. Política de privacidad actualizada: ese botón se carga desde Buy Me a Coffee (solo en la portada, no dentro de la app).',
+    ],
+  },
   {
     version: '1.6.1',
     date: '2026-09-24',

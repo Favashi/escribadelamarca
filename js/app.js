@@ -143,6 +143,7 @@ function renderLanding() {
       toast('Tu cuenta y todos tus datos se han eliminado.', 'ok');
     }
   } catch { /* sin storage */ }
+  showCoffeeWidget();
   view.querySelectorAll('[data-login]').forEach((btn) => (btn.onclick = async () => {
     view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = true));
     try { await signInWithGoogle(); } catch (err) {
@@ -150,6 +151,21 @@ function renderLanding() {
       view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = false));
     }
   }));
+}
+
+// Botón flotante de Buy Me a Coffee: solo en la portada (sin sesión) y con las donaciones activadas.
+// Se carga una vez; dentro de la app lo oculta el CSS (body sin .landing).
+function showCoffeeWidget() {
+  if (!settings.donations_enabled || document.querySelector('script[data-name="BMC-Widget"]')) return;
+  const s = document.createElement('script');
+  Object.assign(s.dataset, {
+    name: 'BMC-Widget', cfasync: 'false', id: 'toniruiz', description: '¡Invítame a un café!', message: '',
+    color: '#FFDD00', position: 'Right', x_margin: '18', y_margin: '18',
+  });
+  s.src = 'https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js';
+  // El widget se monta al recibir DOMContentLoaded, que ya pasó: se vuelve a lanzar cuando carga
+  s.onload = () => window.dispatchEvent(new Event('DOMContentLoaded'));
+  document.body.append(s);
 }
 
 // Banner de OSR Manager con el estilo de su web (tema Fósforo Verde, franja y marco doble).

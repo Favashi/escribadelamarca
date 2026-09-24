@@ -81,6 +81,16 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           <label>Etiquetas <input name="tags" value="${(initial.tags || []).join(', ')}" placeholder="Dungeon, Exploración"></label>
         </div>
       </fieldset>
+      <fieldset class="game-fields">
+        <legend>Ficha editorial</legend>
+        <div class="row2">
+          <label>Fecha de publicación <input name="catalog_date" type="date" value="${initial.catalog_date ?? ''}"></label>
+          <label>PVP (€) <input name="price_eur" inputmode="decimal" value="${initial.price_eur != null ? String(initial.price_eur).replace('.', ',') : ''}" placeholder="12,95"></label>
+        </div>
+        <label>Formato <input name="binding" maxlength="80" value="${initial.binding ?? ''}" placeholder="Grapado, tapa blanda, PDF…"></label>
+        <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${initial.summary ?? ''}</textarea></label>
+        <p class="muted small">La fecha de publicación decide cuándo sale como «Nuevo» (45 días).</p>
+      </fieldset>
       <label>URL de portada
         <input name="cover_url" type="url" value="${initial.cover_url ?? ''}" placeholder="https://…">
       </label>
@@ -106,6 +116,8 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
         code = normalizeCode(f.barcode);
         if (!code) return showErr('El código de barras no es válido (revisa los dígitos).');
       }
+      const price = f.price_eur.trim() ? Number(f.price_eur.trim().replace(',', '.')) : null;
+      if (price !== null && !(price >= 0 && price < 10000)) return showErr('El PVP no es válido (ej. 12,95).');
       const pubCode = f.code.trim().toUpperCase();
       const m = pubCode.match(/^([A-Z]+)(\d*)$/);
       close({
@@ -123,6 +135,10 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           tags: [...new Set(f.tags.split(',').map((t) => t.trim()).filter(Boolean))],
           cover_url: f.cover_url.trim() || null,
           description: f.description.trim() || null,
+          catalog_date: f.catalog_date || null,
+          price_eur: price,
+          binding: f.binding.trim() || null,
+          summary: f.summary.trim() || null,
         },
         barcode: code,
       });
@@ -190,6 +206,7 @@ export const FIELD_LABELS = {
   min_level: 'Nivel mínimo', max_level: 'Nivel máximo', min_players: 'Jugadores mín.', max_players: 'Jugadores máx.',
   sessions: 'Sesiones', tags: 'Etiquetas', summary: 'Resumen', description: 'Descripción', cover_url: 'Portada',
   status: 'Estado', verified: 'Verificado', price_eur: 'PVP', kind: 'Tipo', binding: 'Formato',
+  catalog_date: 'Fecha de publicación',
 };
 const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary'];
 const INT_FIELDS = new Set(['min_level', 'max_level', 'min_players', 'max_players', 'sessions']);

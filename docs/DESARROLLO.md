@@ -26,8 +26,8 @@ supabase/config.toml                      config CLI + funciones que despliega l
 supabase/migrations/                      esquema (tablas, RLS, triggers) y catálogo inicial
 supabase/seed.sql                         datos de prueba (solo local / ramas preview)
 supabase/functions/bmc-webhook/           Edge Function para Buy Me a Coffee
-data/catalogo_marca_del_este.csv          catálogo fuente (Sombra + Tesoros de la Marca + Codex LMDE)
-scripts/catalog_sync.py                   CSV → migración SQL de sincronización
+scripts/                                  monitorización (health_check.py, supabase_report.py)
+tests/, supabase/tests/                   pruebas (Playwright y pgTAP)
 ```
 
 ## Puesta en marcha
@@ -101,24 +101,26 @@ Como admin puedes crear/editar/borrar libros, aprobar propuestas (libros y códi
 
 ## Catálogo
 
-El catálogo sale de `data/catalogo_marca_del_este.csv` (103 publicaciones), elaborado a partir de:
-- [Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM): título, autor, clave interna, formato, páginas, «ISBN» publicado, precio, fecha.
-- [Tesoros de la Marca](https://tesorosdelamarca.com/): SKU `ALME` + código de publicación.
-- [Codex LMDE](https://github.com/diacritica/codexlmde): códigos históricos (B19, C4, G3, H1…).
+**La base de datos es la única fuente de verdad del catálogo** y se mantiene desde la app. No hay ningún CSV ni
+script de sincronización: el catálogo inicial (103 publicaciones) se cargó en las migraciones de septiembre de 2026 a
+partir de un CSV elaborado cruzando [Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM),
+[Tesoros de la Marca](https://tesorosdelamarca.com/) y el [Codex LMDE](https://github.com/diacritica/codexlmde); ese CSV
+y sus scripts (`catalog_sync.py`, `catalog_export.py`, `codex_fetch.py`) se retiraron (siguen en el historial de git).
+
+Cómo se mantiene:
+- **Novedades**: el admin las da de alta en Catálogo → «Nuevo libro» (con la **fecha de publicación**, que decide cuándo
+  sale como «Nuevo»), o llegan solas cuando alguien escanea un código desconocido o propone un libro (Revisión).
+- **Correcciones**: el admin edita la ficha (datos de juego y ficha editorial: fecha, PVP, formato, resumen); los usuarios
+  sugieren cambios desde la ficha y el admin los valida en Revisión.
+- **Códigos de barras**: se proponen al escanear y se verifican con el modo «verificar estantería».
+- **Copia**: la copia semanal cifrada (`backup.yml`) incluye todo el catálogo y su historial.
 
 Cómo identifica la app un libro:
 1. **Código de barras** (tabla `catalog_barcodes`). Un libro puede tener varios y, por errores de las fuentes,
    un código puede estar en varios libros: la app deja elegir. Los importados de Sombra están *sin verificar*.
 2. **Código de publicación** (B19, G0, CR…) escrito en la caja del escáner, para libros sin código de barras.
+   La serie y el número se calculan solos a partir de él (B12 → serie B, número 12).
 3. Si no se encuentra, el usuario elige el libro en una lista (código **propuesto**) o propone un libro nuevo.
-
-Datos de juego (buscador de aventuras): `python3 scripts/codex_fetch.py` descarga las fichas del Codex LMDE a
-`data/codex_modulos.csv` (niveles, personajes, sesiones, etiquetas, resumen). `catalog_sync.py` los cruza con el
-catálogo por código de publicación; solo sobrescribe un dato si el Codex lo trae, para respetar lo editado por el admin.
-
-Para actualizarlo: edita el CSV (y/o vuelve a ejecutar `codex_fetch.py`), ejecuta `python3 scripts/catalog_sync.py`
-y haz commit de la migración generada. El script numera la migración después de la última existente.
-Reglas del script: documentadas en la cabecera de `scripts/catalog_sync.py`.
 
 ## Cambios en la base de datos
 - **Nunca edites una migración ya aplicada.** Crea una nueva: `supabase migration new descripcion` (o a mano, `supabase/migrations/AAAAMMDDHHMMSS_descripcion.sql`).
@@ -176,15 +178,9 @@ Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/
 
 ## Herramientas de admin para el catálogo
 - **Catálogo → filtros de calidad** (solo admin): sin verificar, códigos duplicados, sin código de barras, sin datos
-  de juego y editados en la app, cada uno con su recuento.
+  de juego, cada uno con su recuento.
 - **Escáner → modo «verificar estantería»**: cada código que coincide con un único libro se marca verificado solo; si
   un código está en varios libros, al elegir el correcto se ofrece quitarlo de los demás. Registro de la sesión debajo.
-- **`scripts/catalog_export.py`** (app → CSV): copia al CSV fuente los campos corregidos en la app (título, autor,
-  páginas, código) y el código de barras aprobado/verificado; lo que no cabe en el CSV (libros creados en la app, datos
-  de juego corregidos) va a `data/correcciones_app.csv` (ignorado por git). Necesita la clave *service_role* solo como
-  variable de entorno: `SUPABASE_SERVICE_ROLE_KEY=... python3 scripts/catalog_export.py --dry-run`.
-- `catalog_sync.py` no vuelve a añadir los códigos que el admin quitó desde la app (lo consulta en `catalog_history`).
-- Flujo recomendado: verificar en la app → `catalog_export.py` → revisar diff → commit → `catalog_sync.py` si hace falta.
 
 ## Historial y sugerencias
 - `catalog_history` guarda cada alta, cambio y borrado de libros y códigos (versión anterior y nueva, quién y cuándo),
@@ -192,8 +188,6 @@ Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/
   (`admin_restore_version`); la restauración también queda registrada.
 - `catalog_suggestions`: los usuarios proponen cambios (título, código, autor, páginas, datos de juego, resumen) con una
   nota. El admin los ve en Revisión con el antes/después y los valida (`admin_apply_suggestion`) o rechaza.
-- `catalog.locked_fields`: campos editados desde la app. `catalog_sync.py` no los sobrescribe con el CSV, para que una
-  corrección validada no se pierda en la siguiente sincronización. Pásalos al CSV cuando actualices la fuente.
 
 ## Estilos
 - Cada tema es un bloque de **variables** en `css/tokens.css`; lo que un tema cambia de estructura (bordes, tipografía,

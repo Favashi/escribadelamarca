@@ -53,10 +53,12 @@ export const test = base.extend({
 
   /** Opciones del usuario de cada test (se pueden cambiar con test.use). */
   onboarded: [true, { option: true }],
+  admin: [false, { option: true }],
 
   /** Usuario nuevo con la sesión iniciada; `onboarded` salta la bienvenida. */
-  account: async ({ page, onboarded }, use) => {
+  account: async ({ page, onboarded, admin }, use) => {
     const { user, session } = await newUserSession('Prueba E2E');
+    if (admin) await api(`/rest/v1/profiles?id=eq.${user.id}`, { method: 'PATCH', body: { is_admin: true } });
     const storageKey = `sb-${new URL(SB.url).hostname.split('.')[0]}-auth-token`;
     await page.addInitScript(([key, value, skip]) => {
       if (sessionStorage.getItem('e2e.init')) return;   // solo la primera carga: luego manda la app

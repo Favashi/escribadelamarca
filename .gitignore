@@ -10,7 +10,6 @@ backup*.tar.gz
 backup*.gpg
 backup*.zip
 *.dump
-data/correcciones_app.csv
 
 # Tests
 node_modules/

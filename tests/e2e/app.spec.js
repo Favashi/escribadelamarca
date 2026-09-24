@@ -89,3 +89,23 @@ test('un error de JavaScript llega a client_errors', async ({ page, account }) =
     `/rest/v1/client_errors?user_id=eq.${account.user.id}&select=kind,message,page,app_version`)), { timeout: 10_000 })
     .toEqual([expect.objectContaining({ kind: 'error', message: 'Uncaught Error: e2e: error de prueba', page: '#/biblioteca' })]);
 });
+
+test.describe('admin', () => {
+  test.use({ admin: true });
+
+  test('edita la ficha editorial de un libro (fecha de publicación y PVP)', async ({ page, account }) => {
+    const id = await bookId('ref=eq.test:T1');
+    await page.goto(`/#/libro/${id}`);
+    await page.getByRole('button', { name: 'Editar', exact: true }).click();
+    const form = page.locator('#dialog form');
+    await form.getByLabel('Fecha de publicación').fill('2026-09-01');
+    await form.getByLabel('PVP (€)').fill('12,95');
+    await form.getByLabel('Formato').fill('Grapado');
+    await form.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Libro actualizado')).toBeVisible();
+    const [book] = await api(`/rest/v1/catalog?id=eq.${id}&select=catalog_date,price_eur,binding`);
+    expect(book).toEqual({ catalog_date: '2026-09-01', price_eur: 12.95, binding: 'Grapado' });
+    // Deja el libro de prueba como estaba para los demás tests
+    await api(`/rest/v1/catalog?id=eq.${id}`, { method: 'PATCH', body: { catalog_date: null, price_eur: null, binding: null } });
+  });
+});

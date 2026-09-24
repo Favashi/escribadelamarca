@@ -107,14 +107,14 @@ Las aportaciones ayudan a pagar el servidor y el tiempo dedicado a mejorar la ap
 
 ## 🗂️ De dónde salen los datos
 
-El catálogo se ha construido a partir de fuentes públicas:
+El catálogo inicial se construyó a partir de fuentes públicas y desde entonces se mantiene en la propia app, con la ayuda de la comunidad:
 
 | Fuente | Qué aporta |
 |---|---|
 | [Distribuciones Sombra](https://dbsombra.com/index.asp?cod=12LM) | Título, autor, formato, páginas, códigos de barras, precio y fecha de catálogo. |
 | [Codex LMDE](https://github.com/diacritica/codexlmde) | Códigos históricos (B19, C4, H1…) y datos de juego: niveles, personajes, sesiones, etiquetas y resúmenes. |
 | [Tesoros de la Marca](https://tesorosdelamarca.com/) | Referencias (SKU) de tienda. |
-| **La comunidad** | Códigos verificados escaneando ejemplares reales y correcciones validadas. |
+| **La comunidad** | Novedades, códigos verificados escaneando ejemplares reales y correcciones validadas. |
 
 ¿Ves un dato mal? Abre el libro en la app y pulsa **«✎ Sugerir cambios»**.
 
@@ -164,8 +164,8 @@ js/                                       lógica de la app (vistas en js/views/
 assets/                                   iconos y tipografías
 supabase/migrations/                      esquema de la base de datos (versionado)
 supabase/functions/                       Edge Functions
-data/                                     CSV fuente del catálogo y datos del Codex
-scripts/                                  sincronización del catálogo (CSV ⇄ base de datos)
+scripts/                                  monitorización (estado de la app e informe de Supabase)
+tests/, supabase/tests/                   pruebas del flujo principal (Playwright) y de la base de datos (pgTAP)
 docs/DESARROLLO.md                        guía técnica
 ```
 </details>

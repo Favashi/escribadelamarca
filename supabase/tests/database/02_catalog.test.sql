@@ -2,7 +2,7 @@
 -- Interruptores de Admin → Ajustes (sugerencias y comentarios) respetados por RLS.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(33);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -97,6 +97,9 @@ select is((select title from public.catalog where id = 'b0000000-0000-0000-0000-
   'el libro aprobado sigue intacto tras los intentos del usuario');
 select is((select value from public.app_settings where key = 'donations_enabled'), 'true'::jsonb,
   'el ajuste sigue intacto tras el intento del usuario');
+select isnt_empty($$ select 1 from public.catalog_history where catalog_id = 'b0000000-0000-0000-0000-00000000000b' and op = 'update'
+  and changed_by = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' $$, 'el historial registra la aprobación del admin');
+select hasnt_column('public', 'catalog', 'locked_fields', 'sin CSV no hace falta proteger campos (locked_fields retirado)');
 
 select * from finish();
 rollback;

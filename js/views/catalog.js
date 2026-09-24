@@ -12,7 +12,6 @@ const DATA_FILTERS = [
   ['duplicates', 'Códigos duplicados', (b, c) => c.codesOf(b.id).some((x) => c.dupCodes.has(x.code))],
   ['nobarcode', 'Sin código de barras', (b, c) => !c.codesOf(b.id).length],
   ['nogame', 'Sin datos de juego', (b) => !(b.min_level || b.max_level || b.min_players || b.sessions || (b.tags && b.tags.length))],
-  ['locked', 'Editados en la app', (b) => (b.locked_fields || []).length > 0],
 ];
 
 function dataContext() {

@@ -5,7 +5,8 @@ Lo ejecuta .github/workflows/health.yml cada 15 minutos. Solo avisa cuando algo 
 siga caído y cuando se recupera. El estado anterior se guarda en .health/state.json (caché de GitHub Actions).
 Sin dependencias: solo la biblioteca estándar de Python.
 
-Variables de entorno: TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID (opcionales; sin ellas solo informa en el log)
+Variables de entorno: TELEGRAM_BOT_TOKEN y TELEGRAM_MONITOR_CHAT_ID o, si no hay, TELEGRAM_CHAT_ID
+(opcionales; sin ellas solo informa en el log)
 y GITHUB_STEP_SUMMARY (la pone GitHub).
 """
 import json
@@ -75,7 +76,9 @@ def run_checks():
 
 
 def telegram(text):
-    token, chat = os.environ.get('TELEGRAM_BOT_TOKEN'), os.environ.get('TELEGRAM_CHAT_ID')
+    # Canal de monitorización; si no está configurado, el chat de siempre
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    chat = os.environ.get('TELEGRAM_MONITOR_CHAT_ID') or os.environ.get('TELEGRAM_CHAT_ID')
     if not token or not chat:
         print('Sin secretos de Telegram: no se avisa.')
         return

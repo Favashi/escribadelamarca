@@ -239,6 +239,16 @@ Usan `pg_net` para llamar a la API de Telegram; el token vive cifrado en **Vault
    ```
 4. Prueba: `select public.notify_admin('Hola desde Supabase');`
 
+**Dos canales** (opcional, recomendado): los avisos de **gestión** (altas, propuestas, sugerencias, comentarios,
+donaciones, resumen semanal) van al chat de siempre, y los de **monitorización** (caídas, errores de la app, informe de
+Supabase, fallos del webhook y de las Actions) a otro:
+1. Crea un grupo de Telegram (p. ej. «Escriba · Monitorización») y añade el bot.
+2. Escribe algo en el grupo y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`: el `chat.id` del grupo es un
+   número negativo (p. ej. `-1001234567890`).
+3. Guárdalo en Vault (`select vault.create_secret('<ID>', 'telegram_monitor_chat_id');`) y en GitHub como secreto
+   `TELEGRAM_MONITOR_CHAT_ID`.
+Sin ese secreto, todo sigue llegando al chat de siempre. En SQL se elige con `notify_admin(texto, '{"channel": "monitor"}')`.
+
 Sin esos secretos no se envía nada y la app funciona igual. Los mensajes no incluyen emails.
 
 Fiabilidad: cada aviso queda en `admin_notifications` y un trabajo de `pg_cron` (`retry-admin-notifications`, cada
@@ -269,7 +279,7 @@ psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 | Qué | Dónde | Aviso |
 |---|---|---|
 | **¿Funciona la app?** Web, código, API, Auth, Edge Function y supabase-js del CDN | `.github/workflows/health.yml` + `scripts/health_check.py`, cada 15 min | Telegram al caer, cada 2 h si sigue caída y al recuperarse. Estado en la caché de Actions; resumen en cada run |
-| **Errores del navegador** (`error`, promesas sin gestionar, ficheros que no cargan, app que no arranca en 20 s) | `js/errors.js` (se carga antes que `app.js`, sin supabase-js) → tabla `client_errors` | Telegram la primera vez que aparece cada error (por firma, 1 vez al día, máx. 10 avisos/h). Total en el resumen semanal. Se purgan a los 90 días |
+| **Errores del navegador** (`error`, promesas sin gestionar, ficheros que no cargan, app que no arranca en 20 s) | `js/errors.js` (se carga antes que `app.js`, sin supabase-js) → tabla `client_errors` | Telegram la primera vez que aparece cada error (por firma, 1 vez al día, máx. 10 avisos/h). Total en el resumen semanal. Topes: 60/h en total y 20/h por usuario; se purgan a los 30 días |
 | **Errores del backend** (logs de las últimas 24 h: API 5xx, Edge Functions, Auth, Postgres) | `.github/workflows/supabase-report.yml` + `scripts/supabase_report.py`, a diario | Telegram solo si hay algo que mirar. Los ERROR de Postgres cuentan a partir de 50 (muchos son normales: RLS, duplicados) |
 | **Advisors** de seguridad y rendimiento | el mismo informe, los lunes | Telegram siempre (✓ o la lista) |
 | **Webhook de Buy Me a Coffee** (firma incorrecta, secreto que falta, fallo al guardar o al activar Mecenas) | `supabase/functions/bmc-webhook` → `notify_admin_once()` | Telegram (la firma incorrecta, como mucho cada 6 h) |

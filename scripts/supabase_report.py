@@ -7,7 +7,7 @@
 
 Lo ejecuta .github/workflows/supabase-report.yml. Variables de entorno:
   SUPABASE_ACCESS_TOKEN   token personal (Supabase → Account → Access Tokens). Obligatorio.
-  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID   opcionales; sin ellos solo se escribe en el log.
+  TELEGRAM_BOT_TOKEN y TELEGRAM_MONITOR_CHAT_ID (o TELEGRAM_CHAT_ID)   opcionales; sin ellos solo se escribe en el log.
 Sin dependencias: solo la biblioteca estándar de Python.
 """
 import json
@@ -26,8 +26,25 @@ with open(os.path.join(ROOT, 'js/config.js'), encoding='utf-8') as f:
 TOKEN = os.environ.get('SUPABASE_ACCESS_TOKEN', '')
 DASHBOARD = f'https://supabase.com/dashboard/project/{REF}'
 
-# Umbral de errores de Postgres: muchos son normales (RLS que rechaza, «ya existe» al añadir dos veces…)
+# Umbrales para avisar. Muchos errores de Postgres son normales: accesos que la seguridad rechaza («permission
+# denied»), «ya existe» al añadir dos veces… Los FATAL por reinicio (despliegues de Supabase) no cuentan.
 PG_ERRORS_THRESHOLD = 50
+AUTH_ERRORS_THRESHOLD = 5
+BENIGN_FATAL = "event_message not like '%terminating connection due to administrator command%'"
+
+# Avisos de los Advisors revisados y aceptados (ver las migraciones): no se repiten cada semana.
+# (título del aviso, nombre del objeto; '' = aviso sin objeto)
+KNOWN_ADVISORS = {
+    # La lista de deseos compartida se ve sin sesión, a propósito
+    ('Public Can Execute SECURITY DEFINER Function', 'public_wishlist'),
+    # Funciones que llaman los usuarios con sesión; las admin_* comprueban assert_admin() por dentro
+    *(('Signed-In Users Can Execute SECURITY DEFINER Function', f) for f in (
+        'admin_apply_suggestion', 'admin_donations', 'admin_match_donation', 'admin_metrics', 'admin_reject_suggestion',
+        'admin_restore_version', 'admin_set_supporter', 'admin_users', 'delete_my_account', 'is_admin', 'is_supporter',
+        'public_wishlist', 'scribes', 'setting_enabled', 'trade_matches')),
+    # Solo se entra con Google: no hay contraseñas que comprobar (y además es de pago)
+    ('Leaked Password Protection Disabled', ''),
+}
 
 
 def esc(s):
@@ -55,7 +72,9 @@ def logs(sql, start, end):
 
 
 def telegram(text, buttons=None):
-    token, chat = os.environ.get('TELEGRAM_BOT_TOKEN'), os.environ.get('TELEGRAM_CHAT_ID')
+    # Canal de monitorización; si no está configurado, el chat de siempre
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    chat = os.environ.get('TELEGRAM_MONITOR_CHAT_ID') or os.environ.get('TELEGRAM_CHAT_ID')
     print(text)
     if not token or not chat:
         print('(Sin secretos de Telegram: no se avisa.)')
@@ -84,21 +103,25 @@ select
   countIf(source = 'function_edge_logs' and toInt32OrZero(log_attributes['response.status_code']) >= 500) as fn_5xx,
   countIf(source = 'function_logs' and lower(log_attributes['level']) = 'error') as fn_errors,
   countIf(source = 'auth_logs' and lower(log_attributes['level']) in ('error', 'fatal')) as auth_errors,
-  countIf(source = 'postgres_logs' and log_attributes['parsed.error_severity'] = 'ERROR') as pg_errors,
-  countIf(source = 'postgres_logs' and log_attributes['parsed.error_severity'] in ('FATAL', 'PANIC')) as pg_fatal
+  countIf(source = 'postgres_logs' and log_attributes['parsed.error_severity'] = 'ERROR'
+          and event_message not like 'permission denied%') as pg_errors,
+  countIf(source = 'postgres_logs' and log_attributes['parsed.error_severity'] = 'ERROR'
+          and event_message like 'permission denied%') as pg_denied,
+  countIf(source = 'postgres_logs' and log_attributes['parsed.error_severity'] in ('FATAL', 'PANIC') and {BENIGN_FATAL}) as pg_fatal
 from logs
-"""
+""".replace('{BENIGN_FATAL}', BENIGN_FATAL)
 TOP_SQL = """
 select source, substring(event_message, 1, 160) as msg, count() as n
 from logs
 where (source in ('edge_logs', 'function_edge_logs') and toInt32OrZero(log_attributes['response.status_code']) >= 500)
    or (source = 'function_logs' and lower(log_attributes['level']) = 'error')
    or (source = 'auth_logs' and lower(log_attributes['level']) in ('error', 'fatal'))
-   or (source = 'postgres_logs' and log_attributes['parsed.error_severity'] in ('ERROR', 'FATAL', 'PANIC'))
+   or (source = 'postgres_logs' and log_attributes['parsed.error_severity'] in ('ERROR', 'FATAL', 'PANIC')
+       and event_message not like 'permission denied%' and {BENIGN_FATAL})
 group by source, msg
 order by n desc
 limit 8
-"""
+""".replace('{BENIGN_FATAL}', BENIGN_FATAL)
 SOURCE_NAMES = {'edge_logs': 'API', 'function_edge_logs': 'Función', 'function_logs': 'Función',
                 'auth_logs': 'Auth', 'postgres_logs': 'Postgres'}
 
@@ -110,8 +133,9 @@ def logs_report():
     c = {k: int(v or 0) for k, v in c.items()}
     summary('## Logs de Supabase (últimas 24 h)\n\n| Métrica | Valor |\n|---|---|\n'
             + '\n'.join(f'| {k} | {v} |' for k, v in c.items()))
-    alarming = c['api_5xx'] + c['fn_5xx'] + c['fn_errors'] + c['auth_errors'] + c['pg_fatal']
-    if not alarming and c['pg_errors'] < PG_ERRORS_THRESHOLD:
+    alarming = (c['api_5xx'] + c['fn_5xx'] + c['fn_errors'] + c['pg_fatal']
+                or c['auth_errors'] >= AUTH_ERRORS_THRESHOLD or c['pg_errors'] >= PG_ERRORS_THRESHOLD)
+    if not alarming:
         print('Logs: nada que avisar.', c)
         return
     top = logs(TOP_SQL, start, end)
@@ -120,8 +144,9 @@ def logs_report():
         f'API: {c["api_5xx"]} errores 5xx de {c["api_total"]} peticiones',
         f'Edge Functions: {c["fn_5xx"]} respuestas 5xx, {c["fn_errors"]} errores',
         f'Auth: {c["auth_errors"]} errores',
-        f'Postgres: {c["pg_errors"]} ERROR{" (normal si son pocos: RLS, duplicados…)" if c["pg_errors"] < PG_ERRORS_THRESHOLD else ""}'
+        f'Postgres: {c["pg_errors"]} errores{" (normal si son pocos: duplicados…)" if c["pg_errors"] < PG_ERRORS_THRESHOLD else ""}'
         + (f', <b>{c["pg_fatal"]} FATAL/PANIC</b>' if c['pg_fatal'] else ''),
+        f'Accesos rechazados por la seguridad: {c["pg_denied"]} (normal: sesiones caducadas, curiosos…)',
     ]
     if top:
         lines += ['', '<b>Los más repetidos</b>:']
@@ -132,25 +157,32 @@ def logs_report():
 # ---------- Advisors ----------
 def advisors_report():
     found = []
+    known = 0
     for kind, label in (('security', 'Seguridad'), ('performance', 'Rendimiento')):
         lints = api(f'/v1/projects/{REF}/advisors/{kind}').get('lints') or []
         for lint in lints:
-            if lint.get('level') in ('ERROR', 'WARN'):
-                found.append((label, lint.get('level'), lint.get('title') or lint.get('name'),
-                              (lint.get('metadata') or {}).get('name') or ''))
+            if lint.get('level') not in ('ERROR', 'WARN'):
+                continue
+            title = lint.get('title') or lint.get('name')
+            name = (lint.get('metadata') or {}).get('name') or ''
+            if (title, name) in KNOWN_ADVISORS:
+                known += 1
+                continue
+            found.append((label, lint.get('level'), title, name))
     # Agrupa por aviso: «Función con search_path mutable (3): a, b, c»
     groups = {}
     for label, level, title, name in found:
         groups.setdefault((label, level, title), []).append(name)
     summary('## Advisors\n\n' + ('\n'.join(f'- {l} · {lv} · {t} ({len(n)})' for (l, lv, t), n in groups.items()) or '✓ Sin avisos'))
+    known_txt = f' ({known} avisos ya revisados e intencionados)' if known else ''
     if not groups:
-        telegram('🛡️ <b>Advisors de Supabase</b>: ✓ sin avisos de seguridad ni de rendimiento.')
+        telegram(f'🛡️ <b>Advisors de Supabase</b>: ✓ nada nuevo{known_txt}.')
         return
     lines = ['🛡️ <b>Advisors de Supabase</b>']
     for (label, level, title), names in sorted(groups.items(), key=lambda g: (g[0][1] != 'ERROR', g[0][0])):
         who = ', '.join(sorted({n for n in names if n}))[:200]
         lines.append(f'{"🔴" if level == "ERROR" else "🟡"} {esc(label)}: {esc(title)} ({len(names)})' + (f'\n   <i>{esc(who)}</i>' if who else ''))
-    lines.append('\nAlgunos avisos son intencionados (explicados en las migraciones).')
+    lines.append(f'\nSolo se listan los avisos nuevos{known_txt}. Si alguno es intencionado, añádelo a KNOWN_ADVISORS.')
     telegram('\n'.join(lines), [('Ver los Advisors', f'{DASHBOARD}/advisors/security')])
 
 

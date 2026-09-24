@@ -78,7 +78,7 @@ jobs:
         if: failure() && github.event_name != 'pull_request'
         env:
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_CHAT: ${{ secrets.TELEGRAM_MONITOR_CHAT_ID || secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW: ${{ github.workflow }}
         run: |

@@ -1,7 +1,7 @@
 -- Monitorización: errores del navegador (client_errors) y avisos sin repetición.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(17);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -45,11 +45,16 @@ insert into public.client_errors (message, source) values ('Falta el libro 123',
 select is((select count(distinct signature)::int from public.client_errors where message like 'Falta el libro%'), 1,
   'errores iguales con distintos números o línea se agrupan');
 
--- Tope por usuario: 30 por hora; el resto se descarta sin error
+-- Tope por usuario: 20 por hora; el resto se descarta sin error
 select lives_ok($$ insert into public.client_errors (user_id, message) select '11111111-1111-1111-1111-111111111111', 'spam ' || g from generate_series(1, 40) g $$,
   'un aluvión de errores no da error…');
-select is((select count(*)::int from public.client_errors where user_id = '11111111-1111-1111-1111-111111111111'), 30,
-  '…pero solo se guardan 30 por usuario y hora');
+select is((select count(*)::int from public.client_errors where user_id = '11111111-1111-1111-1111-111111111111'), 20,
+  '…pero solo se guardan 20 por usuario y hora');
+
+-- Tope global: 60 por hora entre todos (sin sesión incluidos)
+select lives_ok($$ insert into public.client_errors (user_id, message) select null, 'anónimo ' || g from generate_series(1, 100) g $$,
+  'un aluvión anónimo no da error…');
+select is((select count(*)::int from public.client_errors), 60, '…pero en total solo se guardan 60 por hora');
 
 -- ---------- Admin ----------
 select public._test_login('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');

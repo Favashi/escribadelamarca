@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
   const alert = async (key: string, text: string, within = "6 hours") => {
     const { error } = await supabase.rpc("notify_admin_once", {
       p_key: `bmc:${key}`, p_text: `☕⚠️ <b>Webhook de Buy Me a Coffee</b>\n${text}`, p_within: within,
+      p_opts: { channel: "monitor" },   // canal de monitorización (si está configurado)
     });
     if (error) console.error("notify_admin_once", error);
   };

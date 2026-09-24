@@ -39,4 +39,5 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MONITOR_CHAT_ID: ${{ secrets.TELEGRAM_MONITOR_CHAT_ID }}
         run: python3 scripts/supabase_report.py ${{ inputs.advisors && '--advisors' || '' }}

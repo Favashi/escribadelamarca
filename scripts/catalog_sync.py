@@ -16,7 +16,8 @@ Reglas de la sincronización (idempotente, se puede repetir):
   * Filas existentes con source='csv' → se actualizan sus datos, EXCEPTO la categoría, la portada y
     cualquier campo editado desde la app (catalog.locked_fields: ediciones del admin o sugerencias validadas).
   * Libros creados desde la app (source='app') no se tocan.
-  * Códigos de barras: solo EAN-13 con checksum válido; se añaden como source='sombra', sin verificar.
+  * Códigos de barras: solo EAN-13 con checksum válido; se añaden como source='sombra', sin verificar,
+    salvo los que el admin quitó desde la app (quedan registrados en catalog_history).
     Nunca se borran códigos ni libros: eso se hace a mano (ver MEJORAS.md).
 """
 import argparse
@@ -207,6 +208,9 @@ def build_sql(rows, codex):
             ",\n".join(barcodes),
             ") as v(code, ref)",
             "join public.catalog c on c.ref = v.ref",
+            # No volver a añadir códigos que el admin quitó a propósito desde la app (quedan en el historial)
+            "where not exists (select 1 from public.catalog_history h where h.table_name = 'catalog_barcodes'",
+            "  and h.op = 'delete' and h.catalog_id = c.id and h.old_data ->> 'code' = v.code and h.changed_by is not null)",
             "on conflict (code, catalog_id) do nothing;",
             "",
         ]

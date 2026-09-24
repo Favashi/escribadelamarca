@@ -221,3 +221,10 @@ details.danger-zone[open] .dz-chevron { transform: rotate(90deg); }
 .flag-switch input:checked + span[aria-hidden]::after { transform: translateX(20px); }
 .flag-switch input:focus-visible + span[aria-hidden] { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Filtros de calidad de datos (admin) ---------- */
+.admin-filters { align-items: center; margin: -4px 0 12px; padding: 8px 10px; border-radius: 12px;
+  background: color-mix(in srgb, var(--admin) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--admin) 30%, var(--line)); --icon-cut: var(--surface); }
+.admin-filters > .i { color: var(--admin); width: 18px; height: 18px; }
+.admin-filters .chip b { font-weight: 800; margin-left: 2px; opacity: .75; }
+.admin-filters .chip.on { background: var(--admin); border-color: var(--admin); color: #fff; }

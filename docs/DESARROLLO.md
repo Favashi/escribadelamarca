@@ -159,6 +159,18 @@ La app los lee al arrancar (`js/settings.js`); si fallan, usa los valores por de
 Para añadir uno: fila en `app_settings` (migración), valor por defecto en `js/settings.js` y su interruptor en `FLAGS`
 (`js/views/admin.js`).
 
+## Herramientas de admin para el catálogo
+- **Catálogo → filtros de calidad** (solo admin): sin verificar, códigos duplicados, sin código de barras, sin datos
+  de juego y editados en la app, cada uno con su recuento.
+- **Escáner → modo «verificar estantería»**: cada código que coincide con un único libro se marca verificado solo; si
+  un código está en varios libros, al elegir el correcto se ofrece quitarlo de los demás. Registro de la sesión debajo.
+- **`scripts/catalog_export.py`** (app → CSV): copia al CSV fuente los campos corregidos en la app (título, autor,
+  páginas, código) y el código de barras aprobado/verificado; lo que no cabe en el CSV (libros creados en la app, datos
+  de juego corregidos) va a `data/correcciones_app.csv` (ignorado por git). Necesita la clave *service_role* solo como
+  variable de entorno: `SUPABASE_SERVICE_ROLE_KEY=... python3 scripts/catalog_export.py --dry-run`.
+- `catalog_sync.py` no vuelve a añadir los códigos que el admin quitó desde la app (lo consulta en `catalog_history`).
+- Flujo recomendado: verificar en la app → `catalog_export.py` → revisar diff → commit → `catalog_sync.py` si hace falta.
+
 ## Historial y sugerencias
 - `catalog_history` guarda cada alta, cambio y borrado de libros y códigos (versión anterior y nueva, quién y cuándo),
   mediante triggers. En la ficha, el admin abre «Historial de cambios» y puede **restaurar** cualquier versión

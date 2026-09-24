@@ -5,7 +5,7 @@ import {
 } from '../store.js';
 import { startScanner, cameraAvailable } from '../scanner.js';
 import { normalizeCode, formatCode, isPubCode } from '../isbn.js';
-import { bookFormDialog, errMsg, ADMIN_TAG } from '../ui.js';
+import { bookFormDialog, errMsg, ADMIN_TAG, confirmDialog } from '../ui.js';
 import * as api from '../api.js';
 import { track } from '../track.js';
 
@@ -18,6 +18,7 @@ export function renderScan(root) {
   let idleTimer = null;   // pista si pasa un rato sin detectar nada
 
   const RESUME_MS = 2500;
+const VERIFY_KEY = 'edm.verifyMode';
   const IDLE_HINT_MS = 8000;
   const dialogOpen = () => document.getElementById('dialog')?.open;
 
@@ -44,6 +45,9 @@ export function renderScan(root) {
     handleBarcode(code);
   }
 
+  let verifyMode = false;
+  try { verifyMode = isAdmin() && sessionStorage.getItem(VERIFY_KEY) === '1'; } catch { /* sin storage */ }
+
   root.innerHTML = html`
     <header class="view-head"><div><h1>Escanear</h1><p class="muted">Apunta al código de barras de la contraportada.</p></div></header>
     <div class="scanner">
@@ -58,6 +62,13 @@ export function renderScan(root) {
       <button class="btn btn-ghost">Buscar</button>
     </form>
     <p class="muted small hint">¿Tu libro no tiene código de barras? Escribe el código de la portada (B1, X2, G0…).</p>
+    ${isAdmin() ? raw(html`<section class="verify-mode admin-inline">
+      <label class="switch"><input type="checkbox" data-verify-mode ${verifyMode ? 'checked' : ''}>
+        <span>${raw(ADMIN_TAG)} Modo «verificar estantería»</span></label>
+      <p class="muted small">Escanea tus libros uno tras otro: cada código que coincida con un único libro se marca como
+        verificado automáticamente.</p>
+      <ol class="verify-log" aria-live="polite"></ol>
+    </section>`) : ''}
     <section class="scan-result" aria-live="polite"></section>`;
 
   const video = $('video', root);
@@ -126,11 +137,57 @@ export function renderScan(root) {
       try { await refreshCatalog(); books = booksForBarcode(code); } catch (e) { toast(errMsg(e), 'error'); }
     }
     track('scan', books.length === 1 ? 'hit' : books.length > 1 ? 'multi' : 'unknown');
+    if (verifyMode && books.length === 1) await verifyPair(code, books[0]);
+    else if (verifyMode && !books.length) logVerify(`${formatCode(code)} · desconocido: elige a qué libro pertenece`, 'warn');
     if (books.length === 1) showBook(books[0], code);
     else if (books.length > 1) showChoice(books, code);
     else showUnknown(code);
     result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     scheduleResume();
+  }
+
+  // ---------- Modo «verificar estantería» (admin) ----------
+  $('[data-verify-mode]', root)?.addEventListener('change', (e) => {
+    verifyMode = e.target.checked;
+    try { sessionStorage.setItem(VERIFY_KEY, verifyMode ? '1' : '0'); } catch { /* sin storage */ }
+    toast(verifyMode ? 'Modo verificar estantería activado' : 'Modo verificar estantería desactivado');
+  });
+
+  function logVerify(text, kind = 'ok') {
+    const log = $('.verify-log', root);
+    if (!log) return;
+    const li = document.createElement('li');
+    li.className = `verify-${kind}`;
+    li.textContent = text;
+    log.prepend(li);
+    while (log.children.length > 25) log.lastChild.remove();
+  }
+
+  /** Marca como verificado el par código–libro (si no lo estaba ya). */
+  async function verifyPair(code, book) {
+    const bc = barcodesOf(book.id).find((b) => b.code === code);
+    const label = `${book.code ? `${book.code} · ` : ''}${book.title}`;
+    if (!bc) return;
+    if (bc.verified && bc.status === 'approved') { logVerify(`${label} · ya estaba verificado`, 'muted'); return; }
+    try {
+      await api.updateBarcode(code, book.id, { status: 'approved', verified: true });
+      await refreshCatalog();
+      logVerify(`✓ ${label} · ${formatCode(code)} verificado`);
+    } catch (e) { logVerify(`${label} · error: ${errMsg(e)}`, 'warn'); }
+  }
+
+  /** Código repetido en varios libros: verifica el elegido y ofrece quitarlo de los demás. */
+  async function resolveDuplicate(code, book, books) {
+    await verifyPair(code, book);
+    const others = books.filter((b) => b.id !== book.id);
+    if (!others.length) return;
+    const names = others.map((b) => b.code || b.title).join(', ');
+    if (!(await confirmDialog(`¿Quitar el código ${formatCode(code)} de ${names}? Tienes en la mano «${book.title}», así que en los otros es un error.`, { ok: 'Quitar de los demás' }))) return;
+    try {
+      for (const b of others) await api.deleteBarcode(code, b.id);
+      await refreshCatalog();
+      logVerify(`✓ ${formatCode(code)} quitado de ${names}`);
+    } catch (e) { logVerify(`Error al quitar: ${errMsg(e)}`, 'warn'); }
   }
 
   function again() {
@@ -210,7 +267,11 @@ export function renderScan(root) {
       </div>
     </div>`;
     $('[data-again]', result).onclick = again;
-    result.querySelectorAll('.pick').forEach((btn) => (btn.onclick = () => showBook(state.catalog.find((b) => b.id === btn.dataset.id), code)));
+    result.querySelectorAll('.pick').forEach((btn) => (btn.onclick = async () => {
+      const book = state.catalog.find((b) => b.id === btn.dataset.id);
+      if (verifyMode && code) await resolveDuplicate(code, book, books);
+      showBook(book, code);
+    }));
   }
 
   /** Código desconocido: elegir a qué libro pertenece o proponer uno nuevo. */

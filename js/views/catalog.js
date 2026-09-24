@@ -5,23 +5,56 @@ import * as api from '../api.js';
 import { setNavList } from '../navlist.js';
 import { icon } from '../icons.js';
 
+/** Filtros de calidad de datos (solo admin). Cada uno: [id, etiqueta, test(libro, ctx)]. */
+const DATA_FILTERS = [
+  ['unverified', 'Sin verificar', (b, c) => c.codesOf(b.id).some((x) => x.status === 'approved' && !x.verified)],
+  ['duplicates', 'Códigos duplicados', (b, c) => c.codesOf(b.id).some((x) => c.dupCodes.has(x.code))],
+  ['nobarcode', 'Sin código de barras', (b, c) => !c.codesOf(b.id).length],
+  ['nogame', 'Sin datos de juego', (b) => !(b.min_level || b.max_level || b.min_players || b.sessions || (b.tags && b.tags.length))],
+  ['locked', 'Editados en la app', (b) => (b.locked_fields || []).length > 0],
+];
+
+function dataContext() {
+  const byBook = new Map();
+  const booksPerCode = new Map();
+  for (const bc of state.barcodes) {
+    (byBook.get(bc.catalog_id) ?? byBook.set(bc.catalog_id, []).get(bc.catalog_id)).push(bc);
+    booksPerCode.set(bc.code, (booksPerCode.get(bc.code) || 0) + 1);
+  }
+  return {
+    codesOf: (id) => byBook.get(id) || [],
+    dupCodes: new Set([...booksPerCode].filter(([, n]) => n > 1).map(([code]) => code)),
+  };
+}
+
 export function renderCatalog(root) {
   let query = '';
+  let dataFilter = '';
   const admin = isAdmin();
 
   function pendingSection() {
     const n = admin ? pendingCount() : 0;
-    return n ? html`<a class="panel teaser" href="#/revision">📝 Hay <strong>${n}</strong> ${n === 1 ? 'propuesta pendiente' : 'propuestas pendientes'} de revisar →</a>` : '';
+    return n ? html`<a class="panel teaser" href="#/revision">Hay <strong>${n}</strong> ${n === 1 ? 'propuesta pendiente' : 'propuestas pendientes'} de revisar →</a>` : '';
   }
 
   function draw() {
-    const pool = state.catalog.filter((b) => (admin || b.status === 'approved' || b.created_by === user().id) && matches(b, query));
+    const ctx = admin ? dataContext() : null;
+    const test = DATA_FILTERS.find((f) => f[0] === dataFilter)?.[2];
+    const pool = state.catalog.filter((b) => (admin || b.status === 'approved' || b.created_by === user().id)
+      && matches(b, query) && (!test || test(b, ctx)));
+    if (admin) {
+      root.querySelectorAll('[data-dfilter]').forEach((chip) => {
+        const f = DATA_FILTERS.find((x) => x[0] === chip.dataset.dfilter);
+        chip.classList.toggle('on', chip.dataset.dfilter === dataFilter);
+        if (f) chip.querySelector('b').textContent = state.catalog.filter((b) => f[2](b, ctx)).length;
+      });
+    }
     const groups = groupByCategory(pool).filter((g) => g.books.length);
     setNavList(groups.flatMap((g) => g.books.map((b) => b.id)), 'Catálogo');
 
     root.querySelector('.groups').innerHTML = html`
       ${raw(pendingSection())}
-      ${groups.length ? groups.map((g) => raw(html`<details class="group" ${query ? 'open' : ''}>
+      ${groups.length ? groups.map((g) => raw(html`<details class="group" ${query || dataFilter ? 'open' : ''}>
         <summary><span>${g.category.name}</span><span class="count">${g.books.length}</span></summary>
         <ul class="rows">
           ${g.books.map((b) => {
@@ -41,7 +74,15 @@ export function renderCatalog(root) {
   root.innerHTML = html`
     ${raw(viewHeader('Catálogo', `${state.catalog.filter((b) => b.status === 'approved').length} publicaciones de la Marca del Este`, `<button class="btn btn-sm ${admin ? 'btn-admin' : 'btn-primary'}" data-new>${admin ? `${icon('shield')} Nuevo` : '+ Proponer'}</button>`))}
     <div class="toolbar"><input type="search" class="search" placeholder="Buscar título, código (B19) o autor…" aria-label="Buscar"></div>
+    ${admin ? raw(html`<div class="chips admin-filters" role="group" aria-label="Calidad de datos (admin)">
+      ${raw(icon('shield'))}
+      ${DATA_FILTERS.map(([id, label]) => raw(html`<button type="button" class="chip" data-dfilter="${id}">${label} <b></b></button>`))}
+    </div>`) : ''}
     <div class="groups"></div>`;
+  root.querySelectorAll('[data-dfilter]').forEach((chip) => chip.addEventListener('click', () => {
+    dataFilter = dataFilter === chip.dataset.dfilter ? '' : chip.dataset.dfilter;
+    draw();
+  }));
 
   $('.search', root).addEventListener('input', (e) => { query = e.target.value.trim(); draw(); });
 

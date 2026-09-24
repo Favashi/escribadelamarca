@@ -4,6 +4,7 @@ import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG, suggestDia
 import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { icon, ribbon } from '../icons.js';
+import { uploadCover, removeCover } from '../covers.js';
 import { settings } from '../settings.js';
 import { removeWithUndo } from '../library-actions.js';
 import { gameInfo } from './finder.js';
@@ -52,7 +53,7 @@ export async function renderBook(root, { id }) {
       </nav>`) : ''}
     </div>
     <article class="book">
-      ${raw(cover(book, 'cover-lg'))}
+      <figure class="book-cover">${raw(cover(book, 'cover-lg'))}${book.cover_url && settings.covers_enabled ? raw('<figcaption>Portada © de sus autores, con permiso de La Marca del Este</figcaption>') : ''}</figure>
       <div class="book-info">
         <p class="eyebrow">${book.code ? `${book.code} · ` : ''}${categoryName(book.category_id)}</p>
         <h1>${book.title}</h1>
@@ -147,6 +148,12 @@ export async function renderBook(root, { id }) {
           ${c.status === 'pending' || !c.verified ? raw('<button class="btn btn-sm btn-ghost" data-code-ok>Verificar</button>') : ''}
           <button class="btn btn-sm btn-ghost btn-danger-text" data-code-del aria-label="Quitar código">Quitar</button>
         </li>`))}</ul>`) : ''}
+        <div class="cover-admin">
+          <span class="cover-admin-label">${raw(icon('camera'))} Portada</span>
+          <label class="btn btn-ghost btn-sm">${book.cover_url ? 'Cambiar' : 'Subir portada'}
+            <input type="file" accept="image/*" data-cover-file hidden></label>
+          ${book.cover_url ? raw('<button type="button" class="btn btn-ghost btn-sm btn-danger-text" data-cover-remove>Quitar</button>') : ''}
+        </div>
         <form class="inline-form barcode-form"><input name="barcode" inputmode="numeric" placeholder="Añadir código de barras"><button class="btn btn-ghost">Añadir</button></form>
         <details class="history-box">
           <summary>Historial de cambios</summary>
@@ -245,6 +252,23 @@ export async function renderBook(root, { id }) {
     await refreshCatalog();
     rerender();
   })));
+
+  $('[data-cover-file]', root)?.addEventListener('change', run(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast('Subiendo portada…');
+    const { bytes } = await uploadCover(book, file);
+    await refreshCatalog();
+    toast(`Portada guardada (${Math.round(bytes / 1024)} KB)`, 'ok');
+    rerender();
+  }));
+  $('[data-cover-remove]', root)?.addEventListener('click', run(async () => {
+    if (!(await confirmDialog('¿Quitar la portada de este libro?', { ok: 'Quitar', danger: true }))) return;
+    await removeCover(book);
+    await refreshCatalog();
+    toast('Portada quitada', 'ok');
+    rerender();
+  }));
 
   $('[data-edit]', root)?.addEventListener('click', run(async () => {
     const res = await bookFormDialog({ initial: book, heading: 'Editar libro' });

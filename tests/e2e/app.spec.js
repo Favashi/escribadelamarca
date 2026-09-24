@@ -173,3 +173,58 @@ test('la portada cuenta una visita anónima por canal', async ({ page }) => {
   await page.waitForTimeout(500);
   expect((await api(`/rest/v1/landing_visits?ref=eq.${ref}&select=visits`))[0].visits).toBe(1);
 });
+
+test.describe('portadas (admin)', () => {
+  test.use({ admin: true });
+  test.describe.configure({ mode: 'serial' });   // el segundo borra todas las portadas al terminar
+
+  /** Imagen PNG de prueba: captura de un recuadro de color (cabe en la pantalla del móvil emulado). */
+  const fakeCover = async (page, color = '#74398a') => {
+    await page.setContent(`<div style="width:300px;height:450px;background:${color}"></div>`);
+    return page.screenshot({ clip: { x: 0, y: 0, width: 300, height: 450 } });
+  };
+
+  test('subir y quitar la portada desde la ficha', async ({ page, account }) => {
+    const id = await bookId('ref=eq.test:T1');
+    const png = await fakeCover(page);
+    await page.goto(`/#/libro/${id}`);
+    await page.locator('[data-cover-file]').setInputFiles({ name: 'portada.png', mimeType: 'image/png', buffer: png });
+    await expect(page.getByText(/Portada guardada \(\d+ KB\)/)).toBeVisible();
+    const img = page.locator('.book-cover img.cover-lg');
+    await expect(img).toHaveAttribute('src', /\/storage\/v1\/object\/public\/covers\//);
+    await expect(page.getByText('Portada © de sus autores, con permiso de La Marca del Este')).toBeVisible();
+    const src = await img.getAttribute('src');
+    const res = await page.request.get(src);
+    expect(res.status()).toBe(200);
+    expect((await res.body()).length).toBeLessThan(100_000);   // reducida y comprimida
+
+    await page.getByRole('button', { name: 'Quitar', exact: true }).click();
+    await page.locator('#dialog').getByRole('button', { name: 'Quitar' }).click();
+    await expect(page.getByText('Portada quitada')).toBeVisible();
+    expect((await api(`/rest/v1/catalog?id=eq.${id}&select=cover_url`))[0].cover_url).toBeNull();
+    expect((await page.request.get(src)).status()).not.toBe(200);   // el fichero también se borra
+  });
+
+  test('subida masiva emparejando por código', async ({ page, account }) => {
+    const id = await bookId('ref=eq.test:T1');
+    const png = await fakeCover(page, '#b02a1f');
+    await page.goto('/#/admin/portadas');
+    await page.locator('[data-bulk]').setInputFiles([
+      { name: 'T1 - prueba.png', mimeType: 'image/png', buffer: png },
+      { name: 'ZZZ9.png', mimeType: 'image/png', buffer: png },
+    ]);
+    await expect(page.getByText('→ T1 · [Prueba] Aventura de test')).toBeVisible();
+    await expect(page.getByText('Ningún libro con el código «ZZZ9»')).toBeVisible();
+    await page.getByRole('button', { name: 'Subir 1 portada' }).click();
+    await expect(page.getByText('1 portada subida')).toBeVisible();
+    const [book] = await api(`/rest/v1/catalog?id=eq.${id}&select=cover_url`);
+    expect(book.cover_url).toMatch(/\/covers\//);
+    // Limpieza: el borrado de emergencia deja todo como estaba
+    await page.getByText('Borrar todas las portadas', { exact: true }).first().click();
+    await page.getByRole('button', { name: 'Borrar todas las portadas' }).click();
+    await page.locator('#dialog input[name=word]').fill('PORTADAS');
+    await page.locator('#dialog').getByRole('button', { name: 'Borrar todas' }).click();
+    await expect(page.getByText(/ficheros borrados; ningún libro tiene portada/)).toBeVisible();
+    expect((await api(`/rest/v1/catalog?id=eq.${id}&select=cover_url`))[0].cover_url).toBeNull();
+  });
+});

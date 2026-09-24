@@ -133,7 +133,8 @@ export function renderProfile(root) {
     <p class="muted small center pad">
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
-      Proyecto de fans, no oficial · <a href="privacidad.html">Privacidad</a> ·
+      Proyecto de fans, no oficial · Portadas © de sus autores, con permiso de La Marca del Este<br>
+      <a href="privacidad.html">Privacidad</a> ·
       <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
     <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
 

@@ -21,3 +21,6 @@ reports/
 
 # Borradores de difusión (privados)
 difusion/
+
+# Utilidades y descargas de portadas (fuera del proyecto: nunca al repositorio)
+portadas_marca_del_este_utilidades/

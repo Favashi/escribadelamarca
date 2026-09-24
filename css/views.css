@@ -557,3 +557,14 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .acq-table th, .acq-table td { padding: 8px 4px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .acq-table th:first-child, .acq-table td:first-child { text-align: left; white-space: normal; }
 .acq-table th { font-weight: 700; color: var(--muted); font-size: .8rem; }
+
+/* ---------- Portadas (admin) ---------- */
+.cover-admin { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+.cover-admin-label { display: inline-flex; align-items: center; gap: 6px; font: 700 .9rem var(--font-ui); margin-right: auto; }
+.missing-covers summary { cursor: pointer; font: 600 .9rem var(--font-ui); }
+.bulk-rows { margin-top: 12px; }
+.bulk-rows select { min-height: 36px; padding-block: 0; font-size: .85rem; }
+.bulk-done { opacity: .6; }
+.bulk-rows .bad { color: var(--danger); font-weight: 600; }
+.book-cover { margin: 0; display: grid; justify-items: center; gap: 6px; }
+.book-cover figcaption { font: .68rem var(--font-ui); color: var(--muted); max-width: 200px; text-align: center; }

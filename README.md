@@ -116,6 +116,8 @@ El catálogo inicial se construyó a partir de fuentes públicas y desde entonce
 | [Tesoros de la Marca](https://tesorosdelamarca.com/) | Referencias (SKU) de tienda. |
 | **La comunidad** | Novedades, códigos verificados escaneando ejemplares reales y correcciones validadas. |
 
+Las **portadas** son © de sus autores y se usan con permiso de La Marca del Este. No están en este repositorio: se guardan aparte (Supabase Storage) y no se incluyen en la licencia AGPL del código.
+
 ¿Ves un dato mal? Abre el libro en la app y pulsa **«✎ Sugerir cambios»**.
 
 ## 🛠️ Tecnología
@@ -203,7 +205,8 @@ Las novedades de cada versión están en [Releases](https://github.com/Favashi/e
 - Código bajo **[GNU AGPL-3.0](LICENSE)**: puedes usarlo, modificarlo y publicarlo, pero si ofreces una versión
   modificada (también como servicio web) debes compartir su código bajo la misma licencia.
 - **Proyecto de fans, no oficial.** *Aventuras en la Marca del Este*, sus títulos, logotipos e ilustraciones pertenecen
-  a sus respectivos autores y no se incluyen en este repositorio.
+  a sus respectivos autores y no se incluyen en este repositorio. Las portadas se muestran en la app **con permiso de
+  La Marca del Este**; ese permiso es para esta app y no se extiende a copias o forks del proyecto.
 - Tipografías Cinzel, Uncial Antiqua y Source Serif 4 bajo SIL Open Font License.
 
 ## 🙏 Agradecimientos

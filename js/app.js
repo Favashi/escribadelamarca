@@ -136,6 +136,7 @@ function renderLanding() {
       <p class="small">
         Hecho por <a href="https://github.com/Favashi" rel="noopener">Toni Ruiz (Favashi)</a>, también autor de OSR Manager.<br>
         Proyecto de fans, no oficial. <em>Aventuras en la Marca del Este</em> pertenece a sus autores.<br>
+        Portadas © de sus autores, usadas con permiso de La Marca del Este.<br>
         <a href="privacidad.html">Privacidad</a> ·
         <a href="https://github.com/Favashi/escribadelamarca" rel="noopener">Código (AGPL-3.0)</a>
       </p>

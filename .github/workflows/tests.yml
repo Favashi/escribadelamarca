@@ -32,7 +32,7 @@ jobs:
 
       - name: Levantar Supabase local (migraciones + seed)
         id: supabase
-        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,postgres-meta
 
       - name: Tests de base de datos (pgTAP)
         run: supabase test db

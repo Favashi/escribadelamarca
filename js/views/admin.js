@@ -1,8 +1,9 @@
 import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
 import { icon } from '../icons.js';
-import { state, isAdmin, pendingCount, loadAll, personName } from '../store.js';
+import { uploadCover, matchFiles, deleteAllCovers } from '../covers.js';
+import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
-import { viewHeader, confirmDialog, errMsg } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog } from '../ui.js';
 import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
 import { renderAnnouncement } from '../announcement.js';
@@ -19,6 +20,7 @@ export function adminTabs(active) {
     ['usuarios', '#/admin/usuarios', 'Usuarios'],
     ['donaciones', '#/admin/donaciones', 'Donaciones'],
     ['comentarios', '#/admin/comentarios', `Comentarios${state.feedback.filter((f) => f.status === 'new').length ? ` (${state.feedback.filter((f) => f.status === 'new').length})` : ''}`],
+    ['portadas', '#/admin/portadas', 'Portadas'],
     ['ajustes', '#/admin/ajustes', 'Ajustes'],
   ];
   return html`<nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, href, label]) =>
@@ -60,6 +62,7 @@ export async function renderAdmin(root, params = {}) {
   const body = $('.admin-body', root);
   try {
     if (section === 'ajustes') renderSettings(body);
+    else if (section === 'portadas') renderCovers(body);
     else if (section === 'comentarios') await renderFeedback(body);
     else if (section === 'usuarios') await renderUsers(body);
     else if (section === 'donaciones') await renderDonations(body);
@@ -246,6 +249,104 @@ const FLAGS = [
 ];
 
 /** Admin → Ajustes: interruptores que cambian la app al instante, sin publicar versión. */
+/** Portadas: recuento, libros sin portada, subida masiva (ficheros con el código en el nombre) y borrado de emergencia. */
+function renderCovers(body) {
+  const books = state.catalog.filter((b) => b.status === 'approved').sort(compareBooks);
+  const withCover = books.filter((b) => b.cover_url);
+  const missing = books.filter((b) => !b.cover_url);
+  let rows = [];
+
+  body.innerHTML = html`
+    <section class="panel">
+      <h2>Portadas</h2>
+      <p class="big-stat"><span>${withCover.length}</span><small>de ${books.length} libros tienen portada</small></p>
+      <p class="muted small">Se guardan en Supabase Storage (bucket público «covers»), nunca en el repositorio, reducidas a
+        unos 400 px y comprimidas en este dispositivo antes de subirlas. Portadas © de sus autores, usadas con permiso de
+        La Marca del Este. Para ocultarlas al momento: Ajustes → Portadas.</p>
+      ${settings.covers_enabled ? '' : raw('<p class="badge badge-warn">Las portadas están ocultas (Ajustes → Portadas)</p>')}
+      ${missing.length ? raw(html`<details class="missing-covers"><summary>Sin portada (${missing.length})</summary>
+        <p class="small">${missing.map((b) => b.code || b.title).join(', ')}</p></details>`) : ''}
+    </section>
+
+    <section class="panel">
+      <h2>Subir varias</h2>
+      <p class="muted small">Nombra cada fichero con el código del libro: <code>B12.jpg</code>, <code>X2.png</code>,
+        <code>CR - Caja Roja.webp</code>… Revisa la lista y pulsa «Subir». Si el libro ya tenía portada, se sustituye.</p>
+      <label class="btn btn-primary">Elegir imágenes<input type="file" accept="image/*" multiple data-bulk hidden></label>
+      <div class="bulk-list"></div>
+    </section>
+
+    <details class="panel danger-zone">
+      <summary><h2>${raw(icon('warning'))} Borrar todas las portadas</h2><span class="muted small">Por si se retira el permiso</span>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
+      <div class="dz-item">
+        <p class="small">Borra todos los ficheros del bucket y deja todos los libros sin portada. Para solo ocultarlas, usa
+          Ajustes → Portadas.</p>
+        <button class="btn btn-danger-outline" data-delete-covers>${raw(icon('trash'))} Borrar todas las portadas</button>
+      </div>
+    </details>`;
+
+  const list = $('.bulk-list', body);
+  const draw = () => {
+    const ok = rows.filter((r) => r.book && !r.done);
+    list.innerHTML = rows.length ? html`
+      <ul class="rows bulk-rows">${rows.map((r, i) => raw(html`<li class="row ${r.done ? 'bulk-done' : ''}">
+        <span class="row-title">${r.file.name}
+          <small>${r.error ? raw(html`<span class="bad">${r.error}</span>`)
+            : r.done ? '✓ Subida'
+            : r.book ? raw(html`→ <strong>${r.book.code}</strong> · ${r.book.title}${r.book.cover_url ? ' (sustituye la actual)' : ''}`)
+            : r.books.length > 1 ? raw(html`<select data-pick="${i}"><option value="">¿Cuál de ${r.books.length}?</option>
+                ${r.books.map((b) => raw(html`<option value="${b.id}">${b.title}</option>`))}</select>`)
+            : raw(html`<span class="bad">Ningún libro con el código «${r.code || '?'}»</span>`)}</small></span>
+      </li>`))}</ul>
+      <div class="actions"><button class="btn btn-primary" data-bulk-go ${ok.length ? '' : 'disabled'}>Subir ${ok.length} ${ok.length === 1 ? 'portada' : 'portadas'}</button></div>`
+      : '';
+  };
+
+  $('[data-bulk]', body).addEventListener('change', (e) => {
+    rows = matchFiles(e.target.files).map((m) => ({ ...m, book: m.books.length === 1 ? m.books[0] : null }));
+    e.target.value = '';
+    draw();
+  });
+  list.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-pick]');
+    if (!sel) return;
+    const r = rows[Number(sel.dataset.pick)];
+    r.book = r.books.find((b) => b.id === sel.value) || null;
+    draw();
+  });
+  list.addEventListener('click', async (e) => {
+    const go = e.target.closest('[data-bulk-go]');
+    if (!go) return;
+    go.disabled = true;
+    const todo = rows.filter((r) => r.book && !r.done);
+    let n = 0;
+    for (const r of todo) {
+      go.textContent = `Subiendo ${++n} de ${todo.length}…`;
+      try {
+        await uploadCover(bookById(r.book.id) || r.book, r.file);
+        r.done = true;
+      } catch (err) { r.error = errMsg(err); }
+    }
+    await refreshCatalog();
+    const done = todo.filter((r) => r.done).length;
+    toast(`${done} ${done === 1 ? 'portada subida' : 'portadas subidas'}${done < todo.length ? ` · ${todo.length - done} con error` : ''}`, done === todo.length ? 'ok' : 'error');
+    renderCovers(body);
+  });
+
+  $('[data-delete-covers]', body).onclick = async (e) => {
+    const ok = await typeToConfirmDialog(`Se borrarán las ${withCover.length} portadas y sus ficheros. No se puede deshacer.`,
+      { word: 'PORTADAS', ok: 'Borrar todas' });
+    if (!ok) return;
+    e.target.disabled = true;
+    try {
+      const n = await deleteAllCovers();
+      await refreshCatalog();
+      toast(`${n} ficheros borrados; ningún libro tiene portada`, 'ok');
+      renderCovers(body);
+    } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
+  };
+}
+
 function renderSettings(body) {
   const a = settings.announcement || { enabled: false, text: '', level: 'info' };
   body.innerHTML = html`

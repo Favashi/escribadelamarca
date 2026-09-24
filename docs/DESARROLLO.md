@@ -269,6 +269,20 @@ pg_restore --no-owner --clean --if-exists -d "$NUEVA_DB_URL" backup/public.dump
 psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 ```
 
+## Portadas
+- Permiso de La Marca del Este (septiembre de 2026, general «para la app»; guardar la respuesta por escrito).
+  Nunca en el repositorio: bucket **público** `covers` de Supabase Storage (migración `20260924001400`), con subida,
+  cambio y borrado solo para el admin (RLS en `storage.objects`); máx. 1 MB por fichero.
+- `js/covers.js`: reduce a ≈400 px y comprime en el dispositivo (WebP; JPEG si el navegador no sabe generar WebP),
+  sube con un nombre nuevo cada vez (sin problemas de caché; `cacheControl` de 1 año), guarda la URL en
+  `catalog.cover_url` y borra el fichero anterior.
+- Dónde: ficha del libro (Administración → Portada: subir, cambiar, quitar) y **Admin → Portadas** (recuento, libros
+  sin portada y **subida masiva**: ficheros con el código delante, `B12.jpg`, `CR - Caja Roja.webp`…).
+- Ocultarlas al momento: Admin → Ajustes → Portadas (`covers_enabled`). Si se retira el permiso: Admin → Portadas →
+  «Borrar todas las portadas» (escribiendo PORTADAS): borra los ficheros y deja `cover_url` vacío.
+- Créditos: bajo la portada en la ficha, pie de Perfil y de la portada web, Ayuda y README.
+- En local y en CI hace falta el contenedor de Storage (no excluir `storage-api` en `supabase start`).
+
 ## Difusión
 - **Vista previa al compartir** (Open Graph en `index.html`): imagen `assets/og-image.jpg` (1200×630, < 300 KB para
   WhatsApp) generada desde `docs/og/og-image.html` con `node docs/og/render.mjs`. Si cambias el texto, regénerala.
@@ -328,7 +342,7 @@ runner con todas las migraciones y `supabase/seed.sql`; nunca tocan producción.
 
 En local (Docker u OrbStack):
 ```bash
-supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime,postgres-meta
 supabase test db            # pgTAP
 npm ci && npx playwright install chromium
 npx playwright test         # flujo principal (sirve la app con tests/e2e/serve.js)

@@ -78,6 +78,8 @@ function sections() {
       ['¿Qué es la página de Escribas?',
         `<p>Un agradecimiento a quienes más ayudan con el catálogo. <strong>Es voluntaria</strong>: solo aparece quien lo activa en
         Perfil → Rango de escriba. <a href="#/escribas">Ver los Escribas</a>.</p>`],
+      ['¿De dónde salen las portadas?',
+        '<p>Las portadas son © de sus autores y se muestran con permiso de La Marca del Este. Los libros que aún no tienen portada muestran una genérica con sus iniciales.</p>'],
       ['¿Los logros se pueden perder?',
         '<p>No. Se guardan en tu cuenta con la fecha en que los conseguiste, aunque luego quites libros o la serie crezca.</p>'],
     ]],

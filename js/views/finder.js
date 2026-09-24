@@ -1,10 +1,10 @@
 import { html, raw, $, cover } from '../util.js';
-import { state, user, isSupporter, matches, compareBooks, categoryName } from '../store.js';
-import { viewHeader, PERK_TAG } from '../ui.js';
-import * as api from '../api.js';
+import { state, matches, compareBooks, categoryName } from '../store.js';
+import { viewHeader } from '../ui.js';
 import { track } from '../track.js';
 import { setNavList } from '../navlist.js';
 import { icon } from '../icons.js';
+import { hasMark, markIcons } from '../marks.js';
 
 const LAST_PICK = 'edm.surprise';
 
@@ -34,11 +34,7 @@ export async function renderFinder(root) {
   try { f = { ...f, ...JSON.parse(sessionStorage.getItem(KEY) || '{}') }; } catch { /* sin storage */ }
   const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(f)); } catch { /* sin storage */ } };
 
-  const supporter = isSupporter();
-  let directed = new Set();
-  if (supporter) {
-    try { directed = new Set((await api.getPlays(user().id)).filter((p) => p.role === 'dirigido').map((p) => p.catalog_id)); } catch { /* RLS */ }
-  }
+  const done = (id) => hasMark(id, 'played_at') || hasMark(id, 'directed_at');
 
   // Etiquetas disponibles, las más frecuentes primero
   const tagCount = new Map();
@@ -65,7 +61,7 @@ export async function renderFinder(root) {
       </div>`) : ''}
       <div class="finder-foot">
         <div class="finder-switches">
-          ${supporter ? raw(html`<label class="switch"><input type="checkbox" name="fresh" ${f.fresh ? 'checked' : ''}> <span>Solo las que no he dirigido</span> ${raw(PERK_TAG)}</label>`) : ''}
+          <label class="switch"><input type="checkbox" name="fresh" ${f.fresh ? 'checked' : ''}> <span>Ocultar las que ya he jugado o dirigido</span></label>
           <label class="switch"><input type="checkbox" name="nodata" ${f.nodata ? 'checked' : ''}> <span>Incluir libros sin datos de juego</span></label>
         </div>
         <button type="button" class="link" data-clear>Limpiar filtros</button>
@@ -99,7 +95,7 @@ export async function renderFinder(root) {
       if (f.duration === '4+' && !(b.sessions >= 4 || (b.tags || []).includes('Campaña'))) return false;
       if (f.tags.length && !f.tags.every((t) => (b.tags || []).includes(t))) return false;
       if (f.scope === 'mine' && !state.library.has(b.id)) return false;
-      if (supporter && f.fresh && directed.has(b.id)) return false;
+      if (f.fresh && done(b.id)) return false;
       return true;
     }).sort((a, b) => {
       // Con nivel: primero los módulos cuyo rango está más centrado en ese nivel
@@ -122,7 +118,7 @@ export async function renderFinder(root) {
           <h3>${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}</h3>
           <p class="finder-meta">${gameInfo(b) || categoryName(b.category_id)}
             ${have ? raw('<span class="badge badge-ok">La tengo</span>') : ''}
-            ${directed.has(b.id) ? raw('<span class="badge">Dirigida</span>') : ''}</p>
+            ${raw(markIcons(b.id))}</p>
           ${b.summary ? raw(html`<p class="finder-summary">${b.summary}</p>`) : ''}
           ${(b.tags || []).length ? raw(html`<p class="tags">${b.tags.slice(0, 5).map((t) => raw(html`<span class="tag">${t}</span>`))}</p>`) : ''}
         </div>

@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.9.0';
+export const APP_VERSION = '1.10.0';
 
 export const RELEASES = [
+  {
+    version: '1.10.0',
+    date: '2026-09-25',
+    notes: [
+      'Nuevo: marca cualquier libro como Leído, Jugado o Dirigido desde su ficha, lo tengas o no.',
+      'Las marcas se ven como iconos en la biblioteca y el catálogo, y puedes filtrar por ellas en «Mi biblioteca» (Sin leer, Jugados…).',
+      'El buscador de aventuras permite a todos ocultar las que ya has jugado o dirigido.',
+    ],
+  },
   {
     version: '1.9.0',
     date: '2026-09-24',

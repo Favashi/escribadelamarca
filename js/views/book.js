@@ -5,6 +5,7 @@ import { formatCode, normalizeCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { icon, ribbon } from '../icons.js';
 import { uploadCover, removeCover } from '../covers.js';
+import { markButtons, toggleMark, loadMarks } from '../marks.js';
 import { settings } from '../settings.js';
 import { removeWithUndo } from '../library-actions.js';
 import { gameInfo } from './finder.js';
@@ -59,6 +60,7 @@ export async function renderBook(root, { id }) {
         <h1>${book.title}</h1>
         ${book.author ? raw(html`<p class="author">${book.author}</p>`) : ''}
         ${book.status === 'pending' ? raw('<p class="badge badge-warn">Pendiente de revisión</p>') : ''}
+        ${raw(markButtons(book.id))}
         <dl class="meta">
           ${book.kind ? raw(html`<dt>Tipo</dt><dd>${book.kind}</dd>`) : ''}
           ${book.pages ? raw(html`<dt>Páginas</dt><dd>${book.pages}</dd>`) : ''}
@@ -166,7 +168,8 @@ export async function renderBook(root, { id }) {
         </div>
       </section>`) : ''}</div>`;
 
-  const rerender = () => renderBook(root, { id });
+  // Solo si la ficha sigue abierta: una petición que termina tarde no debe pintar encima de otra pantalla
+  const rerender = () => { if (location.hash === `#/libro/${id}`) renderBook(root, { id }); };
 
   // Anterior / siguiente: sustituye la entrada del historial para que «Volver» regrese a la lista
   const go = (target) => { if (target) location.replace(`#/libro/${target}`); };
@@ -218,6 +221,7 @@ export async function renderBook(root, { id }) {
       role: f.get('role'), played_on: f.get('played_on'),
       group_name: f.get('group_name').trim() || null, notes: f.get('notes').trim() || null,
     });
+    await loadMarks(uid).catch(() => {});   // el diario marca Jugada o Dirigida
     toast('Añadido al diario', 'ok');
     rerender();
   }));
@@ -251,6 +255,16 @@ export async function renderBook(root, { id }) {
     else await api.deleteBarcode(code, book.id);
     await refreshCatalog();
     rerender();
+  })));
+
+  root.querySelectorAll('[data-mark-key]').forEach((btn) => btn.addEventListener('click', run(async () => {
+    btn.disabled = true;
+    try {
+      const row = await toggleMark(book.id, btn.dataset.markKey);
+      const on = !!row[btn.dataset.markKey];
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    } finally { btn.disabled = false; }
   })));
 
   $('[data-cover-file]', root)?.addEventListener('change', run(async (e) => {

@@ -568,3 +568,19 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .bulk-rows .bad { color: var(--danger); font-weight: 600; }
 .book-cover { margin: 0; display: grid; justify-items: center; gap: 6px; }
 .book-cover figcaption { font: .68rem var(--font-ui); color: var(--muted); max-width: 200px; text-align: center; }
+
+/* ---------- Marcas: leída, jugada, dirigida ---------- */
+.mark-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.book .mark-buttons { justify-content: center; }
+@media (min-width: 560px) { .book .mark-buttons { justify-content: flex-start; } }
+.mark-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 600 .88rem var(--font-ui); cursor: pointer;
+}
+.mark-btn .i { width: 18px; height: 18px; }
+.mark-btn.on { background: var(--purple-soft); border-color: var(--purple); color: var(--purple); }
+.mark-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mark-icons { display: inline-flex; gap: 4px; vertical-align: middle; color: var(--purple); }
+.mark-icons .i { width: 15px; height: 15px; }
+.card .mark-icons { margin-top: -2px; }
+.row-title .mark-icons { margin-left: 6px; }

@@ -6,6 +6,7 @@ import { setNavList } from '../navlist.js';
 import { icon } from '../icons.js';
 import { removeWithUndo } from '../library-actions.js';
 import { isNewBook } from '../achievements.js';
+import { markIcons } from '../marks.js';
 
 /** Filtros de calidad de datos (solo admin). Cada uno: [id, etiqueta, test(libro, ctx)]. */
 const DATA_FILTERS = [
@@ -23,7 +24,7 @@ function bookRow(b, extra = '') {
   const have = state.library.has(b.id);
   return html`<li class="row" data-id="${b.id}">
     ${raw(cover(b, 'cover-xs'))}
-    <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}${b.status === 'pending' ? raw(' <span class="badge badge-warn">pendiente</span>') : ''}${b.author ? raw(html`<small>${b.author}</small>`) : ''}${extra ? raw(extra) : ''}</a>
+    <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}${b.status === 'pending' ? raw(' <span class="badge badge-warn">pendiente</span>') : ''}${b.author ? raw(html`<small>${b.author}</small>`) : ''}${extra ? raw(extra) : ''}${raw(markIcons(b.id))}</a>
     <button class="toggle ${have ? 'on' : ''}" data-toggle aria-pressed="${String(have)}" aria-label="${have ? 'Quitar de' : 'Añadir a'} mi biblioteca">
       ${have ? '✓ Lo tengo' : '+ Añadir'}
     </button>

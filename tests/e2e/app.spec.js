@@ -228,3 +228,35 @@ test.describe('portadas (admin)', () => {
     expect((await api(`/rest/v1/catalog?id=eq.${id}&select=cover_url`))[0].cover_url).toBeNull();
   });
 });
+
+test('marcas: leída, jugada y dirigida (sin tener el libro)', async ({ page, account }) => {
+  const id = await bookId('ref=eq.test:T1');
+  await page.goto(`/#/libro/${id}`);
+  const leida = page.getByRole('button', { name: 'Leída' });
+  await expect(leida).toHaveAttribute('aria-pressed', 'false');
+  await leida.click();
+  await expect(leida).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Dirigida' }).click();
+  await expect(page.getByRole('button', { name: 'Dirigida' })).toHaveAttribute('aria-pressed', 'true');
+  const [m] = await api(`/rest/v1/book_marks?user_id=eq.${account.user.id}&select=read_at,played_at,directed_at`);
+  expect(m.read_at).not.toBeNull(); expect(m.played_at).toBeNull(); expect(m.directed_at).not.toBeNull();
+  expect(await libraryOf(account.user.id)).toEqual([]);   // marcar no es tenerlo
+
+  // Iconos en el catálogo
+  await page.goto('/#/catalogo');
+  await page.getByRole('searchbox', { name: 'Buscar' }).fill('T1');
+  await expect(page.locator('.row', { hasText: TEST_TITLE }).locator('.mark-icons')).toHaveAttribute('aria-label', 'Leída, Dirigida');
+
+  // Filtro de la biblioteca: se añade y se filtra por «Sin leer» / «Leídos»
+  await page.goto(`/#/libro/${id}`);
+  await page.getByRole('button', { name: 'Añadir a mi biblioteca' }).click();
+  await expect(page.getByRole('button', { name: 'Quitar' })).toBeVisible();
+  await page.goto('/#/biblioteca');
+  await page.getByText('Por categorías', { exact: true }).click();
+  const filtro = page.locator('.lib-marks select');
+  await filtro.selectOption('unread');
+  await expect(page.locator('.card-title', { hasText: TEST_TITLE })).toHaveCount(0);
+  await filtro.selectOption('read');
+  await expect(page.locator('.card-title', { hasText: TEST_TITLE })).toBeVisible();
+  await filtro.selectOption('');
+});

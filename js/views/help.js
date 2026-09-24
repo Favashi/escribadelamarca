@@ -58,6 +58,11 @@ function sections() {
         `<p>Abre un libro que te falte y pulsa <strong>«☆ Lo quiero»</strong>. Luego, en <a href="#/deseos">Perfil → Lista de
         deseos</a>, crea un enlace y compártelo: quien lo abra verá tu nombre y los títulos, nada más. Cuando consigas un
         libro y lo añadas a tu biblioteca, sale solo de la lista.</p>`],
+      ['¿Puedo marcar un libro como leído, jugado o dirigido?',
+        `<p>Sí: en la ficha de cualquier libro, lo tengas o no, pulsa <strong>Leída</strong>, <strong>Jugada</strong> o
+        <strong>Dirigida</strong>. Aparecen como iconos en la biblioteca y el catálogo, puedes filtrar por ellas en
+        «Mi biblioteca» (por ejemplo, «Sin leer») y en el buscador de aventuras ocultar las que ya has jugado o dirigido.
+        No cuentan como «tenerlo» ni para completar series.</p>`],
       ['¿Puedo ordenar la biblioteca?',
         '<p>Sí, en la vista «Por categorías»: por serie y número, por los añadidos más recientes o por título.</p>'],
     ]],

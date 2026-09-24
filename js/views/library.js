@@ -5,11 +5,21 @@ import { viewHeader, errMsg } from '../ui.js';
 import { setNavList } from '../navlist.js';
 import { isNewBook, newInMySeries } from '../achievements.js';
 import { removeWithUndo, addMany } from '../library-actions.js';
+import { markIcons, markText, hasMark } from '../marks.js';
 import * as api from '../api.js';
 
 const LS_KEY = 'edm.showMissing';
 const VIEW_KEY = 'edm.libView';
 const SORT_KEY = 'edm.libSort';
+const MARK_KEY = 'edm.libMarks';
+const MARK_FILTERS = [
+  { id: '', label: 'Todos' },
+  { id: 'unread', label: 'Sin leer', test: (id) => !hasMark(id, 'read_at') },
+  { id: 'read', label: 'Leídos', test: (id) => hasMark(id, 'read_at') },
+  { id: 'unplayed', label: 'Sin jugar ni dirigir', test: (id) => !hasMark(id, 'played_at') && !hasMark(id, 'directed_at') },
+  { id: 'played', label: 'Jugados', test: (id) => hasMark(id, 'played_at') },
+  { id: 'directed', label: 'Dirigidos', test: (id) => hasMark(id, 'directed_at') },
+];
 const SORTS = [
   { id: 'code', label: 'Serie y número' },
   { id: 'recent', label: 'Añadidos recientemente' },
@@ -22,10 +32,12 @@ export function renderLibrary(root) {
   let mode = 'categories';
   let markMode = false;   // «Marcar lo que tengo»: las casillas de las series se tocan para añadir/quitar
   let sort = 'code';
+  let markFilter = '';
   try {
     showMissing = localStorage.getItem(LS_KEY) === '1';
     mode = localStorage.getItem(VIEW_KEY) === 'series' ? 'series' : 'categories';
     sort = SORTS.some((o) => o.id === localStorage.getItem(SORT_KEY)) ? localStorage.getItem(SORT_KEY) : 'code';
+    markFilter = MARK_FILTERS.some((o) => o.id === localStorage.getItem(MARK_KEY)) ? localStorage.getItem(MARK_KEY) : '';
   } catch { /* sin storage */ }
 
   const owned = state.catalog.filter((b) => state.library.has(b.id));
@@ -42,6 +54,9 @@ export function renderLibrary(root) {
       <label class="lib-sort" ${mode === 'series' ? 'hidden' : ''}><span>Ordenar por</span>
         <select name="sort">${SORTS.map((o) => raw(html`<option value="${o.id}" ${sort === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
       </label>
+      <label class="lib-sort lib-marks" ${mode === 'series' ? 'hidden' : ''}><span>Mostrar</span>
+        <select name="marks">${MARK_FILTERS.map((o) => raw(html`<option value="${o.id}" ${markFilter === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
+      </label>
       <label class="switch missing-toggle" ${mode === 'series' ? 'hidden' : ''}><input type="checkbox" ${showMissing ? 'checked' : ''}> <span>Ver los que me faltan</span></label>
     </div>
     <div class="news-slot"></div>
@@ -51,7 +66,9 @@ export function renderLibrary(root) {
 
   function draw() {
     if (mode === 'series') return drawSeries();
-    const pool = (showMissing ? state.catalog.filter((b) => b.status === 'approved' || state.library.has(b.id)) : owned).filter((b) => matches(b, query));
+    const markTest = MARK_FILTERS.find((o) => o.id === markFilter)?.test;
+    const pool = (showMissing ? state.catalog.filter((b) => b.status === 'approved' || state.library.has(b.id)) : owned)
+      .filter((b) => matches(b, query) && (!markTest || markTest(b.id)));
 
     if (!owned.length && !showMissing) {
       list.innerHTML = html`<div class="empty">
@@ -66,7 +83,10 @@ export function renderLibrary(root) {
       return;
     }
 
-    if (!pool.length) { list.innerHTML = html`<p class="muted pad">Sin resultados para «${query}».</p>`; return; }
+    if (!pool.length) {
+      list.innerHTML = html`<p class="muted pad">${query ? `Sin resultados para «${query}».` : 'Ningún libro con ese filtro.'}</p>`;
+      return;
+    }
 
     const card = (b) => {
       const entry = state.library.get(b.id);
@@ -74,6 +94,7 @@ export function renderLibrary(root) {
         ${raw(cover(b))}
         <span class="card-title">${b.title}</span>
         <span class="card-meta">${b.code ? `${b.code} · ` : ''}${entry ? fmtShort(entry.added_at) : 'No lo tengo'}</span>
+        ${raw(markIcons(b.id))}
       </a>`);
     };
 
@@ -121,7 +142,8 @@ export function renderLibrary(root) {
     const tile = (b) => {
       const have = state.library.has(b.id);
       const wished = !have && state.wishlist.has(b.id);
-      const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}`;
+      const marks = markText(b.id);
+      const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}${marks ? ` · ${marks}` : ''}`;
       const fresh = isNewBook(b);
       if (markMode) {
         return html`<button type="button" class="tile marking ${have ? 'owned' : 'missing'} ${fresh ? 'is-new' : ''}" data-mark="${b.id}"
@@ -197,7 +219,7 @@ export function renderLibrary(root) {
       try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
       root.querySelector('input[name=mode][value=series]').checked = true;
       $('.missing-toggle', root).hidden = true;
-      $('.lib-sort', root).hidden = true;
+      root.querySelectorAll('.lib-sort').forEach((el) => { el.hidden = true; });
       markMode = true;
       draw();
       return;
@@ -238,9 +260,14 @@ export function renderLibrary(root) {
     markMode = false;
     try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
     $('.missing-toggle', root).hidden = mode === 'series';
-    $('.lib-sort', root).hidden = mode === 'series';
+    root.querySelectorAll('.lib-sort').forEach((el) => { el.hidden = mode === 'series'; });
     draw();
   }));
+  $('.lib-marks select', root).addEventListener('change', (e) => {
+    markFilter = e.target.value;
+    try { localStorage.setItem(MARK_KEY, markFilter); } catch { /* sin storage */ }
+    draw();
+  });
   $('.lib-sort select', root).addEventListener('change', (e) => {
     sort = e.target.value;
     try { localStorage.setItem(SORT_KEY, sort); } catch { /* sin storage */ }

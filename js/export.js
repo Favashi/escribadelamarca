@@ -39,6 +39,7 @@ export async function downloadAllJson() {
     sugerencias: state.suggestions.filter((s) => s.created_by === uid)
       .map((s) => ({ libro: title(s.catalog_id), cambios: s.changes, nota: s.note, estado: s.status, fecha: s.created_at })),
     lista_de_deseos: [...state.wishlist].map(title),
+    marcas: [...state.marks.values()].map((m) => ({ libro: title(m.catalog_id), leida: m.read_at, jugada: m.played_at, dirigida: m.directed_at })),
   };
   if (isSupporter()) {
     const [loans, plays] = await Promise.all([api.getLoans(uid).catch(() => []), api.getPlays(uid).catch(() => [])]);

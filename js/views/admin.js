@@ -1,6 +1,7 @@
 import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
 import { icon } from '../icons.js';
 import { uploadCover, matchFiles, deleteAllCovers } from '../covers.js';
+import { renderStats } from './admin-stats.js';
 import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
 import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog } from '../ui.js';
@@ -13,18 +14,22 @@ const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
 /** Pestañas internas del área de administración (también las usa la vista de Revisión). */
 export function adminTabs(active) {
-  const n = pendingCount();
+  const pending = pendingCount();
+  const newFeedback = state.feedback.filter((f) => f.status === 'new').length;
   const tabs = [
     ['resumen', '#/admin', 'Resumen'],
-    ['revision', '#/revision', `Revisión${n ? ` (${n})` : ''}`],
+    ['estadisticas', '#/admin/estadisticas', 'Estadísticas'],
+    ['revision', '#/revision', 'Revisión', pending],
     ['usuarios', '#/admin/usuarios', 'Usuarios'],
     ['donaciones', '#/admin/donaciones', 'Donaciones'],
-    ['comentarios', '#/admin/comentarios', `Comentarios${state.feedback.filter((f) => f.status === 'new').length ? ` (${state.feedback.filter((f) => f.status === 'new').length})` : ''}`],
+    ['comentarios', '#/admin/comentarios', 'Comentarios', newFeedback],
     ['portadas', '#/admin/portadas', 'Portadas'],
     ['ajustes', '#/admin/ajustes', 'Ajustes'],
   ];
-  return html`<nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, href, label]) =>
-    raw(html`<a href="${href}" class="${id === active ? 'active' : ''}" ${id === active ? raw('aria-current="page"') : ''}>${label}</a>`))}</nav>`;
+  // Los contadores van en una burbuja (no «(3)» en el texto) para que quepan en la rejilla del móvil
+  return html`<nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, href, label, n]) =>
+    raw(html`<a href="${href}" class="${id === active ? 'active' : ''}" ${id === active ? raw('aria-current="page"') : ''}
+      ${n ? raw(html`aria-label="${label}, ${n} pendientes"`) : ''}>${label}${n ? raw(html`<b class="tab-count" aria-hidden="true">${n > 99 ? '99+' : n}</b>`) : ''}</a>`))}</nav>`;
 }
 
 function denied(root) {
@@ -62,6 +67,7 @@ export async function renderAdmin(root, params = {}) {
   const body = $('.admin-body', root);
   try {
     if (section === 'ajustes') renderSettings(body);
+    else if (section === 'estadisticas') await renderStats(body);
     else if (section === 'portadas') renderCovers(body);
     else if (section === 'comentarios') await renderFeedback(body);
     else if (section === 'usuarios') await renderUsers(body);

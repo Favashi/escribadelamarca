@@ -269,6 +269,34 @@ pg_restore --no-owner --clean --if-exists -d "$NUEVA_DB_URL" backup/public.dump
 psql "$NUEVA_DB_URL" -f backup/migrations_history.sql
 ```
 
+## Estadísticas
+Cifras **agregadas** (sin emails, nombres ni ids) en el esquema `analytics` (migración `20260925000100`), que no se
+expone por la API de la app. Las usan **Admin → Estadísticas** (`admin_stats`, `js/views/admin-stats.js`: periodo,
+comparación con el anterior, canales, retención, top y salud; CSV del periodo) y **Google Looker Studio**.
+
+| Vista | Qué tiene |
+|---|---|
+| `analytics.uso_diario` | Por día (último año): altas, activos, escaneos (reconocidos/varios/desconocidos), búsquedas, libros y deseos añadidos, errores |
+| `analytics.canales_diario` | Por día y canal (`?ref=`): visitas a la portada y altas |
+| `analytics.libros` | Por libro: coleccionado, deseado, leído, jugado, dirigido, tiene portada |
+| `analytics.retencion_semanal` | Por semana de alta: usuarios y cuántos vuelven 1, 2 y 4 semanas después |
+| `analytics.salud_diaria` | Por día (90 días): errores de la app y avisos de Telegram entregados/fallidos |
+| `analytics.resumen` | Una fila con los totales de hoy y el tamaño de la base de datos |
+
+**Looker Studio** (gratis, con tu cuenta de Google):
+1. Activa el lector (una vez, en el SQL Editor; usa una contraseña larga y guárdala en tu gestor):
+   `alter role looker_reader with login password '<contraseña>';`
+   Solo puede leer las vistas de `analytics` (probado en `supabase/tests/database/08_analytics.test.sql`).
+   Para revocarlo: `alter role looker_reader with nologin;`
+2. Datos de conexión: Supabase → **Connect** → **Session pooler** (IPv4; la conexión directa es solo IPv6 y Google no
+   llega). Host `aws-…pooler.supabase.com`, puerto `5432`, base de datos `postgres`, usuario
+   **`looker_reader.<ref del proyecto>`** (con el punto y el ref, como indica el pooler) y la contraseña del paso 1.
+3. En https://lookerstudio.google.com → Crear → Fuente de datos → **PostgreSQL** → introduce los datos y marca
+   **Habilitar SSL**. En vez de elegir tabla, usa **Consulta personalizada**, una fuente por vista:
+   `select * from analytics.uso_diario` (y lo mismo con las demás).
+4. Crea el informe con esas fuentes (gráficos de series temporales con `dia`, tablas, filtros de fecha…).
+   Exportar: menú de cada gráfico → Exportar (CSV o Google Sheets); también puedes programar el envío por correo.
+
 ## Portadas
 - Permiso de La Marca del Este (septiembre de 2026, general «para la app»; guardar la respuesta por escrito).
   Nunca en el repositorio: bucket **público** `covers` de Supabase Storage (migración `20260924001400`), con subida,

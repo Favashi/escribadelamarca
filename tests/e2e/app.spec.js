@@ -260,3 +260,17 @@ test('marcas: leída, jugada y dirigida (sin tener el libro)', async ({ page, ac
   await expect(page.locator('.card-title', { hasText: TEST_TITLE })).toBeVisible();
   await filtro.selectOption('');
 });
+
+test.describe('estadísticas (admin)', () => {
+  test.use({ admin: true });
+  test('Admin → Estadísticas muestra el periodo, las gráficas y cambia de periodo', async ({ page, account }) => {
+    await page.goto('/#/admin/estadisticas');
+    await expect(page.getByText('Actividad diaria')).toBeVisible();
+    await expect(page.locator('.lchart svg')).toHaveCount(4);
+    await page.getByText('7 días', { exact: true }).click();
+    await expect(page.getByText('Últimos 7 días comparados con los 7 anteriores.')).toBeVisible();
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Descargar CSV' }).click();
+    expect((await download).suggestedFilename()).toBe('escriba-estadisticas-7d.csv');
+  });
+});

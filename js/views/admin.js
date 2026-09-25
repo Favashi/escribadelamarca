@@ -7,6 +7,7 @@ import { updateAdminBadge } from '../nav.js';
 import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog } from '../ui.js';
 import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
+import { SUPABASE_URL } from '../config.js';
 import { renderAnnouncement } from '../announcement.js';
 
 const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
@@ -37,20 +38,6 @@ function denied(root) {
 }
 
 /** Mini gráfica de barras semanal con los valores visibles (no depende solo del color). */
-function weeklyChart(title, weekly, key) {
-  const max = Math.max(1, ...weekly.map((w) => w[key]));
-  const total = weekly.reduce((t, w) => t + w[key], 0);
-  const label = `${title}: ${weekly.map((w) => `${fmtShort(w.week)} ${w[key]}`).join(', ')}`;
-  return html`<figure class="wchart">
-    <figcaption><span>${title}</span><strong>${total}</strong><small>8 semanas</small></figcaption>
-    <div class="wchart-bars" role="img" aria-label="${label}">
-      ${weekly.map((w) => raw(html`<div class="wchart-col" title="Semana del ${fmtShort(w.week)}: ${w[key]}">
-        <span class="wchart-val">${w[key] || ''}</span>
-        <span class="wchart-bar" style="height:${Math.round((w[key] / max) * 100)}%"></span>
-      </div>`))}
-    </div>
-  </figure>`;
-}
 
 /** f•••@gmail.com */
 export const maskEmail = (email) => {
@@ -79,78 +66,70 @@ export async function renderAdmin(root, params = {}) {
   }
 }
 
+/** Supabase → Table Editor del proyecto (errores y avisos se consultan ahí). */
+const TABLE_EDITOR = `https://supabase.com/dashboard/project/${(SUPABASE_URL.match(/https:\/\/([a-z0-9]+)\./) || [])[1]}/editor`;
+
+/**
+ * Resumen: lo que hay que atender (cada pendiente con su enlace) y cuatro cifras clave.
+ * El análisis (gráficas, canales, retención, top) está en Estadísticas.
+ */
 async function renderSummary(body) {
-  const [m, acq] = await Promise.all([api.adminMetrics(), api.adminAcquisition().catch(() => null)]);
-  const u = m.users, l = m.library, s = m.scans, c = m.catalog, d = m.donations;
-  const weekly = m.weekly || [];
-  const list = (rows, empty) => rows.length
-    ? html`<ol class="toplist">${rows.map((r) => raw(html`<li><span>${r.code ? `${r.code} · ` : ''}${r.title}</span><strong>${r.n}</strong></li>`))}</ol>`
-    : html`<p class="muted small">${empty}</p>`;
+  // La parte de salud es opcional: si falla (migración sin aplicar, versión mezclada en caché), el Resumen sale sin ella
+  const [m, ov] = await Promise.all([api.adminMetrics(), (async () => api.adminOverview())().catch(() => null)]);
+  const u = m.users, d = m.donations;
+  const approved = state.catalog.filter((b) => b.status === 'approved');
+  const booksPerCode = new Map();
+  for (const bc of state.barcodes) booksPerCode.set(bc.code, (booksPerCode.get(bc.code) || 0) + 1);
+  const dupCodes = [...booksPerCode.values()].filter((n) => n > 1).length;
+  const unverifiedBooks = new Set(state.barcodes.filter((b) => b.status === 'approved' && !b.verified).map((b) => b.catalog_id)).size;
+  const n = (x, one, many) => `${x} ${x === 1 ? one : many}`;
+  const pending = {
+    books: state.catalog.filter((b) => b.status === 'pending').length,
+    codes: state.barcodes.filter((b) => b.status === 'pending').length,
+    suggestions: state.suggestions.filter((x) => x.status === 'pending').length,
+  };
+  const review = pending.books + pending.codes + pending.suggestions;
+  const dbPct = ov ? Math.round((ov.db_mb / ov.db_limit_mb) * 100) : 0;
+
+  // [icono, texto, detalle, enlace, externo?] — solo los que tienen algo
+  const todos = [
+    review && ['quill', `${n(review, 'propuesta', 'propuestas')} por revisar`,
+      [pending.books && n(pending.books, 'libro', 'libros'), pending.codes && n(pending.codes, 'código', 'códigos'),
+        pending.suggestions && n(pending.suggestions, 'sugerencia', 'sugerencias')].filter(Boolean).join(' · '), '#/revision'],
+    state.feedback.filter((f) => f.status === 'new').length && ['chat',
+      n(state.feedback.filter((f) => f.status === 'new').length, 'comentario nuevo', 'comentarios nuevos'), '', '#/admin/comentarios'],
+    d.unmatched && ['coffee', n(d.unmatched, 'donación sin emparejar', 'donaciones sin emparejar'), 'Asígnalas a su usuario', '#/admin/donaciones'],
+    approved.filter((b) => !b.cover_url).length && ['camera',
+      n(approved.filter((b) => !b.cover_url).length, 'libro sin portada', 'libros sin portada'), '', '#/admin/portadas'],
+    dupCodes && ['warning', n(dupCodes, 'código de barras duplicado', 'códigos de barras duplicados'), 'Un mismo EAN en varios libros', '#/catalogo/duplicates'],
+    unverifiedBooks && ['shield', n(unverifiedBooks, 'libro con código sin verificar', 'libros con códigos sin verificar'),
+      'Se verifican escaneando el ejemplar (modo «verificar estantería»)', '#/catalogo/unverified'],
+    ov?.errors_7d && ['bug', `${n(ov.errors_7d, 'error', 'errores')} en la app (7 días)`, n(ov.error_kinds_7d, 'error distinto', 'errores distintos'),
+      TABLE_EDITOR, true],
+    ov?.notify_failed_7d && ['warning', `${n(ov.notify_failed_7d, 'aviso', 'avisos')} de Telegram sin entregar (7 días)`,
+      'Tabla admin_notifications', TABLE_EDITOR, true],
+    dbPct >= 80 && ['warning', `Base de datos al ${dbPct} % del límite`, `${ov.db_mb} MB de ${ov.db_limit_mb} MB`, TABLE_EDITOR, true],
+  ].filter(Boolean);
 
   body.innerHTML = html`
-    <section class="kpis">
+    <section class="panel todo-panel">
+      <h2>Pendiente</h2>
+      ${todos.length ? raw(html`<ul class="todo-list">${todos.map(([ic, title, sub, href, ext]) => raw(html`<li>
+        <a href="${href}" ${ext ? raw('target="_blank" rel="noopener"') : ''}>
+          <span class="todo-icon" aria-hidden="true">${raw(icon(ic))}</span>
+          <span class="todo-text"><strong>${title}</strong>${sub ? raw(html`<small>${sub}</small>`) : ''}</span>
+          ${raw(icon('chevron', { cls: 'todo-go' }))}
+        </a></li>`))}</ul>`)
+        : raw(html`<p class="todo-done">${raw(icon('seal'))} Todo al día. No hay nada pendiente.</p>`)}
+    </section>
+
+    <section class="kpis four">
       ${raw(kpi(u.total, 'usuarios', `+${u.new_7d} esta semana`))}
-      ${raw(kpi(u.active_7d, 'activos (7 días)', `${u.active_1d} hoy · ${u.active_30d} en 30 días`))}
+      ${raw(kpi(u.active_7d, 'activos (7 días)', `${u.active_1d} hoy`))}
       ${raw(kpi(u.supporters, 'mecenas', `${pct(u.supporters, u.total)} % de los usuarios`))}
-      ${raw(kpi(eur(d.total), 'recaudado', `${d.count} donaciones${d.unmatched ? ` · ${d.unmatched} sin emparejar` : ''}`))}
-      ${raw(kpi(l.entries, 'libros en bibliotecas', `+${l.added_7d} esta semana · ${u.with_books} usuarios con libros`))}
-      ${raw(kpi(s.total_30d, 'escaneos (30 días)', `${pct(s.hit_30d, s.total_30d)} % reconocidos`))}
+      ${raw(kpi(eur(d.total), 'recaudado', `${d.count} donaciones`))}
     </section>
-
-    <section class="panel">
-      <h2>Últimas 8 semanas</h2>
-      <div class="wcharts">
-        ${raw(weeklyChart('Altas', weekly, 'signups'))}
-        ${raw(weeklyChart('Usuarios activos', weekly, 'active'))}
-        ${raw(weeklyChart('Libros añadidos', weekly, 'added'))}
-        ${raw(weeklyChart('Escaneos', weekly, 'scans'))}
-      </div>
-    </section>
-
-    <div class="admin-cols">
-      <section class="panel">
-        <h2>Escaneos (30 días)</h2>
-        <dl class="meta admin-meta">
-          <dt>Reconocidos</dt><dd>${s.hit_30d}</dd>
-          <dt>Varios libros</dt><dd>${s.multi_30d}</dd>
-          <dt>Desconocidos</dt><dd>${s.unknown_30d}</dd>
-          <dt>Búsquedas de aventuras</dt><dd>${s.searches_30d}</dd>
-        </dl>
-      </section>
-      <section class="panel">
-        <h2>Catálogo</h2>
-        <dl class="meta admin-meta">
-          <dt>Publicaciones</dt><dd>${c.books}</dd>
-          <dt>Códigos verificados</dt><dd>${c.verified_codes}</dd>
-          <dt>Códigos sin verificar</dt><dd>${c.unverified_codes}</dd>
-          <dt>Pendientes de revisar</dt><dd>${c.pending_books + c.pending_codes} ${c.pending_books + c.pending_codes ? raw('<a href="#/revision">→</a>') : ''}</dd>
-          <dt>Deseos · partidas</dt><dd>${l.wishes} · ${l.plays}</dd>
-        </dl>
-      </section>
-    </div>
-
-    ${acq ? raw(acquisitionPanel(acq)) : ''}
-
-    <div class="admin-cols">
-      <section class="panel"><h2>Más coleccionados</h2>${raw(list(m.top_owned || [], 'Aún no hay libros en bibliotecas.'))}</section>
-      <section class="panel"><h2>Más deseados</h2>${raw(list(m.top_wished || [], 'Aún no hay listas de deseos.'))}</section>
-    </div>
-    <p class="muted small center">Datos a ${fmtDate(m.generated_at)}. Los eventos de uso se borran a los 12 meses.</p>`;
-}
-
-/** ¿De dónde vienen? Visitas anónimas a la portada y altas por canal (?ref=…). */
-function acquisitionPanel(rows) {
-  const name = (r) => ({ directo: 'Directo / sin canal', otro: 'Otros', 'lista-compartida': 'Listas de deseos compartidas' }[r] || r);
-  return html`<section class="panel">
-    <h2>¿De dónde vienen?</h2>
-    <p class="muted small acq-help">Comparte enlaces con <code>?ref=canal</code> (p. ej. <code>?ref=reddit</code> o
-      <code>?ref=jornadas</code>) para saber qué difusión funciona. Visitas: una por navegador y día a la portada o a una
-      lista compartida, últimos 30 días. Altas: nuevas cuentas en 30 y 90 días.</p>
-    ${rows.length ? raw(html`<div class="table-scroll"><table class="acq-table">
-      <thead><tr><th>Canal</th><th>Visitas</th><th>Altas 30 d</th><th>90 d</th></tr></thead>
-      <tbody>${rows.map((r) => raw(html`<tr><td>${name(r.ref)}</td><td>${r.visits_30d}</td><td>${r.signups_30d}</td><td>${r.signups_90d}</td></tr>`))}</tbody>
-    </table></div>`) : raw('<p class="muted small">Aún no hay datos.</p>')}
-  </section>`;
+    <p class="center"><a class="btn btn-ghost btn-sm" href="#/admin/estadisticas">Ver estadísticas ${raw(icon('chevron'))}</a></p>`;
 }
 
 async function renderUsers(body) {

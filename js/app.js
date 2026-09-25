@@ -258,6 +258,7 @@ const mount = (fn) => async (params) => {
 route('/biblioteca', mount(renderLibrary));
 route('/escanear', mount(renderScan));
 route('/catalogo', mount(renderCatalog));
+route('/catalogo/:filtro', mount(renderCatalog));   // admin: con un filtro de calidad ya aplicado
 route('/libro/:id', mount(renderBook));
 route('/perfil', mount(renderProfile));
 route('/mecenas', mount(renderSupporter));

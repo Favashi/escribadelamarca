@@ -59,10 +59,10 @@ function dataContext() {
   };
 }
 
-export function renderCatalog(root) {
+export function renderCatalog(root, params = {}) {
   let query = '';
-  let dataFilter = '';
   const admin = isAdmin();
+  let dataFilter = admin && DATA_FILTERS.some((f) => f[0] === params.filtro) ? params.filtro : '';
 
   function pendingSection() {
     const n = admin ? pendingCount() : 0;

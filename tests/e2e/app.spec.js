@@ -274,3 +274,22 @@ test.describe('estadísticas (admin)', () => {
     expect((await download).suggestedFilename()).toBe('escriba-estadisticas-7d.csv');
   });
 });
+
+test.describe('resumen (admin)', () => {
+  test.use({ admin: true });
+  test('Admin → Resumen lista lo pendiente con enlaces directos', async ({ page, account }) => {
+    const [b] = await api('/rest/v1/catalog?select=id', { method: 'POST', body: { title: '[Prueba] propuesta e2e', status: 'pending', source: 'app' } });
+    try {
+      await page.goto('/#/admin');
+      const todo = page.locator('.todo-list');
+      await expect(todo.getByRole('link', { name: /propuesta.* por revisar/ })).toHaveAttribute('href', '#/revision');
+      await expect(page.locator('.kpis .kpi')).toHaveCount(4);
+      // Los duplicados del catálogo importado abren el catálogo con el filtro aplicado
+      await todo.getByRole('link', { name: /duplicado/ }).click();
+      await expect(page).toHaveURL(/#\/catalogo\/duplicates$/);
+      await expect(page.locator('[data-dfilter="duplicates"]')).toHaveClass(/on/);
+    } finally {
+      await api(`/rest/v1/catalog?id=eq.${b.id}`, { method: 'DELETE' });
+    }
+  });
+});

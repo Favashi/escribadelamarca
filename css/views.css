@@ -615,3 +615,20 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .bl-bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .bl-bar span { display: block; height: 100%; background: var(--purple); border-radius: 99px; }
 .barlist strong { text-align: right; }
+
+/* ---------- Admin → Resumen: pendientes ---------- */
+.todo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.todo-list a {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; text-decoration: none;
+  color: var(--ink); background: var(--surface-2); border: 1px solid transparent;
+}
+.todo-list a:hover, .todo-list a:focus-visible { border-color: var(--purple); }
+.todo-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.todo-icon .i { width: 20px; height: 20px; --icon-cut: var(--accent-soft); }
+.todo-text { flex: 1; min-width: 0; }
+.todo-text strong { display: block; font: 700 .92rem var(--font-ui); }
+.todo-text small { display: block; font: .78rem var(--font-ui); color: var(--muted); }
+.todo-go { color: var(--muted); flex: none; }
+.todo-done { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 .95rem var(--font-ui); color: var(--ok); }
+.todo-done .i { width: 26px; height: 26px; --icon-cut: var(--surface); }
+@media (min-width: 640px) { .kpis.four { grid-template-columns: repeat(4, 1fr); } }

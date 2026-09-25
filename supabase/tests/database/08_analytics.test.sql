@@ -1,7 +1,7 @@
 -- Estadísticas: vistas agregadas (sin datos personales), lector de Looker Studio limitado y panel de Admin.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(13);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -35,7 +35,9 @@ select ok(not has_schema_privilege('anon', 'analytics', 'usage') and not has_sch
 -- Panel de Admin
 select public._test_login('11111111-1111-1111-1111-111111111111');
 select throws_ok($$ select public.admin_stats(30) $$, '42501', null, 'usuario: admin_stats rechazado');
+select throws_ok($$ select public.admin_overview() $$, '42501', null, 'usuario: admin_overview rechazado');
 select public._test_login('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+select ok(public.admin_overview() ?& array['errors_7d', 'notify_failed_7d', 'db_mb'], 'admin: pendientes de salud para el Resumen');
 select is(jsonb_array_length(public.admin_stats(30) -> 'daily'), 30, 'admin: serie diaria del periodo (30 días)');
 select ok(public.admin_stats(7) ?& array['current', 'previous', 'channels', 'retention', 'top', 'health', 'summary'],
   'admin: incluye comparación, canales, retención, top, salud y resumen');

@@ -51,18 +51,33 @@ export function renderLibrary(root) {
     </div>
     <div class="toolbar">
       <input type="search" class="search" placeholder="Buscar título, código o autor…" aria-label="Buscar">
-      <label class="lib-sort" ${mode === 'series' ? 'hidden' : ''}><span>Ordenar por</span>
-        <select name="sort">${SORTS.map((o) => raw(html`<option value="${o.id}" ${sort === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
-      </label>
-      <label class="lib-sort lib-marks" ${mode === 'series' ? 'hidden' : ''}><span>Mostrar</span>
-        <select name="marks">${MARK_FILTERS.map((o) => raw(html`<option value="${o.id}" ${markFilter === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
-      </label>
-      <label class="switch missing-toggle" ${mode === 'series' ? 'hidden' : ''}><input type="checkbox" ${showMissing ? 'checked' : ''}> <span>Ver los que me faltan</span></label>
+      <button type="button" class="filters-btn" aria-expanded="false" aria-controls="lib-filters" ${mode === 'series' ? 'hidden' : ''}>
+        ${raw(icon('filter', { cls: 'lf-icon' }))}<span>Filtros</span><b class="filter-count" hidden></b></button>
+    </div>
+    <div class="filters-body" id="lib-filters" hidden>
+          <label class="lib-sort"><span>Ordenar por</span>
+            <select name="sort">${SORTS.map((o) => raw(html`<option value="${o.id}" ${sort === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
+          </label>
+          <label class="lib-sort lib-marks"><span>Mostrar</span>
+            <select name="marks">${MARK_FILTERS.map((o) => raw(html`<option value="${o.id}" ${markFilter === o.id ? 'selected' : ''}>${o.label}</option>`))}</select>
+          </label>
+          <label class="switch missing-toggle"><input type="checkbox" ${showMissing ? 'checked' : ''}> <span>Ver los que me faltan</span></label>
+          <button type="button" class="btn btn-ghost btn-sm filters-clear" data-clear-filters>Limpiar filtros</button>
     </div>
     <div class="news-slot"></div>
     <div class="groups"></div>`;
 
   const list = $('.groups', root);
+
+  /** Burbuja con cuántos filtros están activos (orden distinto del normal, «Mostrar» o «Ver los que me faltan»). */
+  function updateFilterCount() {
+    const n = (sort !== 'code') + (markFilter !== '') + (showMissing ? 1 : 0);
+    const b = $('.filter-count', root);
+    b.textContent = n;
+    b.hidden = !n;
+    $('.filters-btn', root).setAttribute('aria-label', n ? `Filtros, ${n} activos` : 'Filtros');
+    $('[data-clear-filters]', root).disabled = !n;
+  }
 
   function draw() {
     if (mode === 'series') return drawSeries();
@@ -218,8 +233,8 @@ export function renderLibrary(root) {
       mode = 'series';
       try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
       root.querySelector('input[name=mode][value=series]').checked = true;
-      $('.missing-toggle', root).hidden = true;
-      root.querySelectorAll('.lib-sort').forEach((el) => { el.hidden = true; });
+      $('.filters-btn', root).hidden = true;
+      $('#lib-filters', root).hidden = true;
       markMode = true;
       draw();
       return;
@@ -259,25 +274,43 @@ export function renderLibrary(root) {
     mode = r.value;
     markMode = false;
     try { localStorage.setItem(VIEW_KEY, mode); } catch { /* sin storage */ }
-    $('.missing-toggle', root).hidden = mode === 'series';
-    root.querySelectorAll('.lib-sort').forEach((el) => { el.hidden = mode === 'series'; });
+    $('.filters-btn', root).hidden = mode === 'series';
+    if (mode === 'series') { $('#lib-filters', root).hidden = true; $('.filters-btn', root).setAttribute('aria-expanded', 'false'); }
     draw();
   }));
+  $('.filters-btn', root).addEventListener('click', (e) => {
+    const open = e.currentTarget.getAttribute('aria-expanded') !== 'true';
+    e.currentTarget.setAttribute('aria-expanded', String(open));
+    $('#lib-filters', root).hidden = !open;
+  });
+  $('[data-clear-filters]', root).addEventListener('click', () => {
+    sort = 'code'; markFilter = ''; showMissing = false;
+    $('.lib-sort select', root).value = sort;
+    $('.lib-marks select', root).value = markFilter;
+    $('.missing-toggle input', root).checked = false;
+    try { localStorage.setItem(SORT_KEY, sort); localStorage.setItem(MARK_KEY, ''); localStorage.setItem(LS_KEY, '0'); } catch { /* sin storage */ }
+    updateFilterCount();
+    draw();
+  });
   $('.lib-marks select', root).addEventListener('change', (e) => {
     markFilter = e.target.value;
     try { localStorage.setItem(MARK_KEY, markFilter); } catch { /* sin storage */ }
+    updateFilterCount();
     draw();
   });
   $('.lib-sort select', root).addEventListener('change', (e) => {
     sort = e.target.value;
     try { localStorage.setItem(SORT_KEY, sort); } catch { /* sin storage */ }
+    updateFilterCount();
     draw();
   });
   $('.search', root).addEventListener('input', (e) => { query = e.target.value.trim(); draw(); });
-  $('.switch input', root).addEventListener('change', (e) => {
+  $('.missing-toggle input', root).addEventListener('change', (e) => {
     showMissing = e.target.checked;
     try { localStorage.setItem(LS_KEY, showMissing ? '1' : '0'); } catch { /* sin storage */ }
+    updateFilterCount();
     draw();
   });
+  updateFilterCount();
   draw();
 }

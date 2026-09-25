@@ -274,7 +274,7 @@ body.landing .landing-panel h2, body.landing .landing-cta h2 { color: #fbf5ea; }
 /* ---------- Buscador de aventuras ---------- */
 .finder { display: grid; gap: 12px; margin-top: 0; }
 .finder-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-@media (min-width: 640px) { .finder-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 640px) { .finder-grid { grid-template-columns: repeat(2, minmax(0, 220px)); } }
 .finder label { display: grid; gap: 4px; font: 600 .82rem var(--font-ui); color: var(--muted); }
 .finder-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
 .finder-count { margin: 4px 2px; }
@@ -632,3 +632,31 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .todo-done { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 .95rem var(--font-ui); color: var(--ok); }
 .todo-done .i { width: 26px; height: 26px; --icon-cut: var(--surface); }
 @media (min-width: 640px) { .kpis.four { grid-template-columns: repeat(4, 1fr); } }
+
+/* ---------- Filtros plegables (Mi biblioteca y buscador de aventuras) ----------
+   El botón no se mueve al abrir: el panel aparece debajo de su fila, a todo el ancho. */
+.filters-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; flex: none;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
+  font: 600 .9rem var(--font-ui); cursor: pointer;
+}
+.filters-btn[aria-expanded="true"] { border-color: var(--purple); color: var(--purple); background: var(--purple-soft); }
+.filters-btn .lf-icon { width: 18px; height: 18px; }
+.filters-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filter-count {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: var(--accent-ink);
+  font: 700 min(.66rem, 11px)/18px var(--font-ui); text-align: center;
+}
+.filters-body {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 0 0 12px; padding: 12px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+}
+.filters-clear { margin-left: auto; }
+.toolbar .search { min-width: 0; }
+.toolbar { flex-wrap: nowrap; }
+/* Buscador de aventuras: texto y «Más filtros» en una fila; el panel debajo */
+.finder-row { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+.finder-row .search { flex: 1 1 auto; min-width: 0; }
+.finder-more { margin: 10px 0 0; flex-direction: column; align-items: stretch; }
+.finder-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.finder-actions .filters-clear { margin-left: 0; }

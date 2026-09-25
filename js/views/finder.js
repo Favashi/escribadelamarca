@@ -51,21 +51,25 @@ export async function renderFinder(root) {
       <div class="finder-grid">
         <label>Nivel del grupo <input name="level" type="number" inputmode="numeric" min="1" max="36" placeholder="Ej. 3" value="${f.level}"></label>
         <label>Jugadores <input name="players" type="number" inputmode="numeric" min="1" max="12" placeholder="Ej. 4" value="${f.players}"></label>
+      </div>
+      <div class="finder-row">
+        <input name="text" type="search" class="search" placeholder="Título, código o autor…" value="${f.text}" aria-label="Título, código o autor">
+        <button type="button" class="filters-btn" aria-expanded="false" aria-controls="finder-more">
+          ${raw(icon('filter', { cls: 'lf-icon' }))}<span>Más filtros</span><b class="filter-count" hidden></b></button>
+      </div>
+      <div class="filters-body finder-more" id="finder-more" hidden>
         <label>Duración
           <select name="duration">${DURATIONS.map((d) => raw(html`<option value="${d.id}" ${f.duration === d.id ? 'selected' : ''}>${d.label}</option>`))}</select>
         </label>
-      </div>
-      <input name="text" type="search" class="search" placeholder="Título, código o autor…" value="${f.text}">
-      ${allTags.length ? raw(html`<div class="chips" role="group" aria-label="Etiquetas">
-        ${allTags.map((t) => raw(html`<button type="button" class="chip ${f.tags.includes(t) ? 'on' : ''}" data-tag="${t}" aria-pressed="${String(f.tags.includes(t))}">${t}</button>`))}
-      </div>`) : ''}
-      <div class="finder-foot">
+        ${allTags.length ? raw(html`<div class="chips" role="group" aria-label="Etiquetas">
+          ${allTags.map((t) => raw(html`<button type="button" class="chip ${f.tags.includes(t) ? 'on' : ''}" data-tag="${t}" aria-pressed="${String(f.tags.includes(t))}">${t}</button>`))}
+        </div>`) : ''}
         <div class="finder-switches">
           <label class="switch"><input type="checkbox" name="fresh" ${f.fresh ? 'checked' : ''}> <span>Ocultar las que ya he jugado o dirigido</span></label>
           <label class="switch"><input type="checkbox" name="nodata" ${f.nodata ? 'checked' : ''}> <span>Incluir libros sin datos de juego</span></label>
         </div>
-        <button type="button" class="link" data-clear>Limpiar filtros</button>
       </div>
+      <div class="finder-actions"><button type="button" class="btn btn-ghost btn-sm filters-clear" data-clear>Limpiar filtros</button></div>
     </form>
     <div class="finder-bar">
       <p class="finder-count muted small"></p>
@@ -79,6 +83,15 @@ export async function renderFinder(root) {
   const list = $('.finder-results', root);
   const count = $('.finder-count', root);
   const surprise = $('[data-surprise]', root);
+
+  /** Burbuja de «Más filtros»: cuántos de los filtros plegados están activos. */
+  const updateMoreCount = () => {
+    const n = (f.duration ? 1 : 0) + f.tags.length + (f.fresh ? 1 : 0) + (f.nodata ? 1 : 0);
+    const b = $('.finder-row .filter-count', root);
+    b.textContent = n;
+    b.hidden = !n;
+    $('.finder-row .filters-btn', root).setAttribute('aria-label', n ? `Más filtros, ${n} activos` : 'Más filtros');
+  };
   let results = [];
 
   function draw() {
@@ -137,9 +150,14 @@ export async function renderFinder(root) {
     const el = e.target;
     if (!el.name) return;
     f[el.name] = el.type === 'checkbox' ? el.checked : el.value.trim();
-    save(); draw(); noteSearch();
+    save(); draw(); noteSearch(); updateMoreCount();
   });
   form.addEventListener('submit', (e) => e.preventDefault());
+  $('.finder-row .filters-btn', root).addEventListener('click', (e) => {
+    const open = e.currentTarget.getAttribute('aria-expanded') !== 'true';
+    e.currentTarget.setAttribute('aria-expanded', String(open));
+    $('#finder-more', root).hidden = !open;
+  });
   // Aventura al azar entre los resultados (sin repetir la anterior si hay más de una)
   surprise.addEventListener('click', () => {
     let last = null;
@@ -162,7 +180,7 @@ export async function renderFinder(root) {
       const t = chip.dataset.tag;
       f.tags = f.tags.includes(t) ? f.tags.filter((x) => x !== t) : [...f.tags, t];
       chip.classList.toggle('on'); chip.setAttribute('aria-pressed', f.tags.includes(t));
-      save(); draw(); noteSearch();
+      save(); draw(); noteSearch(); updateMoreCount();
     }
     if (e.target.closest('[data-clear]')) {
       f = { ...EMPTY, scope: f.scope };
@@ -170,5 +188,6 @@ export async function renderFinder(root) {
     }
   });
 
+  updateMoreCount();
   draw();
 }

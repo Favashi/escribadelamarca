@@ -29,6 +29,7 @@ const P = {
   shuffle: '<path d="M3 7h3.5c5 0 6 10 11 10H21M3 17h3.5c1.8 0 3-1.2 4-2.9M13.5 9.9c1-1.7 2.2-2.9 4-2.9H21M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
   bookOpen: '<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5M12 6.5c2-1.5 5-2 8.5-1.5v13c-3.5-.5-6.5 0-8.5 1.5M12 6.5v13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
   screen: '<path d="M3 7l5-1.5v13L3 20zM8 5.5l8 0v13l-8 0zM16 5.5l5 1.5v13l-5-1.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10.5 9.5h3M10.5 12.5h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  filter: '<path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
   text: '<path d="M3 19l4.5-12h1L13 19M4.6 15h6.8M14.5 19l3.2-8h.6l3.2 8M15.5 16.5h4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
 };
 

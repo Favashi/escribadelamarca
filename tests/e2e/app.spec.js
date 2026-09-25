@@ -95,6 +95,11 @@ test.describe('admin', () => {
 
   test('edita la ficha editorial de un libro (fecha de publicación y PVP)', async ({ page, account }) => {
     const id = await bookId('ref=eq.test:T1');
+    // Pase lo que pase, el libro de prueba vuelve a su estado (otros tests lo usan)
+    test.info().annotations.push({ type: 'cleanup', description: 'T1 restaurado' });
+    const restore = () => api(`/rest/v1/catalog?id=eq.${id}`, { method: 'PATCH',
+      body: { title: '[Prueba] Aventura de test', catalog_date: null, price_eur: null, binding: null } });
+    try {
     await page.goto(`/#/libro/${id}`);
     await page.getByRole('button', { name: 'Editar', exact: true }).click();
     const form = page.locator('#dialog form');
@@ -105,8 +110,7 @@ test.describe('admin', () => {
     await expect(page.getByText('Libro actualizado')).toBeVisible();
     const [book] = await api(`/rest/v1/catalog?id=eq.${id}&select=catalog_date,price_eur,binding`);
     expect(book).toEqual({ catalog_date: '2026-09-01', price_eur: 12.95, binding: 'Grapado' });
-    // Deja el libro de prueba como estaba para los demás tests
-    await api(`/rest/v1/catalog?id=eq.${id}`, { method: 'PATCH', body: { catalog_date: null, price_eur: null, binding: null } });
+    } finally { await restore(); }
   });
 });
 
@@ -253,12 +257,19 @@ test('marcas: leída, jugada y dirigida (sin tener el libro)', async ({ page, ac
   await expect(page.getByRole('button', { name: 'Quitar' })).toBeVisible();
   await page.goto('/#/biblioteca');
   await page.getByText('Por categorías', { exact: true }).click();
+  const btn = page.locator('.filters-btn');
+  const before = await btn.boundingBox();
+  await btn.click();   // los filtros van en un panel plegable
+  expect(await btn.boundingBox()).toEqual(before);   // el botón no se mueve al abrir
   const filtro = page.locator('.lib-marks select');
   await filtro.selectOption('unread');
+  await expect(page.locator('.filter-count')).toHaveText('1');
   await expect(page.locator('.card-title', { hasText: TEST_TITLE })).toHaveCount(0);
   await filtro.selectOption('read');
   await expect(page.locator('.card-title', { hasText: TEST_TITLE })).toBeVisible();
-  await filtro.selectOption('');
+  await page.getByRole('button', { name: 'Limpiar filtros' }).click();
+  await expect(filtro).toHaveValue('');
+  await expect(page.locator('.filter-count')).toBeHidden();
 });
 
 test.describe('estadísticas (admin)', () => {
@@ -292,4 +303,19 @@ test.describe('resumen (admin)', () => {
       await api(`/rest/v1/catalog?id=eq.${b.id}`, { method: 'DELETE' });
     }
   });
+});
+
+test('buscador: «Más filtros» plegado, con burbuja de filtros activos', async ({ page, account }) => {
+  await page.goto('/#/buscar');
+  await expect(page.getByRole('spinbutton', { name: 'Nivel del grupo' })).toBeVisible();
+  const btn = page.locator('.finder-row .filters-btn');
+  await expect(page.locator('#finder-more')).toBeHidden();                 // plegado al entrar
+  const before = await btn.boundingBox();
+  await btn.click();
+  expect(await btn.boundingBox()).toEqual(before);                          // el botón no se mueve al abrir
+  await page.locator('#finder-more [data-tag]').first().click();
+  await page.getByLabel('Ocultar las que ya he jugado o dirigido').check();
+  await expect(page.locator('.finder-row .filter-count')).toHaveText('2');
+  await page.getByRole('button', { name: 'Limpiar filtros' }).click();
+  await expect(page.locator('.finder-row .filter-count')).toBeHidden();
 });

@@ -3,9 +3,17 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.10.2';
+export const APP_VERSION = '1.10.3';
 
 export const RELEASES = [
+  {
+    version: '1.10.3',
+    date: '2026-09-25',
+    notes: [
+      '«Mi biblioteca» más despejada: el orden y los filtros se agrupan en el botón «Filtros», que indica cuántos tienes activos.',
+      'En el buscador de aventuras, la duración, las etiquetas y el resto de opciones pasan a «Más filtros»; nivel y jugadores siguen a la vista.',
+    ],
+  },
   {
     version: '1.10.2',
     date: '2026-09-25',

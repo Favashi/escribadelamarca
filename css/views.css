@@ -187,7 +187,17 @@ body.landing a { color: var(--lp-gold); }
 
 /* 7. Mecenas y OSR Manager */
 .lp-row2 { display: grid; gap: 14px; margin-top: 44px; }
-@media (min-width: 860px) { .lp-row2:has(.lp-mecenas) { grid-template-columns: 1.3fr 1fr; } }
+/* En ordenador, dos franjas horizontales a todo el ancho (sin huecos) */
+@media (min-width: 760px) {
+  .lp-mecenas { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; align-items: center; }
+  .lp-mecenas h3, .lp-mecenas p { grid-column: 1; }
+  .lp-mecenas p { margin-bottom: 0; }
+  .lp-mecenas .btn-coffee { grid-column: 2; grid-row: 1 / span 2; }
+  .lp-osr { grid-template-columns: auto 1fr auto; column-gap: 24px; align-items: center; justify-items: start; text-align: left; }
+  .lp-osr-logo { grid-row: 1 / span 2; }
+  .lp-osr b, .lp-osr p { grid-column: 2; justify-self: start; text-align: left; max-width: none; }
+  .lp-osr-links { grid-column: 3; grid-row: 1 / span 2; }
+}
 .lp-mecenas { background: #2b2113; border: 1px solid #5a4520; border-radius: 16px; padding: 18px; }
 .lp-mecenas h3 { margin: 0 0 6px; font: 700 1.05rem var(--font-display); color: var(--lp-gold); }
 .lp-mecenas p { margin: 0 0 12px; color: #e6d8b8; font-size: .92rem; line-height: 1.45; }
@@ -203,6 +213,7 @@ body.landing .lp-osr .lp-osr-btn { display: inline-block; margin-top: 4px; paddi
   box-shadow: 3px 3px 0 #000; }
 body.landing .lp-osr a:focus-visible { outline: 2px solid #ffff55; outline-offset: 2px; }
 body.landing .lp-osr .lp-osr-app { font-size: .78rem; color: #55ffff; text-decoration: underline; }
+.lp-osr-links { display: grid; justify-items: center; gap: 6px; }
 
 /* 8. Llamada final y pie */
 .lp-final { text-align: center; margin: 48px 0 10px; display: grid; justify-items: center; gap: 12px; }

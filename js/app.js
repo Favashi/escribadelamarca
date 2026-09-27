@@ -182,8 +182,10 @@ function renderLanding() {
  ╚═════╝ ╚══════╝╚═╝  ╚═╝</pre>
         <b>OSR MANAGER</b>
         <p>Del mismo autor: ayuda de mesa para directores de juego OSR (exploración, hexcrawl, encuentros y combate).</p>
-        <a class="lp-osr-btn" href="https://favashi.github.io/osr-manager/?ref=escriba-de-la-marca" rel="noopener">Conocer OSR Manager →</a>
-        <a class="lp-osr-app" href="https://favashi.github.io/osr-manager/app/?ref=escriba-de-la-marca" rel="noopener">o ábrelo directamente</a>
+        <div class="lp-osr-links">
+          <a class="lp-osr-btn" href="https://favashi.github.io/osr-manager/?ref=escriba-de-la-marca" rel="noopener">Conocer OSR Manager →</a>
+          <a class="lp-osr-app" href="https://favashi.github.io/osr-manager/app/?ref=escriba-de-la-marca" rel="noopener">o ábrelo directamente</a>
+        </div>
       </aside>
     </div>
 

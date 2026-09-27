@@ -1,5 +1,5 @@
 import { html, raw, $, cover, fmtDate, toast } from '../util.js';
-import { state, isAdmin, bookById, categoryName, personName, refreshCatalog, refreshLibrary, refreshSuggestions } from '../store.js';
+import { state, isAdmin, bookById, categoryName, personName, refreshCatalog, refreshLibrary, refreshSuggestions, refreshShared } from '../store.js';
 import { confirmDialog, viewHeader, errMsg, fieldText, FIELD_LABELS } from '../ui.js';
 import { formatCode } from '../isbn.js';
 import { updateAdminBadge } from '../nav.js';
@@ -27,7 +27,7 @@ export function renderReview(root) {
     const by = (id, date) => `Propuesto por ${personName(id) ?? 'desconocido'} el ${fmtDate(date)}`;
 
     wrap.innerHTML = html`
-      ${raw(viewHeader('Administración'))}
+      ${raw(viewHeader('Administración', '', '<button type="button" class="btn btn-ghost btn-sm" data-refresh>Actualizar</button>'))}
       ${raw(adminTabs('revision'))}
       <p class="muted admin-sub">${books.length + codes.length + suggestions.length
         ? `${books.length + codes.length + suggestions.length} propuestas pendientes de revisar`
@@ -130,5 +130,18 @@ export function renderReview(root) {
     } catch (err) { toast(errMsg(err), 'error'); }
   });
 
+  // Al entrar, pide lo pendiente al momento (puede haber llegado algo mientras la app estaba abierta)
+  async function reload(btn) {
+    if (btn) btn.disabled = true;
+    try {
+      await refreshShared({ force: true });
+      updateAdminBadge();
+      draw();
+      if (btn) toast('Revisión actualizada', 'ok');
+    } catch (err) { toast(errMsg(err), 'error'); if (btn) btn.disabled = false; }
+  }
+  wrap.addEventListener('click', (e) => { const b = e.target.closest('[data-refresh]'); if (b) reload(b); });
+
   draw();
+  reload();
 }

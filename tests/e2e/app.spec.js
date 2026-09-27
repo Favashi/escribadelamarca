@@ -480,3 +480,21 @@ test.describe('descatalogados (admin)', () => {
     }
   });
 });
+
+test.describe('revisión al día (admin)', () => {
+  test.use({ admin: true });
+  test('una propuesta que llega con la app abierta aparece al pulsar «Actualizar»', async ({ page, account }) => {
+    await page.goto('/#/revision');
+    await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible();
+    const title = `[Prueba] llega tarde ${test.info().project.name}`;
+    const [b] = await api('/rest/v1/catalog?select=id', { method: 'POST', body: { title, status: 'pending', source: 'app' } });
+    try {
+      await expect(page.getByText(title)).toHaveCount(0);
+      await page.getByRole('button', { name: 'Actualizar' }).click();
+      await expect(page.getByText(title)).toBeVisible();
+      await expect(page.locator('#nav .tab-badge')).toBeVisible();
+    } finally {
+      await api(`/rest/v1/catalog?id=eq.${b.id}`, { method: 'DELETE' });
+    }
+  });
+});

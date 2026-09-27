@@ -66,6 +66,25 @@ export const pendingCount = () =>
   + state.suggestions.filter((s) => s.status === 'pending').length
   + state.feedback.filter((f) => f.status === 'new').length;
 
+/**
+ * Datos que cambian por lo que hacen otros usuarios (propuestas, sugerencias, comentarios y, para el admin, nombres).
+ * La app instalada no se puede recargar a mano: se piden de nuevo al volver a ella (como mucho cada 30 s) o al forzarlo.
+ * Devuelve true si ha recargado.
+ */
+let lastShared = Date.now();
+export async function refreshShared({ force = false } = {}) {
+  if (!user() || (!force && Date.now() - lastShared < 30000)) return false;
+  lastShared = Date.now();
+  const admin = isAdmin();
+  await Promise.all([
+    refreshCatalog(),
+    refreshSuggestions(),
+    admin ? api.getFeedback().then((f) => { state.feedback = f; }).catch(() => {}) : null,
+    admin ? api.getPeople().then((p) => { state.people = new Map(p.map((x) => [x.id, x])); }).catch(() => {}) : null,
+  ]);
+  return true;
+}
+
 export async function refreshSuggestions() {
   try { state.suggestions = await api.getSuggestions(); } catch { /* sin migración aún */ }
 }

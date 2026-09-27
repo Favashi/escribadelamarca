@@ -2,7 +2,7 @@ import { html, raw, $, fmtDate, fmtShort, toast } from '../util.js';
 import { icon } from '../icons.js';
 import { uploadCover, matchFiles, deleteAllCovers } from '../covers.js';
 import { renderStats } from './admin-stats.js';
-import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog } from '../store.js';
+import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog, refreshShared } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
 import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog, selectDialog, bindFolds } from '../ui.js';
 import * as api from '../api.js';
@@ -53,6 +53,10 @@ export async function renderAdmin(root, params = {}) {
   root.innerHTML = html`${raw(viewHeader('Administración'))}${raw(adminTabs(section))}<div class="admin-body"><div class="loading" aria-busy="true">Cargando…</div></div>`;
   const body = $('.admin-body', root);
   try {
+    // Datos al día al entrar (la app instalada no se puede recargar a mano)
+    await refreshShared({ force: true }).catch(() => {});
+    updateAdminBadge();
+    root.querySelector('.admin-tabs')?.replaceWith(Object.assign(document.createElement('div'), { innerHTML: adminTabs(section) }).firstElementChild);
     if (section === 'ajustes') renderSettings(body);
     else if (section === 'estadisticas') await renderStats(body);
     else if (section === 'portadas') renderCovers(body);

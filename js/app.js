@@ -1,7 +1,7 @@
 import { isConfigured } from './supabase.js';
 import { icon } from './icons.js';
 import { getSession, onAuthChange, signInWithGoogle } from './auth.js';
-import { state, loadAll, isSupporter } from './store.js';
+import { state, loadAll, isSupporter, isAdmin, pendingCount, refreshShared } from './store.js';
 import { route, start, resolve } from './router.js';
 import { html, raw, $, $$, toast, cover } from './util.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from './config.js';
@@ -245,6 +245,24 @@ function renderSetup() {
 let routerStarted = false;
 let currentUid = null;
 
+// Al volver a la app (y cada 2 min si eres admin), recarga propuestas y comentarios: la app instalada no se puede
+// recargar a mano. Solo repinta Revisión/Admin si ha cambiado lo pendiente y no hay un diálogo ni un campo en uso.
+let syncWired = false;
+function wireSharedSync() {
+  if (syncWired) return;
+  syncWired = true;
+  const sync = async () => {
+    if (!state.session || document.visibilityState !== 'visible') return;
+    const before = pendingCount();
+    if (!(await refreshShared().catch(() => false))) return;
+    updateAdminBadge();
+    const busy = document.getElementById('dialog')?.open || document.activeElement?.matches('input, textarea, select');
+    if (pendingCount() !== before && /^#\/(revision|admin)/.test(location.hash) && !busy) resolve();
+  };
+  document.addEventListener('visibilitychange', sync);
+  setInterval(() => { if (isAdmin()) sync(); }, 120000);
+}
+
 async function enterApp(session) {
   state.session = session;
   document.body.classList.remove('landing');
@@ -263,6 +281,7 @@ async function enterApp(session) {
   nav.hidden = false;
   updateAdminBadge();
   showWhatsNewIfUpdated();
+  wireSharedSync();
   trackOpen(session.user.id);
   maybeOnboard();
   import('./achievements.js').then((m) => m.checkAchievements()).catch(() => {});

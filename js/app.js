@@ -174,6 +174,12 @@ function renderLanding() {
         <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
       </section>`) : ''}
       <aside class="lp-osr" aria-label="OSR Manager">
+        <pre class="lp-osr-logo" aria-hidden="true"> ██████╗ ███████╗██████╗
+██╔═══██╗██╔════╝██╔══██╗
+██║   ██║███████╗██████╔╝
+██║   ██║╚════██║██╔══██╗
+╚██████╔╝███████║██║  ██║
+ ╚═════╝ ╚══════╝╚═╝  ╚═╝</pre>
         <b>OSR MANAGER</b>
         <p>Del mismo autor: ayuda de mesa para directores de juego OSR (exploración, hexcrawl, encuentros y combate).</p>
         <a href="https://favashi.github.io/osr-manager/app/" rel="noopener">Abrir OSR Manager →</a>

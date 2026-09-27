@@ -87,9 +87,21 @@ body:not(.landing) [id^="bmc-"] { display: none !important; }
 .lp-cta small { color: rgb(251 245 234 / .8); font: 500 .82rem var(--font-ui); }
 @media (max-width: 859px) { .lp-hero-text, .lp-cta { justify-items: center; text-align: center; } }
 /* Móvil: sello encima del título y margen arriba para que el ribete de la esquina no lo tape */
+/* Pantallas bajas (iPhone SE…): sin el párrafo secundario, para que el botón de entrar se vea sin desplazar */
+@media (max-width: 600px) and (max-height: 760px) { .lp-sub { display: none; } }
+/* Móvil y tableta: las portadas encima, más bajas, para que el botón de entrar siga sin desplazar */
+@media (max-width: 859px) {
+  .lp-fan { order: -1; height: clamp(140px, 36vw, 240px); margin: -10px 0 -10px; }
+  .lp-hero:not(.no-fan) { gap: 16px; }
+  .lp-bk { width: clamp(80px, 21vw, 140px); bottom: 0; }
+  .lp-stamp { display: none; }
+}
 @media (max-width: 600px) {
   .lp-hero { padding-top: 58px; }
+  .lp-hero:not(.no-fan) { padding-top: 30px; }   /* las portadas ya separan el título del ribete */
   .lp-brand { flex-direction: column; gap: 6px; }
+  .lp-brand img { width: 46px; height: 46px; }
+  .lp-hero-text { gap: 10px; }
   .lp-ribbon { width: 150px; height: 150px; } .lp-ribbon span { top: 40px; right: -62px; width: 230px; font-size: .5rem; }
   .lp-code { font-size: 1.25rem; top: 5px; right: 9px; }
 }
@@ -112,7 +124,7 @@ body:not(.landing) [id^="bmc-"] { display: none !important; }
 .lp-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 28px; margin: 22px 0 0; padding: 14px; border-block: 1px solid var(--lp-line); }
 .lp-stats div { text-align: center; }
 .lp-stats b { display: block; font: 700 1.6rem var(--font-display); color: var(--lp-gold); }
-.lp-stats span { font: 500 .8rem var(--font-ui); color: var(--lp-muted); }
+.lp-stats span { font: 600 .68rem var(--font-ui); color: var(--lp-muted); text-transform: uppercase; letter-spacing: .08em; }
 
 /* Títulos de sección */
 .lp-sec { font: 700 clamp(1.3rem, 3.5vw, 1.7rem) var(--font-display); text-align: center; margin: 48px 0 6px; letter-spacing: .02em; color: var(--lp-ink); }
@@ -180,11 +192,16 @@ body.landing a { color: var(--lp-gold); }
 .lp-mecenas h3 { margin: 0 0 6px; font: 700 1.05rem var(--font-display); color: var(--lp-gold); }
 .lp-mecenas p { margin: 0 0 12px; color: #e6d8b8; font-size: .92rem; line-height: 1.45; }
 body.landing .lp-mecenas .btn-coffee { color: #1a1a1a; }
-.lp-osr { background: #031b06; border: 2px solid #1fcf3c; border-radius: 12px; padding: 16px; font-family: "Lucida Console", "Courier New", monospace;
-  color: #7dff8f; display: grid; gap: 6px; align-content: start; }
-.lp-osr b { font-size: 1.1rem; color: #3dff5a; }
-.lp-osr p { margin: 0; font-size: .82rem; color: #5fd070; }
-body.landing .lp-osr a { color: #3dff5a; font-weight: 700; }
+.lp-osr {   /* OSR Manager con la paleta EGA (como el tema Retro EGA) */
+  position: relative; background: #0000aa; border: 3px double #55ffff; border-radius: 4px; padding: 16px;
+  font-family: "Lucida Console", "Courier New", monospace; color: #ffffff; display: grid; gap: 8px; align-content: start; justify-items: center; text-align: center;
+}
+.lp-osr-logo { margin: 0; font: 700 clamp(5px, 1.6vw, 8px)/1.05 "Courier New", monospace; color: #ffff55; white-space: pre; text-shadow: 1px 1px 0 #000; }
+.lp-osr b { font-size: 1.05rem; letter-spacing: .08em; color: #55ffff; }
+.lp-osr p { margin: 0; font-size: .82rem; color: #ffffff; max-width: 30rem; }
+body.landing .lp-osr a { display: inline-block; margin-top: 4px; padding: 7px 14px; background: #aaaaaa; color: #000; font-weight: 700; text-decoration: none;
+  box-shadow: 3px 3px 0 #000; }
+body.landing .lp-osr a:focus-visible { outline: 2px solid #ffff55; outline-offset: 2px; }
 
 /* 8. Llamada final y pie */
 .lp-final { text-align: center; margin: 48px 0 10px; display: grid; justify-items: center; gap: 12px; }

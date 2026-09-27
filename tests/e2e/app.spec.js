@@ -422,3 +422,30 @@ test('comunidad: pestañas de Escribas y Mecenas, y casilla voluntaria en el per
   const [p] = await api(`/rest/v1/profiles?id=eq.${account.user.id}&select=show_in_scribes`);
   expect(p.show_in_scribes).toBe(true);
 });
+
+test.describe('códigos con errata (admin)', () => {
+  test.use({ admin: true });
+  test('registrar un código con el dígito de control mal y encontrarlo escribiéndolo', async ({ page, account }) => {
+    const id = await bookId('ref=eq.test:T1');
+    const bad = '9780306406158';                                          // el bueno acaba en 7
+    try {
+      await page.goto('/#/escanear');
+      await page.getByRole('textbox', { name: 'Código de barras o de publicación' }).fill(bad);
+      await page.getByRole('button', { name: 'Buscar' }).click();
+      await expect(page.getByText(/no cuadra/)).toBeVisible();             // aún no registrado: aviso de errata
+
+      await page.goto(`/#/libro/${id}`);
+      await page.getByPlaceholder('Añadir código de barras').fill(bad);
+      await page.getByRole('button', { name: 'Añadir', exact: true }).click();
+      await page.locator('#dialog').getByRole('button', { name: 'Registrar tal cual' }).click();
+      await expect.poll(async () => (await api(`/rest/v1/catalog_barcodes?code=eq.${bad}&select=catalog_id`)).map((r) => r.catalog_id)).toEqual([id]);
+
+      await page.goto('/#/escanear');
+      await page.getByRole('textbox', { name: 'Código de barras o de publicación' }).fill(bad);
+      await page.getByRole('button', { name: 'Buscar' }).click();
+      await expect(page.locator('.scan-result')).toContainText(TEST_TITLE);
+    } finally {
+      await api(`/rest/v1/catalog_barcodes?code=eq.${bad}`, { method: 'DELETE' });
+    }
+  });
+});

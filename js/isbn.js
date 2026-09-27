@@ -35,6 +35,16 @@ export function normalizeCode(input) {
   return null;
 }
 
+/**
+ * Código tal cual (8 a 13 dígitos) aunque el dígito de control no cuadre: hay libros con erratas de imprenta
+ * (p. ej. el Mapamundi de Valion lleva 9788493585823: «978» + el ISBN-10 con su dígito de control, sin recalcularlo).
+ * Solo se usa para códigos ya registrados en el catálogo o que el admin registra a sabiendas.
+ */
+export function rawDigitsCode(input) {
+  const c = String(input ?? '').replace(/[\s-]/g, '');
+  return /^[0-9]{8,13}$/.test(c) ? c : null;
+}
+
 export const isIsbn = (code) => /^97[89][0-9]{10}$/.test(code ?? '');
 
 /** 9788412345678 → 978-8412345678 (formato legible simple) */

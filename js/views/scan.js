@@ -5,7 +5,7 @@ import {
   booksForBarcode, booksForPubCode, barcodesOf, matches, compareBooks,
 } from '../store.js';
 import { startScanner, cameraAvailable } from '../scanner.js';
-import { normalizeCode, formatCode, isPubCode } from '../isbn.js';
+import { normalizeCode, formatCode, isPubCode, rawDigitsCode } from '../isbn.js';
 import { bookFormDialog, errMsg, ADMIN_TAG, confirmDialog } from '../ui.js';
 import * as api from '../api.js';
 import { track } from '../track.js';
@@ -107,7 +107,9 @@ const VERIFY_KEY = 'edm.verifyMode';
     const input = e.target.code;
     const value = input.value.trim();
     if (!value) return;
-    const barcode = normalizeCode(value);
+    // Válido, o con errata de imprenta pero ya registrado en el catálogo
+    const raw = rawDigitsCode(value);
+    const barcode = normalizeCode(value) || (raw && booksForBarcode(raw).length ? raw : null);
     if (barcode) {
       input.value = ''; input.blur();
       handleBarcode(barcode);
@@ -120,6 +122,9 @@ const VERIFY_KEY = 'edm.verifyMode';
       clearTimeout(idleTimer);
       books.length === 1 ? showBook(books[0]) : showChoice(books, null);
       scheduleResume();
+    } else if (raw) {
+      toast('El último dígito (el de control) no cuadra: revisa los números o puede ser una errata de imprenta. '
+        + 'Busca el libro por su código de publicación (B1, MP…) o por el título en el Catálogo.', 'error');
     } else {
       toast('Código no válido. Revisa los dígitos.', 'error');
     }

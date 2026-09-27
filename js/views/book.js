@@ -1,7 +1,7 @@
 import { html, raw, $, cover, fmtDate, fmtShort, toast } from '../util.js';
 import { state, user, isAdmin, isSupporter, bookById, categoryName, barcodesOf, personName, refreshCatalog, refreshLibrary, refreshSuggestions } from '../store.js';
 import { bookFormDialog, confirmDialog, errMsg, CONDITIONS, PERK_TAG, suggestDialog, diffFields, FIELD_LABELS } from '../ui.js';
-import { formatCode, normalizeCode } from '../isbn.js';
+import { formatCode, normalizeCode, rawDigitsCode } from '../isbn.js';
 import { navigate } from '../router.js';
 import { icon, ribbon } from '../icons.js';
 import { uploadCover, removeCover } from '../covers.js';
@@ -242,8 +242,12 @@ export async function renderBook(root, { id }) {
   }));
 
   $('.barcode-form', root)?.addEventListener('submit', run(async (e) => {
-    const code = normalizeCode(e.target.barcode.value);
-    if (!code) { toast('Código no válido. Revisa los dígitos.', 'error'); return; }
+    let code = normalizeCode(e.target.barcode.value);
+    const raw = rawDigitsCode(e.target.barcode.value);
+    // Errata de imprenta (dígito de control incorrecto): se puede registrar tal cual, a sabiendas
+    if (!code && raw && await confirmDialog(`El dígito de control de ${raw} no cuadra. Si el libro lo lleva impreso así
+      (errata de imprenta), regístralo tal cual: quien lo escriba a mano encontrará este libro. ¿Registrarlo?`, { ok: 'Registrar tal cual' })) code = raw;
+    if (!code) { if (!raw) toast('Código no válido. Revisa los dígitos.', 'error'); return; }
     await api.addBarcode(uid, code, book.id, { admin: true });
     await refreshCatalog();
     rerender();

@@ -5,6 +5,7 @@ import { state, loadAll, isSupporter } from './store.js';
 import { route, start, resolve } from './router.js';
 import { html, raw, $, $$, toast } from './util.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from './config.js';
+import { communityCounts } from './api.js';
 import { settings, loadSettings } from './settings.js';
 import { renderAnnouncement } from './announcement.js';
 import { restoreTheme, applyTextSize, getTextSize } from './theme.js';
@@ -19,7 +20,7 @@ import { renderFinder } from './views/finder.js';
 import { renderPublicWishlist } from './views/wishlist-public.js';
 import { renderAdmin } from './views/admin.js';
 import { renderHelp } from './views/help.js';
-import { renderScribes } from './views/scribes.js';
+import { renderCommunity } from './views/community.js';
 import { renderWishlist } from './views/wishlist.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
@@ -117,6 +118,7 @@ function renderLanding() {
         <p>¿Falta un libro o un código? Proponlo desde la app y, tras revisarlo, lo tendrán todos.</p>
       </article>
     </section>
+    <p class="landing-thanks" hidden></p>
 
     ${settings.donations_enabled ? raw(html`<section class="landing-panel coffee">
       <h2>Gratis, y con extras para Mecenas</h2>
@@ -148,6 +150,15 @@ function renderLanding() {
     }
   } catch { /* sin storage */ }
   showCoffeeWidget();
+  // «Gracias a N escribas y M mecenas» (solo recuentos; si falla o no hay nadie, no se muestra)
+  communityCounts().then((c) => {
+    const el = $('.landing-thanks', view);
+    const parts = [c.scribes && `${c.scribes} ${c.scribes === 1 ? 'escriba que ha mejorado' : 'escribas que han mejorado'} el catálogo`,
+      c.supporters && `${c.supporters} ${c.supporters === 1 ? 'mecenas que la sostiene' : 'mecenas que la sostienen'}`].filter(Boolean);
+    if (!el || !parts.length) return;
+    el.textContent = `Gracias a ${parts.join(' y a ')}.`;
+    el.hidden = false;
+  }).catch(() => {});
   trackLandingVisit();
   view.querySelectorAll('[data-login]').forEach((btn) => (btn.onclick = async () => {
     view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = true));
@@ -268,7 +279,9 @@ route('/buscar', mount(renderFinder));
 route('/admin', mount(renderAdmin));
 route('/admin/:section', mount(renderAdmin));
 route('/ayuda', mount(renderHelp));
-route('/escribas', mount(renderScribes));
+route('/comunidad', mount(renderCommunity));
+route('/comunidad/:tab', mount(renderCommunity));
+route('/escribas', () => { location.replace('#/comunidad/escribas'); });   // enlace antiguo
 route('/deseos', mount(renderWishlist));
 
 async function boot() {

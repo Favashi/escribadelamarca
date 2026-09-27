@@ -208,6 +208,7 @@ Las novedades de cada versión están en [Releases](https://github.com/Favashi/e
   a sus respectivos autores y no se incluyen en este repositorio. Las portadas se muestran en la app **con permiso de
   La Marca del Este**; ese permiso es para esta app y no se extiende a copias o forks del proyecto.
 - Tipografías Cinzel, Uncial Antiqua y Source Serif 4 bajo SIL Open Font License.
+- Emblemas de [game-icons.net](https://game-icons.net) (Lorc y Delapouite) bajo [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/), en `js/emblems.js`.
 
 ## 🙏 Agradecimientos
 

@@ -2,7 +2,7 @@
 -- las públicas (lista de deseos, Escribas, intercambio) solo exponen lo que deben; borrar la cuenta borra todo.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(41);
+select plan(50);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -29,6 +29,11 @@ insert into public.catalog_barcodes (code, catalog_id, source, status, verified,
   ('9780306406157', 'b0000000-0000-0000-0000-00000000000a', 'usuario', 'approved', true, '11111111-1111-1111-1111-111111111111'),
   ('9780262033848', 'b0000000-0000-0000-0000-00000000000a', 'usuario', 'approved', true, '22222222-2222-2222-2222-222222222222');
 update public.profiles set show_in_scribes = true, display_name = 'Ana García López' where id = '11111111-1111-1111-1111-111111111111';
+-- Comunidad: u1 ha jugado un libro (10 PX más); mecenas1 sale en la lista de Mecenas con su emblema, mecenas2 no
+insert into public.book_marks (user_id, catalog_id, played_at) values
+  ('11111111-1111-1111-1111-111111111111', 'b0000000-0000-0000-0000-00000000000a', now());
+update public.profiles set show_in_supporters = true, emblem = 'dragon-head', supporter_since = now()
+  where id = '33333333-3333-3333-3333-333333333333';
 
 create function public._test_login(uid uuid) returns void language sql as $$
   select set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true),
@@ -42,7 +47,8 @@ $$;
 select ok(not has_function_privilege(r, f, 'execute'), format('%s no puede ejecutar %s', r, f))
 from unnest(array['anon', 'authenticated']) r,
      unnest(array['public.notify_admin(text, jsonb)', 'public.telegram_send(text, jsonb)', 'public.mark_supporter_by_email(text)',
-                  'public.weekly_admin_digest()', 'public.retry_admin_notifications()', 'public.tg_who(uuid)']) f;
+                  'public.weekly_admin_digest()', 'public.retry_admin_notifications()', 'public.tg_who(uuid)',
+                  'public.user_xp(uuid)', 'public.user_contributions(uuid)']) f;
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon no puede ejecutar delete_my_account');
 
 -- ---------- Funciones de admin: rechazan a usuarios y visitantes ----------
@@ -87,10 +93,21 @@ select public._test_login('11111111-1111-1111-1111-111111111111');
 select is_empty($$ select 1 from public.trade_matches() $$, 'intercambio: un usuario normal no ve nada');
 
 -- ---------- Escribas (voluntario) ----------
-select results_eq($$ select name, total, is_me from public.scribes() $$, $$ values ('Ana G.'::text, 1, true) $$,
-  'Escribas: solo quien lo activa, con el nombre abreviado');
+select results_eq($$ select name, total, is_me, xp, level, supporter from public.scribes() $$,
+  $$ values ('Ana G.'::text, 1, true, 110, 2, false) $$,
+  'Escribas: solo quien lo activa, con el nombre abreviado y su nivel (100 PX por aportación + 10 por partida)');
+select results_eq($$ select name, emblem, is_me from public.supporters() $$, $$ values ('Mecenas U.'::text, 'dragon-head'::text, false) $$,
+  'Mecenas: solo quien lo activa, con nombre abreviado y emblema');
+select lives_ok($$ update public.profiles set emblem = 'owl' where id = '11111111-1111-1111-1111-111111111111' $$,
+  'el usuario elige su emblema');
+select throws_ok($$ update public.profiles set emblem = '<script>' where id = '11111111-1111-1111-1111-111111111111' $$,
+  '23514', null, 'emblema: solo claves válidas');
 select public._test_anon();
 select throws_ok($$ select public.scribes() $$, '42501', null, 'Escribas: sin sesión no se puede consultar');
+select throws_ok($$ select public.supporters() $$, '42501', null, 'Mecenas: sin sesión no se puede consultar');
+-- (los datos de ejemplo de seed.sql pueden sumar más usuarios: se comprueba el mínimo de este test)
+select ok((public.community_counts()->>'scribes')::int >= 2 and (public.community_counts()->>'supporters')::int >= 2,
+  'Comunidad: la portada ve solo los recuentos (sin sesión)');
 
 -- ---------- Borrar la cuenta ----------
 select public._test_anon();

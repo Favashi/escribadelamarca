@@ -5,13 +5,19 @@ import * as api from './api.js';
 import { celebrateDialog } from './ui.js';
 import { toast } from './util.js';
 
-// ---------- Rangos de escriba ----------
+// ---------- Nivel y rango de escriba ----------
+// PX (puntos de experiencia): 100 por aportación aceptada al catálogo, 25 por logro (sin contar los de rango, que dependen
+// de los propios PX) y 10 por cada libro marcado como jugado o dirigido. Tener libros no da PX.
+// Misma fórmula en la base de datos: public.user_xp() (migración 20260927000000_community.sql).
+export const XP = { contribution: 100, achievement: 25, mark: 10 };
+
+// El título depende de los PX; los umbrales son los antiguos (por aportaciones) × 100, así nadie baja de rango.
 export const RANKS = [
   { min: 0, name: 'Aprendiz de escriba' },
-  { min: 1, name: 'Copista' },
-  { min: 5, name: 'Cronista' },
-  { min: 15, name: 'Archivero' },
-  { min: 40, name: 'Gran Escriba de la Marca' },
+  { min: 100, name: 'Copista' },
+  { min: 500, name: 'Cronista' },
+  { min: 1500, name: 'Archivero' },
+  { min: 4000, name: 'Gran Escriba de la Marca' },
 ];
 
 /** Aportaciones aceptadas del usuario: sugerencias validadas, códigos aprobados y libros propuestos aprobados. */
@@ -22,11 +28,32 @@ export function contributions(uid = user()?.id) {
   return { suggestions, codes, books, total: suggestions + codes + books };
 }
 
-export function rankOf(total) {
+/** PX del usuario actual, con el desglose. */
+export function xpBreakdown() {
+  const c = contributions();
+  const achievements = state.achievements.filter((a) => !a.key.startsWith('rank:')).length;
+  let marks = 0;
+  for (const m of state.marks.values()) marks += (m.played_at ? 1 : 0) + (m.directed_at ? 1 : 0);
+  const total = c.total * XP.contribution + achievements * XP.achievement + marks * XP.mark;
+  return { contributions: c, achievements, marks, total };
+}
+
+/** PX necesarios para llegar a un nivel: 0, 100, 300, 600, 1000… (cada nivel cuesta 100 PX más que el anterior). */
+export const xpForLevel = (level) => 50 * level * (level - 1);
+export const levelOf = (xp) => Math.max(1, Math.floor((1 + Math.sqrt(1 + Math.max(0, xp) / 12.5)) / 2));
+
+export function rankOf(xp) {
   let i = 0;
-  RANKS.forEach((r, j) => { if (total >= r.min) i = j; });
+  RANKS.forEach((r, j) => { if (xp >= r.min) i = j; });
   const next = RANKS[i + 1] || null;
-  return { index: i, name: RANKS[i].name, next, toNext: next ? next.min - total : 0 };
+  return { index: i, name: RANKS[i].name, next, toNext: next ? next.min - xp : 0 };
+}
+
+/** Todo lo que se muestra del nivel: { xp, level, rank, from, to, pct } (from/to: PX del nivel actual y del siguiente). */
+export function levelInfo(xp = xpBreakdown().total) {
+  const level = levelOf(xp);
+  const from = xpForLevel(level), to = xpForLevel(level + 1);
+  return { xp, level, rank: rankOf(xp), from, to, pct: Math.round(((xp - from) / (to - from)) * 100) };
 }
 
 // ---------- Series y novedades ----------
@@ -83,7 +110,7 @@ export function describe(key, row = {}) {
     const n = row.meta?.count;
     return { icon: 'trophy', title: `Serie ${arg} completa`, text: n ? `Completada con ${n} módulos.` : 'Todos los módulos de la serie.' };
   }
-  if (kind === 'rank') return { icon: 'quill', title: RANKS[Number(arg)]?.name ?? 'Escriba', text: 'Rango de escriba por tus aportaciones al catálogo.' };
+  if (kind === 'rank') return { icon: 'quill', title: RANKS[Number(arg)]?.name ?? 'Escriba', text: 'Rango de escriba por tu experiencia en la Marca.' };
   return { icon: 'seal', title: key, text: '' };
 }
 
@@ -101,12 +128,21 @@ function currentlyEarned() {
   for (const [code, books] of seriesMap()) {
     if (books.every((b) => state.library.has(b.id))) earned.push({ key: `series:${code}`, meta: { count: books.length } });
   }
-  const r = rankOf(contributions().total);
+  const r = rankOf(xpBreakdown().total);
   for (let i = 1; i <= r.index; i++) earned.push({ key: `rank:${i}` });
   return earned;
 }
 
 // ---------- Comprobación y celebración ----------
+
+/** Nivel nuevo desde la última vez (0 si no ha subido). La primera vez solo lo apunta. Se guarda por usuario. */
+function levelUp() {
+  const { level } = levelInfo();
+  const key = `edm.level.${user().id}`;
+  let prev;
+  try { prev = Number(localStorage.getItem(key)) || 0; localStorage.setItem(key, String(Math.max(level, prev))); } catch { return 0; }
+  return prev && level > prev ? level : 0;
+}
 let checking = false;
 
 /** Espera a que no haya ningún diálogo abierto (bienvenida, novedades…) para no pisarlo. */
@@ -148,9 +184,17 @@ export async function checkAchievements({ celebrate = true } = {}) {
       }
     }
     state.achievements = await api.getAchievements().catch(() => stored);
+    document.dispatchEvent(new CustomEvent('edm:xp'));   // distintivo de nivel de la cabecera
+    const newLevel = levelUp();
 
-    if (!celebrate || !toCelebrate.length) return;
+    if (!celebrate || (!toCelebrate.length && !newLevel)) return;
     await dialogFree();
+    if (!toCelebrate.length) {
+      const { rank } = levelInfo();
+      await celebrateDialog({ icon: 'seal', title: `¡Nivel ${newLevel}!`,
+        text: `${rank.name}. Sigues sumando experiencia: aportaciones al catálogo, logros y partidas.` });
+      return;
+    }
     if (firstRun) {
       toast(`Has desbloqueado ${toCelebrate.length} ${toCelebrate.length === 1 ? 'logro' : 'logros'}: míralos en tu perfil ✦`, 'ok');
       return;
@@ -166,9 +210,11 @@ export async function checkAchievements({ celebrate = true } = {}) {
       title: kind === 'series' ? (main.again ? `¡Vuelves a tener la serie ${arg} al día!` : `¡Serie ${arg} completa!`)
         : kind === 'rank' ? `Nuevo rango: ${d.title}` : d.title,
       text: kind === 'series' ? `${main.meta.count} módulos. ${main.again ? 'Seguías la serie y ya tienes todas las novedades.' : 'Todos los módulos publicados de la serie.'}`
-        : kind === 'rank' ? 'Gracias por ayudar a mejorar el catálogo de la Marca.' : d.text,
+        : kind === 'rank' ? 'Tu experiencia en la Marca te lleva a un nuevo rango de escriba.' : d.text,
     });
-    if (rest.length) toast(`Y ${rest.length} ${rest.length === 1 ? 'logro más' : 'logros más'} en tu perfil ✦`, 'ok');
+    const extra = [rest.length && `${rest.length} ${rest.length === 1 ? 'logro más' : 'logros más'} en tu perfil`,
+      newLevel && `subes a nivel ${newLevel}`].filter(Boolean);
+    if (extra.length) toast(`Y ${extra.join(', y ')} ✦`, 'ok');
   } finally {
     checking = false;
   }

@@ -4,11 +4,12 @@ import { state, booksForBarcode, booksForPubCode } from './store.js';
 import { normalizeCode } from './isbn.js';
 import { APP_VERSION, RELEASES } from './version.js';
 import { icon } from './icons.js';
+import { heroChip } from './hero.js';
 
 const dialog = () => document.getElementById('dialog');
 
 /** Abre el <dialog> con contenido HTML. Devuelve la promesa resuelta por close(value). */
-function openDialog(content, bind) {
+export function openDialog(content, bind) {
   const d = dialog();
   d.innerHTML = content;
   return new Promise((resolve) => {
@@ -332,10 +333,12 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
   });
 }
 
-export function viewHeader(title, sub = '', extra = '') {
-  return html`<header class="view-head">
+/** Cabecera de vista. hero: distintivo de nivel arriba a la derecha (Biblioteca, Catálogo y Buscador). */
+export function viewHeader(title, sub = '', extra = '', { hero = false } = {}) {
+  const chip = hero ? heroChip() : '';
+  return html`<header class="view-head ${chip ? 'has-hero' : ''}">
     <div><h1>${title}</h1>${sub ? raw(`<p class="muted">${esc(sub)}</p>`) : ''}</div>
-    ${raw(extra)}
+    ${chip ? raw(html`<div class="view-head-side">${raw(extra)}${raw(chip)}</div>`) : raw(extra)}
   </header>`;
 }
 

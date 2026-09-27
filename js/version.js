@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.10.4';
+export const APP_VERSION = '1.11.0';
 
 export const RELEASES = [
+  {
+    version: '1.11.0',
+    date: '2026-09-27',
+    notes: [
+      'Niveles de escriba: ganas experiencia (PX) con cada aportación aceptada al catálogo, cada logro y cada partida jugada o dirigida. Tu nivel sale arriba a la derecha; tócalo para ver tu progreso.',
+      'Elige tu emblema: 30 iconos de fantasía (dragón, búho, dado de veinte, calavera…). Los Mecenas lo llevan con un marco de moneda antigua.',
+      'Nueva página Comunidad, con los Escribas que más aportan y los Mecenas que sostienen la app. Aparecer es voluntario y se activa en tu perfil.',
+    ],
+  },
   {
     version: '1.10.4',
     date: '2026-09-27',

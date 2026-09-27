@@ -94,7 +94,7 @@ export function renderCatalog(root, params = {}) {
   }
 
   root.innerHTML = html`
-    ${raw(viewHeader('Catálogo', `${state.catalog.filter((b) => b.status === 'approved').length} publicaciones de la Marca del Este`, `<button class="btn btn-sm ${admin ? 'btn-admin' : 'btn-primary'}" data-new>${admin ? `${icon('shield')} Nuevo` : '+ Proponer'}</button>`))}
+    ${raw(viewHeader('Catálogo', `${state.catalog.filter((b) => b.status === 'approved').length} publicaciones de la Marca del Este`, `<button class="btn btn-sm ${admin ? 'btn-admin' : 'btn-primary'}" data-new>${admin ? `${icon('shield')} Nuevo` : '+ Proponer'}</button>`, { hero: true }))}
     <div class="toolbar"><input type="search" class="search" placeholder="Buscar título, código (B19) o autor…" aria-label="Buscar"></div>
     ${admin ? raw(html`<div class="chips admin-filters" role="group" aria-label="Calidad de datos (admin)">
       ${raw(icon('shield'))}

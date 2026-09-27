@@ -384,3 +384,41 @@ test.describe('categorías (admin)', () => {
     }
   });
 });
+
+test('nivel: distintivo en la biblioteca, hoja de progreso y cambio de emblema', async ({ page, account }) => {
+  await page.goto('/#/biblioteca');
+  const chip = page.locator('.view-head [data-hero]');
+  await expect(chip).toHaveAttribute('aria-label', /^Nivel 1, Aprendiz de escriba/);
+  await chip.click();
+  const dialog = page.locator('#dialog');
+  await expect(dialog.getByText('Aprendiz de escriba')).toBeVisible();
+  await expect(dialog.getByText(/te faltan 100 PX para el nivel 2/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cambiar emblema' }).click();
+  await dialog.getByRole('radio', { name: 'Búho' }).check({ force: true });
+  await dialog.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Emblema: Búho')).toBeVisible();
+  const [p] = await api(`/rest/v1/profiles?id=eq.${account.user.id}&select=emblem`);
+  expect(p.emblem).toBe('owl');
+
+  // Marcar un libro como jugado da 10 PX (se ve en la hoja)
+  const id = await bookId('ref=eq.test:T1');
+  await page.goto(`/#/libro/${id}`);
+  await page.getByRole('button', { name: 'Jugada' }).click();
+  await page.goto('/#/catalogo');
+  await page.locator('.view-head [data-hero]').click();
+  await expect(dialog.locator('p strong')).toHaveText('10 PX');
+});
+
+test('comunidad: pestañas de Escribas y Mecenas, y casilla voluntaria en el perfil', async ({ page, account }) => {
+  await page.goto('/#/escribas');                                           // el enlace antiguo lleva a la Comunidad
+  await expect(page).toHaveURL(/#\/comunidad\/escribas$/);
+  await expect(page.getByRole('heading', { name: 'Comunidad', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: 'Mecenas', exact: true }).click();
+  await expect(page).toHaveURL(/#\/comunidad\/mecenas$/);
+  await expect(page.locator('.community-list')).not.toContainText('Cargando');
+  await page.goto('/#/perfil');
+  await page.getByLabel('Aparecer en la lista de Escribas').check();
+  await expect(page.getByText('Tu nombre aparecerá en la lista de Escribas')).toBeVisible();
+  const [p] = await api(`/rest/v1/profiles?id=eq.${account.user.id}&select=show_in_scribes`);
+  expect(p.show_in_scribes).toBe(true);
+});

@@ -7,7 +7,8 @@ import { sendFeedback, updateProfile } from '../api.js';
 const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
 import { icon, ribbon } from '../icons.js';
 import { downloadAllJson } from '../export.js';
-import { contributions, rankOf, RANKS, describe } from '../achievements.js';
+import { levelInfo, xpBreakdown, describe } from '../achievements.js';
+import { emblemBadge, emblemDialog, heroSheet } from '../hero.js';
 import { getAchievements } from '../api.js';
 import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
@@ -25,7 +26,8 @@ export function renderProfile(root) {
   root.innerHTML = html`
     ${raw(viewHeader('Perfil'))}
     <section class="panel profile">
-      ${p.avatar_url ? raw(html`<img class="avatar" src="${p.avatar_url}" alt="" referrerpolicy="no-referrer">`) : raw(`<div class="avatar avatar-ph" aria-hidden="true">${icon('user')}</div>`)}
+      <button type="button" class="emblem-btn" data-emblem aria-label="Cambiar emblema">
+        ${raw(emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<span class="emblem-edit" aria-hidden="true">✎</span></button>
       <div class="profile-main">
         <h2>${p.display_name ?? email}</h2>
         <p class="muted small">${email}</p>
@@ -134,6 +136,7 @@ export function renderProfile(root) {
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
       Proyecto de fans, no oficial · Portadas © de sus autores, con permiso de La Marca del Este<br>
+      Emblemas de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (Lorc y Delapouite, CC BY 3.0)<br>
       <a href="privacidad.html">Privacidad</a> ·
       <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
     <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
@@ -141,16 +144,21 @@ export function renderProfile(root) {
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
   root.querySelectorAll('input[name=text-size]').forEach((r) => r.addEventListener('change', () => applyTextSize(r.value, true)));
-  $('[data-scribes-opt]', root)?.addEventListener('change', async (e) => {
+  // Casillas de la Comunidad (voluntarias): lista de Escribas y lista de Mecenas
+  const optIn = (sel, field, list) => $(sel, root)?.addEventListener('change', async (e) => {
     const on = e.target.checked;
     e.target.disabled = true;
     try {
-      await updateProfile(user().id, { show_in_scribes: on });
-      state.profile.show_in_scribes = on;
-      toast(on ? 'Tu nombre aparecerá en la página de Escribas' : 'Ya no apareces en la página de Escribas', 'ok');
+      await updateProfile(user().id, { [field]: on });
+      state.profile[field] = on;
+      toast(on ? `Tu nombre aparecerá en la lista de ${list}` : `Ya no apareces en la lista de ${list}`, 'ok');
     } catch (err) { e.target.checked = !on; toast(errMsg(err), 'error'); }
     e.target.disabled = false;
   });
+  optIn('[data-scribes-opt]', 'show_in_scribes', 'Escribas');
+  optIn('[data-supporters-opt]', 'show_in_supporters', 'Mecenas');
+  $('[data-emblem]', root).onclick = async () => { if (await emblemDialog()) renderProfile(root); };
+  $('[data-hero-open]', root).onclick = () => heroSheet();
   $('[data-reset]', root).onclick = async (e) => {
     const n = state.library.size;
     const ok = await confirmDialog(
@@ -235,27 +243,28 @@ const HUB = [
   ['exportar', '⤓', 'Exportar', 'CSV o JSON'],
 ];
 
-/** Tarjeta de rango de escriba: aportaciones aceptadas y progreso hasta el siguiente. */
+/** Tarjeta de nivel: nivel, título, PX y casillas para aparecer en la Comunidad. */
 function rankCard() {
-  const c = contributions();
-  const r = rankOf(c.total);
-  const prevMin = RANKS[r.index].min;
-  const pct = r.next ? Math.round(((c.total - prevMin) / (r.next.min - prevMin)) * 100) : 100;
+  const info = levelInfo();
+  const b = xpBreakdown();
+  const c = b.contributions;
   return html`<section class="panel rank-card">
-    <div class="rank-head">
-      <span class="rank-icon" aria-hidden="true">${raw(icon('quill'))}</span>
-      <div><p class="eyebrow">Rango de escriba</p><h2>${r.name}</h2></div>
-    </div>
-    <span class="bar" role="img" aria-label="${c.total} aportaciones aceptadas"><span style="width:${pct}%"></span></span>
-    <p class="small muted">${r.next
-      ? `${r.toNext} ${r.toNext === 1 ? 'aportación aceptada más' : 'aportaciones aceptadas más'} para ser ${r.next.name}.`
-      : 'Has alcanzado el rango más alto. ¡Gracias por tanto!'}
-      Sube proponiendo códigos al escanear, sugiriendo correcciones o proponiendo libros que falten.</p>
+    <button type="button" class="rank-head" data-hero-open>
+      <span class="rank-icon rank-level" aria-hidden="true">${info.level}</span>
+      <div><p class="eyebrow">Nivel ${info.level} · ${info.xp.toLocaleString('es-ES')} PX</p><h2>${info.rank.name}</h2></div>
+      ${raw(icon('chevron', { cls: 'rank-go' }))}
+    </button>
+    <span class="bar" role="img" aria-label="${info.xp} PX de ${info.to} para el nivel ${info.level + 1}"><span style="width:${info.pct}%"></span></span>
+    <p class="small muted">${(info.to - info.xp).toLocaleString('es-ES')} PX para el nivel ${info.level + 1}${info.rank.next
+      ? ` · ${info.rank.toNext.toLocaleString('es-ES')} para ser ${info.rank.next.name}` : ''}.
+      Suman las aportaciones aceptadas al catálogo (lo que más), los logros y las partidas jugadas o dirigidas.</p>
     ${c.total ? raw(html`<p class="small rank-detail">${c.suggestions} sugerencias · ${c.codes} códigos · ${c.books} libros aceptados</p>`) : ''}
     <div class="scribes-opt">
       <label class="switch"><input type="checkbox" data-scribes-opt ${state.profile?.show_in_scribes ? 'checked' : ''}>
-        <span>Mostrar mi nombre en la página de Escribas</span></label>
-      <a href="#/escribas">Ver los Escribas ${raw(icon('chevron'))}</a>
+        <span>Aparecer en la lista de Escribas</span></label>
+      ${isSupporter() ? raw(html`<label class="switch"><input type="checkbox" data-supporters-opt ${state.profile?.show_in_supporters ? 'checked' : ''}>
+        <span>Aparecer en la lista de Mecenas</span></label>`) : ''}
+      <a href="#/comunidad">Ver la Comunidad ${raw(icon('chevron'))}</a>
     </div>
   </section>`;
 }

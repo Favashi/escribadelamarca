@@ -187,3 +187,6 @@ export const deleteFeedback = async (id) =>
 
 /** Página «Escribas»: quienes han aceptado aparecer, con sus aportaciones aceptadas. */
 export const getScribes = async () => ok(await supabase.rpc('scribes'));
+export const getSupporters = async () => ok(await supabase.rpc('supporters'));
+/** Recuentos de la Comunidad (también sin sesión, para la portada). */
+export const communityCounts = async () => ok(await supabase.rpc('community_counts'));

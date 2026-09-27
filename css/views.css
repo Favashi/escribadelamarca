@@ -529,18 +529,24 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 /* ---------- Escribas ---------- */
 .scribes-opt { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .scribes-opt a { display: inline-flex; align-items: center; gap: 2px; font: 600 .9rem var(--font-ui); }
-.scribes-list { list-style: none; margin: 0 0 14px; padding: 6px 16px; }
-.scribe { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
-.scribe:last-child { border-bottom: 0; }
-.scribe.is-me { background: color-mix(in srgb, var(--gold) 8%, transparent); margin: 0 -16px; padding-inline: 16px; }
-.scribe-pos { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); font: 700 .85rem var(--font-ui); color: var(--muted); }
-.scribe:nth-child(-n+3) .scribe-pos { background: var(--gold-soft); color: var(--gold); }
-.scribe-body { flex: 1; min-width: 0; }
-.scribe-body strong { display: block; font: 700 .95rem var(--font-ui); }
-.scribe-body small { display: block; font: .8rem var(--font-ui); color: var(--muted); }
-.scribe-total { font: 700 1.1rem var(--font-display); color: var(--purple); }
-.scribes-empty { display: grid; justify-items: center; gap: 6px; padding: 18px 0; text-align: center; }
-.scribes-empty .i { width: 32px; height: 32px; color: var(--gold); }
+.community-tabs { margin: 0 0 12px; }
+.community-tabs a { display: grid; place-items: center; min-height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  color: var(--ink); font: 600 .9rem var(--font-ui); text-decoration: none; }
+.community-tabs a.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.community-list { list-style: none; margin: 0 0 14px; padding: 6px 16px; }
+.member { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.member:last-child { border-bottom: 0; }
+.member.is-me { background: color-mix(in srgb, var(--gold) 8%, transparent); margin: 0 -16px; padding-inline: 16px; }
+.member-pos { width: 26px; flex: none; text-align: center; font: 700 .85rem var(--font-ui); color: var(--muted); }
+.member:nth-child(-n+3) .member-pos { color: var(--gold); }
+.member-body { flex: 1; min-width: 0; }
+.member-body strong { display: flex; align-items: center; gap: 6px; font: 700 .95rem var(--font-ui); }
+.member-body small { display: block; font: .8rem var(--font-ui); color: var(--muted); }
+.member-star .i { width: 16px; height: 16px; color: var(--gold); }
+.member-total { font: 700 1.1rem var(--font-display); color: var(--purple); }
+.community-empty { display: grid; justify-items: center; gap: 6px; padding: 18px 0; text-align: center; }
+.community-empty .i { width: 32px; height: 32px; color: var(--gold); }
+.landing-thanks { text-align: center; font-style: italic; color: var(--muted); margin: 0 0 24px; }
 
 /* ---------- Catálogo: nuevos ---------- */
 .new-group summary > span:first-child { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); }
@@ -660,3 +666,70 @@ button.tile { appearance: none; -webkit-appearance: none; padding: 2px; }
 .finder-more { margin: 10px 0 0; flex-direction: column; align-items: stretch; }
 .finder-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
 .finder-actions .filters-clear { margin-left: 0; }
+
+/* ---------- Emblemas, distintivo de nivel y hoja de progreso ---------- */
+.emblem { --size: 44px; --em-bg: #3b2447; --em-ink: #f3c02f; position: relative; display: inline-grid; place-items: center; flex: none;
+  width: var(--size); height: var(--size); border-radius: 50%; color: var(--em-ink);
+  background: var(--em-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--em-ink) 35%, transparent); }
+.emblem-sm { --size: 36px; } .emblem-lg { --size: 72px; }
+.emblem .emblem-svg { width: 62%; height: 62%; }
+/* Mecenas: marco de moneda antigua (SVG encima del disco) y el icono algo más pequeño para caber dentro */
+.emblem.is-gold { box-shadow: none; }
+.emblem.is-gold .emblem-svg { width: 48%; height: 48%; position: relative; }
+.emblem-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.emblem-frame .ef-rim { fill: #5a3a14; }
+.emblem-frame .ef-beads { fill: #e0b23a; }
+.emblem-frame .ef-line { stroke: #e0b23a; }
+/* Anillo de progreso hasta el siguiente nivel: el disco del emblema tapa el centro del degradado cónico */
+.emblem.has-ring {
+  background:
+    radial-gradient(closest-side, var(--em-bg) calc(100% - 4px), transparent calc(100% - 3px)),
+    conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--line) 0);
+  box-shadow: none;
+}
+/* Mecenas en la cabecera: el anillo de progreso queda por fuera de la moneda */
+.emblem.has-ring.is-gold { box-shadow: none; }
+.emblem.has-ring.is-gold .emblem-frame { inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); }
+.emblem.has-ring.is-gold .emblem-svg { width: 40%; height: 40%; }
+/* Retro EGA: sus colores (azul y amarillo) */
+:root[data-theme="retro"] .emblem { --em-bg: #000060; --em-ink: #ffff55; }
+
+.view-head.has-hero { position: relative; }
+.view-head-side { display: flex; align-items: center; gap: 12px; flex: none; }
+.hero-chip { display: inline-flex; align-items: center; gap: 10px; flex: none; align-self: flex-start; padding: 6px; margin: -2px -4px 0 0;
+  border: 0; border-radius: 99px; background: none; color: var(--ink); cursor: pointer; font: inherit; text-align: left; }
+.hero-chip:hover .hero-text { color: var(--purple); }
+.hero-emblem { position: relative; display: inline-grid; }
+.hero-level { position: absolute; right: -8px; bottom: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px;
+  background: var(--accent); color: var(--accent-ink); font: 700 min(.72rem, 12px)/20px var(--font-ui); text-align: center;
+  box-shadow: 0 0 0 2px var(--bg); }
+.hero-text { display: none; font: 700 .85rem var(--font-ui); line-height: 1.15; }
+.hero-text small { display: block; font: 600 .72rem var(--font-ui); color: var(--muted); }
+@media (min-width: 640px) { .hero-text { display: block; } }
+/* El título no pasa por debajo del distintivo */
+.view-head.has-hero > div:first-child { min-width: 0; }
+
+.hero-sheet-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.hero-sheet-head .eyebrow { margin: 0; }
+.hero-sheet-head .sheet-title { margin: 0; }
+.hero-sheet-head .muted { margin: 2px 0 0; }
+.xp-list { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; }
+.xp-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.xp-list b { color: var(--purple); white-space: nowrap; }
+.hero-ach { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.hero-ach li { display: grid; font: .88rem var(--font-ui); }
+.hero-actions { flex-wrap: wrap; }
+
+.emblem-picker .emblem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 10px; margin: 12px 0;
+  max-height: 50vh; overflow-y: auto; padding: 6px; }
+.emblem-opt { position: relative; display: grid; place-items: center; padding: 4px; border-radius: 14px; cursor: pointer; }
+.emblem-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.emblem-opt:has(input:checked) { background: var(--accent-soft); outline: 2px solid var(--accent); }
+.emblem-opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.emblem-btn { position: relative; flex: none; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+.emblem-edit { position: absolute; right: -2px; bottom: -2px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: .8rem; }
+button.rank-head { width: 100%; border: 0; background: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rank-level { font: 700 1.3rem var(--font-display); }
+.rank-go { margin-left: auto; width: 20px; height: 20px; color: var(--muted); }

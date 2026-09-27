@@ -44,7 +44,7 @@ export function renderLibrary(root) {
   const approved = state.catalog.filter((b) => b.status === 'approved');
 
   root.innerHTML = html`
-    ${raw(viewHeader('Mi biblioteca', `${owned.length} ${owned.length === 1 ? 'libro' : 'libros'} de ${approved.length} en el catálogo`))}
+    ${raw(viewHeader('Mi biblioteca', `${owned.length} ${owned.length === 1 ? 'libro' : 'libros'} de ${approved.length} en el catálogo`, '', { hero: true }))}
     <div class="seg lib-mode" role="radiogroup" aria-label="Vista">
       <label><input type="radio" name="mode" value="categories" ${mode === 'categories' ? 'checked' : ''}><span>Por categorías</span></label>
       <label><input type="radio" name="mode" value="series" ${mode === 'series' ? 'checked' : ''}><span>Por series</span></label>

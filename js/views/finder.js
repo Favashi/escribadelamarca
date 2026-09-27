@@ -42,7 +42,7 @@ export async function renderFinder(root) {
   const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es')).map(([t]) => t);
 
   root.innerHTML = html`
-    ${raw(viewHeader('Buscador de aventuras', '¿Qué módulo preparo para la próxima partida?'))}
+    ${raw(viewHeader('Buscador de aventuras', '¿Qué módulo preparo para la próxima partida?', '', { hero: true }))}
     <form class="finder panel" autocomplete="off">
       <div class="seg scope" role="radiogroup" aria-label="Buscar en">
         <label><input type="radio" name="scope" value="mine" ${f.scope === 'mine' ? 'checked' : ''}><span>Mi biblioteca (${state.library.size})</span></label>

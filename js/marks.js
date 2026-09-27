@@ -44,6 +44,8 @@ export async function toggleMark(bookId, key) {
   const { data, error } = await supabase.from('book_marks').upsert(row, { onConflict: 'user_id,catalog_id' }).select().single();
   if (error) throw error;
   state.marks.set(bookId, data);
+  // Jugada y Dirigida dan PX: puede subir el nivel (import dinámico: evita dependencia circular)
+  if (key !== 'read_at') import('./achievements.js').then((m) => m.checkAchievements()).catch(() => {});
   return data;
 }
 

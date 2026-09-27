@@ -94,10 +94,9 @@ function renderLanding() {
       <div class="lp-ribbon" aria-hidden="true"><span>Para coleccionistas de<br>Aventuras en la Marca del Este</span></div>
       <p class="lp-code" aria-hidden="true">E1</p>
       <div class="lp-hero-text">
-        <div class="lp-brand"><img src="assets/icons/seal.svg" alt="" width="58" height="58"><h1 class="lp-title">Escriba de la Marca</h1></div>
-        <p class="lp-promise">Escanea tus libros de la Marca del Este y sabrás al momento <em>si ya lo tienes</em> y <em>qué te falta</em>.</p>
-        <p class="lp-sub">Tu colección física, ordenada por series y con sus portadas. Para no volver a comprar un módulo repetido
-          y saber cuáles te faltan… antes de que se descataloguen.</p>
+        <div class="lp-brand"><img src="assets/icons/seal.svg" alt="" width="76" height="76"><h1 class="lp-title">Escriba de la Marca</h1></div>
+        <p class="lp-promise">Escanea tus libros y sabrás al momento <em>si ya lo tienes</em> y <em>qué te falta</em>.</p>
+        <p class="lp-sub">Tu colección física, ordenada por series y con sus portadas.</p>
         <div class="lp-cta">${loginBtn}<small>Gratis · sin anuncios · se instala en el móvil como una app</small></div>
       </div>
       <div class="lp-fan" aria-hidden="true"></div>

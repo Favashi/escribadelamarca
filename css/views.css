@@ -199,9 +199,10 @@ body.landing .lp-mecenas .btn-coffee { color: #1a1a1a; }
 .lp-osr-logo { margin: 0; font: 700 clamp(5px, 1.6vw, 8px)/1.05 "Courier New", monospace; color: #ffff55; white-space: pre; text-shadow: 1px 1px 0 #000; }
 .lp-osr b { font-size: 1.05rem; letter-spacing: .08em; color: #55ffff; }
 .lp-osr p { margin: 0; font-size: .82rem; color: #ffffff; max-width: 30rem; }
-body.landing .lp-osr a { display: inline-block; margin-top: 4px; padding: 7px 14px; background: #aaaaaa; color: #000; font-weight: 700; text-decoration: none;
+body.landing .lp-osr .lp-osr-btn { display: inline-block; margin-top: 4px; padding: 7px 14px; background: #aaaaaa; color: #000; font-weight: 700; text-decoration: none;
   box-shadow: 3px 3px 0 #000; }
 body.landing .lp-osr a:focus-visible { outline: 2px solid #ffff55; outline-offset: 2px; }
+body.landing .lp-osr .lp-osr-app { font-size: .78rem; color: #55ffff; text-decoration: underline; }
 
 /* 8. Llamada final y pie */
 .lp-final { text-align: center; margin: 48px 0 10px; display: grid; justify-items: center; gap: 12px; }

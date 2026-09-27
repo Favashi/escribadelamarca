@@ -13,6 +13,7 @@ const DATA_FILTERS = [
   ['unverified', 'Sin verificar', (b, c) => c.codesOf(b.id).some((x) => x.status === 'approved' && !x.verified)],
   ['duplicates', 'Códigos duplicados', (b, c) => c.codesOf(b.id).some((x) => c.dupCodes.has(x.code))],
   ['nobarcode', 'Sin código de barras', (b, c) => !c.codesOf(b.id).length],
+  ['oop', 'Descatalogados', (b) => b.out_of_print],
   ['nogame', 'Sin datos de juego', (b) => !(b.min_level || b.max_level || b.min_players || b.sessions || (b.tags && b.tags.length))],
 ];
 

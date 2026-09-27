@@ -19,7 +19,7 @@ export function renderWishlist(root) {
     ${raw(viewHeader('Lista de deseos', wishes.length ? `${wishes.length} ${wishes.length === 1 ? 'libro' : 'libros'} que quieres conseguir` : ''))}
     <section class="panel">
       ${wishes.length ? raw(html`<ul class="rows">${wishes.map((b) => raw(html`<li class="row">${raw(cover(b, 'cover-xs'))}
-          <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}<small>${categoryName(b.category_id)}</small></a></li>`))}</ul>`)
+          <a class="row-title" href="#/libro/${b.id}">${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}<small>${categoryName(b.category_id)}${b.out_of_print ? ' · descatalogado: búscalo de segunda mano' : ''}</small></a></li>`))}</ul>`)
         : raw(html`<p class="muted">Vacía. Abre un libro que te falte y pulsa «☆ Lo quiero». Cuando lo consigas y lo añadas
           a tu biblioteca, sale solo de la lista.</p>`)}
     </section>

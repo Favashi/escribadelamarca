@@ -449,3 +449,29 @@ test.describe('códigos con errata (admin)', () => {
     }
   });
 });
+
+test.describe('descatalogados (admin)', () => {
+  test.use({ admin: true });
+  test('marcar un libro como descatalogado: etiqueta en la ficha y filtro en la biblioteca', async ({ page, account }) => {
+    const [{ id }] = await api('/rest/v1/catalog?select=id', { method: 'POST',
+      body: { title: `[Prueba] descatalogado ${test.info().project.name}`, status: 'approved', source: 'app' } });
+    try {
+      await page.goto(`/#/libro/${id}`);
+      await page.getByRole('button', { name: 'Editar', exact: true }).click();
+      await page.locator('#dialog form').getByLabel(/Descatalogado/).check();
+      await page.locator('#dialog form').getByRole('button', { name: 'Guardar' }).click();
+      await expect(page.locator('.oop-dd')).toContainText('solo de segunda mano');
+      const [b] = await api(`/rest/v1/catalog?id=eq.${id}&select=out_of_print`);
+      expect(b.out_of_print).toBe(true);
+
+      await page.goto('/#/biblioteca');
+      await page.locator('.filters-btn').click();
+      await page.getByLabel('Ver los que me faltan').check();
+      await page.locator('.lib-marks select').selectOption('oop');
+      await expect(page.locator('.groups')).toContainText(`[Prueba] descatalogado ${test.info().project.name}`);
+      await expect(page.locator('.groups .oop-ribbon').first()).toBeAttached();
+    } finally {
+      await api(`/rest/v1/catalog?id=eq.${id}`, { method: 'DELETE' });
+    }
+  });
+});

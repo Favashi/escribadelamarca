@@ -2,7 +2,7 @@
 -- las públicas (lista de deseos, Escribas, intercambio) solo exponen lo que deben; borrar la cuenta borra todo.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(52);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -14,9 +14,9 @@ update public.profiles set is_admin = true where id = 'aaaaaaaa-aaaa-aaaa-aaaa-a
 update public.profiles set is_supporter = true, trade_opt_in = true, display_name = 'Mecenas Uno'
   where id in ('33333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444');
 update public.profiles set share_token = 'cccccccc-cccc-cccc-cccc-cccccccccccc' where id = '33333333-3333-3333-3333-333333333333';
-insert into public.catalog (id, title, status, source) values
-  ('b0000000-0000-0000-0000-00000000000a', '[Test] Deseado', 'approved', 'csv'),
-  ('b0000000-0000-0000-0000-00000000000b', '[Test] Ya lo tengo', 'approved', 'csv');
+insert into public.catalog (id, title, status, source, out_of_print) values
+  ('b0000000-0000-0000-0000-00000000000a', '[Test] Deseado', 'approved', 'csv', true),
+  ('b0000000-0000-0000-0000-00000000000b', '[Test] Ya lo tengo', 'approved', 'csv', false);
 insert into public.wishlist (user_id, catalog_id) values
   ('33333333-3333-3333-3333-333333333333', 'b0000000-0000-0000-0000-00000000000a'),
   ('33333333-3333-3333-3333-333333333333', 'b0000000-0000-0000-0000-00000000000b');
@@ -76,8 +76,8 @@ select lives_ok($$ select public.admin_set_supporter('22222222-2222-2222-2222-22
 
 -- ---------- Lista de deseos compartida (pública con el enlace) ----------
 select public._test_anon();
-select results_eq($$ select title from public.public_wishlist('cccccccc-cccc-cccc-cccc-cccccccccccc') $$,
-  $$ values ('[Test] Deseado'::text) $$, 'lista compartida: muestra lo deseado y oculta lo que ya tiene');
+select results_eq($$ select title, out_of_print from public.public_wishlist('cccccccc-cccc-cccc-cccc-cccccccccccc') $$,
+  $$ values ('[Test] Deseado'::text, true) $$, 'lista compartida: muestra lo deseado (y si está descatalogado) y oculta lo que ya tiene');
 select is_empty($$ select 1 from public.public_wishlist('dddddddd-dddd-dddd-dddd-dddddddddddd') $$, 'lista compartida: un enlace falso no muestra nada');
 select is_empty($$ select 1 from public.public_wishlist(null) $$, 'lista compartida: sin enlace no muestra nada');
 
@@ -122,6 +122,17 @@ select is((select created_by from public.catalog_barcodes where code = '97803064
   'borrar cuenta: sus aportaciones quedan en el catálogo, sin autor');
 select isnt_empty($$ select 1 from public.profiles where id = '22222222-2222-2222-2222-222222222222' and is_supporter $$,
   'la acción del admin (Mecenas) se aplicó');
+
+-- ---------- Descatalogado: se puede sugerir y el admin lo aplica ----------
+reset role;
+insert into public.catalog_suggestions (catalog_id, created_by, changes)
+values ('b0000000-0000-0000-0000-00000000000b', '22222222-2222-2222-2222-222222222222', '{"out_of_print": true}');
+select public._test_login('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+select lives_ok($$ select public.admin_apply_suggestion((select max(id) from public.catalog_suggestions)) $$,
+  'admin aplica una sugerencia de «descatalogado»');
+reset role;
+select is((select out_of_print from public.catalog where id = 'b0000000-0000-0000-0000-00000000000b'), true,
+  'descatalogado: la sugerencia aplicada marca el libro');
 
 select * from finish();
 rollback;

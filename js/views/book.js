@@ -62,6 +62,7 @@ export async function renderBook(root, { id }) {
         ${book.status === 'pending' ? raw('<p class="badge badge-warn">Pendiente de revisión</p>') : ''}
         ${raw(markButtons(book.id))}
         <dl class="meta">
+          ${book.out_of_print ? raw('<dt>Disponibilidad</dt><dd class="oop-dd">Descatalogado: solo de segunda mano</dd>') : ''}
           ${book.kind ? raw(html`<dt>Tipo</dt><dd>${book.kind}</dd>`) : ''}
           ${book.pages ? raw(html`<dt>Páginas</dt><dd>${book.pages}</dd>`) : ''}
           ${book.binding ? raw(html`<dt>Formato</dt><dd>${book.binding}${book.interior ? `, ${book.interior}` : ''}</dd>`) : ''}

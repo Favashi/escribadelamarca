@@ -71,6 +71,17 @@
 .cover-xs.cover-ph span { font-size: .8rem; }
 .cover-sm { width: 88px; flex: none; }
 .cover-lg { width: min(180px, 45vw); }
+/* Descatalogado: ribete rojo en diagonal sobre la esquina superior derecha de la portada */
+.cover-box { position: relative; display: block; overflow: hidden; border-radius: 6px 10px 10px 6px; container-type: inline-size; }
+.cover-box > .cover { display: block; width: 100%; }
+.oop-ribbon { position: absolute; top: 0; right: 0; width: 75%; aspect-ratio: 1; overflow: hidden; pointer-events: none; }
+.oop-ribbon span {
+  position: absolute; top: 31%; right: -38%; width: 150%; transform: rotate(45deg); padding: .3em 0;
+  background: #9b1c14; color: #fff; border-block: 1px solid #f3c02f; box-shadow: 0 1px 3px rgb(0 0 0 / .4);
+  font: 700 6.4cqw/1 var(--font-ui); letter-spacing: .03em; text-transform: uppercase; text-align: center;
+}
+/* En miniatura (filas) no cabe el texto: solo la franja */
+.cover-box.cover-xs .oop-ribbon span { font-size: 0; padding: 0; height: 6px; top: 30%; }
 
 /* ---------- Rows (catálogo) ---------- */
 .rows { list-style: none; margin: 0; padding: 4px 0; }

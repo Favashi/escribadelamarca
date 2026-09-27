@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.11.1';
+export const APP_VERSION = '1.12.0';
 
 export const RELEASES = [
+  {
+    version: '1.12.0',
+    date: '2026-09-27',
+    notes: [
+      'Descatalogados: las publicaciones que ya no se pueden comprar nuevas llevan la etiqueta «Descatalogado» (en la ficha, el catálogo, tu biblioteca y la lista de deseos). Así sabes cuáles tendrás que buscar de segunda mano.',
+      'En «Mi biblioteca» → Filtros → Mostrar, elige «Descatalogados» con «Ver los que me faltan» para ver cuáles te faltan y ya no se venden.',
+      '¿Sabes que un libro está descatalogado? Indícalo desde «Sugerir cambios» en su ficha.',
+    ],
+  },
   {
     version: '1.11.1',
     date: '2026-09-27',

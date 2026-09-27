@@ -228,6 +228,8 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           <label>PVP (€) <input name="price_eur" inputmode="decimal" value="${initial.price_eur != null ? String(initial.price_eur).replace('.', ',') : ''}" placeholder="12,95"></label>
         </div>
         <label>Formato <input name="binding" maxlength="80" value="${initial.binding ?? ''}" placeholder="Grapado, tapa blanda, PDF…"></label>
+        <label class="switch"><input type="checkbox" name="out_of_print" ${initial.out_of_print ? 'checked' : ''}>
+          <span>Descatalogado: ya no se puede comprar nuevo (sin reimpresión)</span></label>
         <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${initial.summary ?? ''}</textarea></label>
         <p class="muted small">La fecha de publicación decide cuándo sale como «Nuevo» (45 días).</p>
       </fieldset>
@@ -321,6 +323,7 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           catalog_date: f.catalog_date || null,
           price_eur: price,
           binding: f.binding.trim() || null,
+          out_of_print: f.out_of_print === 'on',
           summary: f.summary.trim() || null,
         },
         barcode: code,
@@ -392,9 +395,9 @@ export const FIELD_LABELS = {
   min_level: 'Nivel mínimo', max_level: 'Nivel máximo', min_players: 'Jugadores mín.', max_players: 'Jugadores máx.',
   sessions: 'Sesiones', tags: 'Etiquetas', summary: 'Resumen', description: 'Descripción', cover_url: 'Portada',
   status: 'Estado', verified: 'Verificado', price_eur: 'PVP', kind: 'Tipo', binding: 'Formato',
-  catalog_date: 'Fecha de publicación',
+  catalog_date: 'Fecha de publicación', out_of_print: 'Descatalogado',
 };
-const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary'];
+const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary', 'out_of_print'];
 const INT_FIELDS = new Set(['min_level', 'max_level', 'min_players', 'max_players', 'sessions']);
 
 /** Texto legible de un valor de campo. */
@@ -402,7 +405,7 @@ export function fieldText(field, value) {
   if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return '—';
   if (Array.isArray(value)) return value.join(', ');
   if (field === 'category_id') return state.categories.find((c) => c.id === value)?.name ?? String(value);
-  if (field === 'verified') return value ? 'sí' : 'no';
+  if (field === 'verified' || field === 'out_of_print') return value ? 'sí' : 'no';
   return String(value);
 }
 
@@ -444,6 +447,8 @@ export function suggestDialog(book) {
         ${raw(tagField('tags', book.tags || []))}
         <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${v('summary')}</textarea></label>
       </fieldset>
+      <label class="switch"><input type="checkbox" name="out_of_print" ${book.out_of_print ? 'checked' : ''}>
+        <span>Descatalogado: ya no se puede comprar nuevo</span></label>
       <label>¿De dónde sale el dato? (opcional) <input name="note" maxlength="500" placeholder="Lo pone en la contraportada, en la web de la editorial…"></label>
       <p class="form-error" hidden></p>
       <div class="actions">
@@ -462,10 +467,12 @@ export function suggestDialog(book) {
       for (const field of SUGGESTABLE) {
         let val = (f[field] ?? '').trim();
         if (field === 'code') val = val.toUpperCase();
-        if (INT_FIELDS.has(field)) val = val === '' ? null : parseInt(val, 10);
+        if (field === 'out_of_print') val = f.out_of_print === 'on';
+        else if (INT_FIELDS.has(field)) val = val === '' ? null : parseInt(val, 10);
         else if (field === 'tags') val = [...new Set(val.split(',').map((t) => t.trim()).filter(Boolean))];
         else val = val || null;
-        if (!same(val, book[field] ?? (field === 'tags' ? [] : null))) changes[field] = val;
+        const current = book[field] ?? (field === 'tags' ? [] : field === 'out_of_print' ? false : null);
+        if (!same(val, current)) changes[field] = val;
       }
       if (!Object.keys(changes).length) { err.textContent = 'No has cambiado ningún dato.'; err.hidden = false; return; }
       if ('title' in changes && !changes.title) { err.textContent = 'El título no puede quedar vacío.'; err.hidden = false; return; }

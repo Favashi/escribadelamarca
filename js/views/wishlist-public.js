@@ -14,7 +14,7 @@ export async function renderPublicWishlist(root, token) {
       ${rows.length ? raw(html`
         <h1>Lista de deseos${owner ? ` de ${owner}` : ''}</h1>
         <p class="muted">Libros de <em>Aventuras en la Marca del Este</em> que le faltan en su colección.</p>
-        <ul class="rows">${rows.map((r) => raw(html`<li class="row"><span class="row-title">${r.code ? raw(html`<span class="code">${r.code}</span> `) : ''}${r.title}<small>${r.category ?? ''}</small></span></li>`))}</ul>`)
+        <ul class="rows">${rows.map((r) => raw(html`<li class="row"><span class="row-title">${r.code ? raw(html`<span class="code">${r.code}</span> `) : ''}${r.title}<small>${r.category ?? ''}${r.out_of_print ? ' · descatalogado: solo de segunda mano' : ''}</small></span></li>`))}</ul>`)
       : raw(html`<h1>Lista no disponible</h1>
         <p class="muted">El enlace no es válido, ya no se comparte o la lista está vacía.</p>`)}
       <div class="pw-cta">

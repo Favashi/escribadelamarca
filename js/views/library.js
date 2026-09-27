@@ -1,6 +1,6 @@
 import { html, raw, $, cover, fmtShort, toast } from '../util.js';
 import { icon } from '../icons.js';
-import { state, user, groupByCategory, matches, compareBooks, categoryName, refreshLibrary } from '../store.js';
+import { state, user, groupByCategory, matches, compareBooks, categoryName, refreshLibrary, bookById } from '../store.js';
 import { viewHeader, errMsg } from '../ui.js';
 import { setNavList } from '../navlist.js';
 import { isNewBook, newInMySeries } from '../achievements.js';
@@ -19,6 +19,8 @@ const MARK_FILTERS = [
   { id: 'unplayed', label: 'Sin jugar ni dirigir', test: (id) => !hasMark(id, 'played_at') && !hasMark(id, 'directed_at') },
   { id: 'played', label: 'Jugados', test: (id) => hasMark(id, 'played_at') },
   { id: 'directed', label: 'Dirigidos', test: (id) => hasMark(id, 'directed_at') },
+  // Con «Ver los que me faltan»: los que ya no se venden nuevos (prioridad para buscarlos de segunda mano)
+  { id: 'oop', label: 'Descatalogados', test: (id) => !!bookById(id)?.out_of_print },
 ];
 const SORTS = [
   { id: 'code', label: 'Serie y número' },
@@ -158,13 +160,13 @@ export function renderLibrary(root) {
       const have = state.library.has(b.id);
       const wished = !have && state.wishlist.has(b.id);
       const marks = markText(b.id);
-      const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}${marks ? ` · ${marks}` : ''}`;
+      const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}${b.out_of_print ? ' · descatalogado' : ''}${marks ? ` · ${marks}` : ''}`;
       const fresh = isNewBook(b);
       if (markMode) {
         return html`<button type="button" class="tile marking ${have ? 'owned' : 'missing'} ${fresh ? 'is-new' : ''}" data-mark="${b.id}"
           aria-pressed="${String(have)}" aria-label="${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
       }
-      return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''}" href="#/libro/${b.id}"
+      return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''} ${b.out_of_print ? 'is-oop' : ''}" href="#/libro/${b.id}"
         title="${label}${fresh ? ' · novedad' : ''}" aria-label="${label}${fresh ? ', novedad' : ''}">${b.code ?? '?'}</a>`;
     };
     const achievements = new Map(state.achievements.map((a) => [a.key, a]));
@@ -205,7 +207,8 @@ export function renderLibrary(root) {
         </div>`) : raw(html`<button type="button" class="btn btn-ghost btn-block mark-start" data-mark-on>✎ Marcar los libros que tengo</button>`)}
       <p class="muted small legend"><span class="tile owned sample">B1</span> lo tienes
         <span class="tile missing sample">B2</span> te falta
-        ${state.wishlist.size ? raw('<span class="tile missing wished sample">B3</span> en tu lista de deseos') : ''}</p>
+        ${state.wishlist.size ? raw('<span class="tile missing wished sample">B3</span> en tu lista de deseos') : ''}
+        ${state.catalog.some((b) => b.out_of_print) ? raw('<span class="tile missing is-oop sample">B4</span> descatalogado') : ''}</p>
       ${multi.map((sr) => raw(section(`Serie ${sr.code}`, categoryName(sr.books[0].category_id), sr.books, sr.code)))}
       ${singles.length ? raw(section('Otras publicaciones', '', singles)) : ''}`;
   }

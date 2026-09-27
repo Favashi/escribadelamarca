@@ -56,9 +56,12 @@ export function initials(title) {
 
 /** Portada o placeholder con iniciales. */
 export function cover(book, cls = '') {
-  return book.cover_url && settings.covers_enabled
+  const img = book.cover_url && settings.covers_enabled
     ? html`<img class="cover ${cls}" src="${book.cover_url}" alt="" loading="lazy">`
     : html`<div class="cover cover-ph ${cls}" aria-hidden="true"><span>${initials(book.title)}</span></div>`;
+  if (!book.out_of_print) return img;
+  // Descatalogado: ribete en diagonal sobre la esquina de la portada (en miniatura, solo la esquina)
+  return html`<span class="cover-box ${cls}" role="img" aria-label="Descatalogado" title="Descatalogado: ya no se vende nuevo">${raw(img)}<span class="oop-ribbon" aria-hidden="true"><span>Descatalogado</span></span></span>`;
 }
 
 export function download(filename, content, type) {

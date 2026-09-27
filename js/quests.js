@@ -42,7 +42,9 @@ export function questTexts(type) {
   return { titles: titles.length ? titles : QUEST_TYPES[type].titles, text: custom.text?.trim() || QUEST_TYPES[type].text };
 }
 
-const fill = (tpl, v) => tpl.replace(/\{(n|serie|titulo|codigo)\}/g, (_, k) => String(v[k] ?? ''));
+// Rellena los huecos. Hay libros sin código de publicación: se quitan los «()» y espacios que queden vacíos
+const fill = (tpl, v) => tpl.replace(/\{(n|serie|titulo|codigo)\}/g, (_, k) => String(v[k] ?? ''))
+  .replace(/\s*\(\s*\)/g, '').replace(/\s+([.,;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
 const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 // La variante cambia cada semana y es la misma para todos
 const week = () => Math.floor(Date.now() / (7 * 864e5));

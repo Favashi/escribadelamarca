@@ -160,11 +160,11 @@ export function renderLibrary(root) {
       const have = state.library.has(b.id);
       const wished = !have && state.wishlist.has(b.id);
       const marks = markText(b.id);
-      const label = `${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}${b.out_of_print ? ' · descatalogado' : ''}${marks ? ` · ${marks}` : ''}`;
+      const label = `${b.code ? `${b.code} · ` : ''}${b.title} · ${have ? 'lo tienes' : wished ? 'en tu lista de deseos' : 'no lo tienes'}${b.out_of_print ? ' · descatalogado' : ''}${marks ? ` · ${marks}` : ''}`;
       const fresh = isNewBook(b);
       if (markMode) {
         return html`<button type="button" class="tile marking ${have ? 'owned' : 'missing'} ${fresh ? 'is-new' : ''}" data-mark="${b.id}"
-          aria-pressed="${String(have)}" aria-label="${b.code ?? ''} · ${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
+          aria-pressed="${String(have)}" aria-label="${b.code ? `${b.code} · ` : ''}${b.title} · ${have ? 'lo tienes: toca para quitar' : 'toca para marcar que lo tienes'}">${b.code ?? '?'}</button>`;
       }
       return html`<a class="tile ${have ? 'owned' : 'missing'} ${wished ? 'wished' : ''} ${fresh ? 'is-new' : ''} ${b.out_of_print ? 'is-oop' : ''}" href="#/libro/${b.id}"
         title="${label}${fresh ? ' · novedad' : ''}" aria-label="${label}${fresh ? ', novedad' : ''}">${b.code ?? '?'}</a>`;

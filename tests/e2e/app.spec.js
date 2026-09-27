@@ -14,6 +14,11 @@ test('portada sin sesión', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Escriba de la Marca', level: 1 })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Entrar con Google' }).first()).toBeVisible();
   await expect(page.locator('#nav')).toBeHidden();
+  // Cifras reales del catálogo (landing_showcase) y ejemplos de la app
+  await expect(page.locator('.lp-stats')).toContainText('publicaciones');
+  await expect(page.locator('[data-demo-scan]')).toContainText('Ya lo tienes');
+  await page.getByText('¿Es una app oficial?').click();
+  await expect(page.getByRole('link', { name: 'de código abierto' })).toHaveAttribute('href', /github\.com\/Favashi\/escribadelamarca/);
 });
 
 test.describe('bienvenida', () => {

@@ -2,7 +2,7 @@
 -- las públicas (lista de deseos, Escribas, intercambio) solo exponen lo que deben; borrar la cuenta borra todo.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(52);
+select plan(54);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -105,6 +105,10 @@ select throws_ok($$ update public.profiles set emblem = '<script>' where id = '1
 select public._test_anon();
 select throws_ok($$ select public.scribes() $$, '42501', null, 'Escribas: sin sesión no se puede consultar');
 select throws_ok($$ select public.supporters() $$, '42501', null, 'Mecenas: sin sesión no se puede consultar');
+select ok(public.landing_showcase() ?& array['covers', 'publications', 'authors', 'adventures', 'books_cataloged', 'scribes', 'supporters'],
+  'Portada: sin sesión devuelve portadas y cifras');
+select ok((public.landing_showcase()->>'books_cataloged')::int >= 3 and (public.landing_showcase()->>'publications')::int >= 2,
+  'Portada: cuenta libros catalogados y publicaciones (solo números)');
 -- (los datos de ejemplo de seed.sql pueden sumar más usuarios: se comprueba el mínimo de este test)
 select ok((public.community_counts()->>'scribes')::int >= 2 and (public.community_counts()->>'supporters')::int >= 2,
   'Comunidad: la portada ve solo los recuentos (sin sesión)');

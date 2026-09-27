@@ -3,9 +3,10 @@ import { icon } from './icons.js';
 import { getSession, onAuthChange, signInWithGoogle } from './auth.js';
 import { state, loadAll, isSupporter } from './store.js';
 import { route, start, resolve } from './router.js';
-import { html, raw, $, $$, toast } from './util.js';
+import { html, raw, $, $$, toast, cover } from './util.js';
 import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from './config.js';
-import { communityCounts } from './api.js';
+import { landingShowcase } from './api.js';
+import { emblemBadge } from './hero.js';
 import { settings, loadSettings } from './settings.js';
 import { renderAnnouncement } from './announcement.js';
 import { restoreTheme, applyTextSize, getTextSize } from './theme.js';
@@ -42,97 +43,147 @@ function setActiveNav() {
 
 const GOOGLE_ICON = `<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
 
+// ---------- Portada: portadas al azar, ejemplos y cifras (landing_showcase) ----------
+const LANDING_EMBLEMS = ['dragon-head', 'owl', 'dice-twenty-faces-twenty', 'quill-ink', 'wolf-head', 'crown', 'skull-crossed-bones', 'dwarf-face', 'spell-book'];
+// Ejemplos mientras llegan (o si fallan) los datos reales: portadas genéricas con sus iniciales
+const DEMO_BOOKS = [
+  { code: 'B24', title: 'La Niebla' }, { code: 'B13', title: 'Sangre en la Nieve' },
+  { code: 'X2', title: 'El Arca de los Mil Inviernos' }, { code: 'B7', title: 'Presentes Sangrientos' },
+];
+// Las cifras de personas solo se enseñan a partir de un mínimo (con pocas, restan en vez de sumar)
+const MIN_SCRIBES = 50, MIN_SUPPORTERS = 20;
+const fmtN = (n) => Number(n || 0).toLocaleString('es-ES');
+
+function fillShowcase(data) {
+  const books = data?.covers?.length ? data.covers : DEMO_BOOKS;
+  const fan = $('.lp-fan', view);
+  const hero = $('.lp-hero', view);
+  if (!fan) return;
+  const fanBooks = (data?.covers || []).slice(0, 5);
+  fan.innerHTML = fanBooks.length
+    ? fanBooks.map((b) => `<div class="lp-bk"><img src="${b.cover_url}" alt="" loading="lazy"></div>`).join('')
+      + '<span class="lp-stamp">✓ Ya lo tienes desde 2019</span>'
+    : '';
+  hero.classList.toggle('no-fan', !fanBooks.length);
+
+  const [scan, ...rest] = books;
+  $('[data-demo-scan]', view).innerHTML = html`${raw(cover(scan, 'lp-demo-cover'))}
+    <div><span class="lp-pill">Ya lo tienes</span><strong>${scan.code} · ${scan.title}</strong><small>Lo añadiste el 12 de marzo de 2025</small></div>`;
+  const wish = [data?.oop ? { ...data.oop, out_of_print: true } : null, ...rest.slice(0, 3)].filter(Boolean).slice(0, 3);
+  $('[data-demo-wish]', view).innerHTML = wish.map((b) => html`<li>${raw(cover(b, 'cover-xs'))}<span>${b.code} · ${b.title}
+    <small>${b.out_of_print ? 'Descatalogado: búscalo de segunda mano' : 'Me falta'}</small></span></li>`).join('');
+
+  const stats = $('.lp-stats', view);
+  if (!data) return;
+  const items = [[data.publications, 'publicaciones'], [data.authors, 'autores'], [data.adventures, 'aventuras en el buscador'],
+    [data.books_cataloged, 'libros ya catalogados']].filter(([n]) => n > 0);
+  stats.innerHTML = items.map(([n, l]) => html`<div><b>${fmtN(n)}</b><span>${l}</span></div>`).join('');
+  stats.hidden = !items.length;
+  const people = [data.scribes >= MIN_SCRIBES && `<strong>${fmtN(data.scribes)} escribas</strong> que mejoran el catálogo`,
+    data.supporters >= MIN_SUPPORTERS && `<strong>${fmtN(data.supporters)} mecenas</strong> que la sostienen`].filter(Boolean);
+  if (people.length === 2) $('.lp-thanks-line', view).innerHTML = `Gracias a los ${people.join(' y a los ')}.`;
+}
+
 function renderLanding() {
   document.body.classList.add('landing');
   nav.hidden = true;
   const loginBtn = raw(`<button class="btn btn-google" data-login>${GOOGLE_ICON} Entrar con Google</button>`);
+  const G = 'https://github.com/Favashi/escribadelamarca';
   view.innerHTML = html`
-    <article class="cover-page">
-      <div class="corner-ribbon" aria-hidden="true"><span>Para coleccionistas de<br>Aventuras en la Marca del Este</span></div>
-      <p class="module-code" aria-hidden="true">E1</p>
-
-      <header class="cover-head">
-        <img src="assets/icons/seal.svg" alt="" class="cover-seal" width="84" height="84">
-        <h1 class="cover-title">Escriba de la Marca</h1>
-        <div class="cover-rule" aria-hidden="true"><span></span></div>
-        <p class="cover-sub">Aplicación para coleccionistas de todos los niveles</p>
-      </header>
-
-      <figure class="cover-art" aria-hidden="true">
-        <div class="mock">
-          <div class="mock-screen">
-            <div class="mock-scan"><span></span></div>
-            <div class="mock-card is-owned">
-              <div class="cover cover-ph mock-cover"><span>N</span></div>
-              <div>
-                <p class="badge badge-ok">Ya registrado</p>
-                <p class="mock-title"><span class="code">B24</span> La Niebla</p>
-                <p class="mock-text">Lo añadiste el <strong>12 de marzo de 2025</strong>.</p>
-              </div>
-            </div>
-            <ul class="mock-bars">
-              <li><span>Aventuras serie B</span><b style="--p:62%"></b><em>26/42</em></li>
-              <li><span>Ambientación</span><b style="--p:38%"></b><em>3/8</em></li>
-              <li><span>Reglamento</span><b style="--p:100%"></b><em>3/3</em></li>
-            </ul>
-          </div>
-        </div>
-      </figure>
-
-      <p class="cover-blurb">
-        Más allá de las estanterías abarrotadas, entre cajas rojas y módulos grapados, se dice que hay una colección
-        que ningún aventurero ha logrado catalogar jamás. ¿Quién será tan valiente como para escanear cada código de barras
-        y descubrir, por fin, qué módulos le faltan?
-      </p>
-
-      <div class="cover-cta">
-        ${loginBtn}
-        <p class="small">Gratis · solo necesitas tu cuenta de Google</p>
+    <section class="lp-hero">
+      <div class="lp-ribbon" aria-hidden="true"><span>Para coleccionistas de<br>Aventuras en la Marca del Este</span></div>
+      <p class="lp-code" aria-hidden="true">E1</p>
+      <div class="lp-hero-text">
+        <div class="lp-brand"><img src="assets/icons/seal.svg" alt="" width="58" height="58"><h1 class="lp-title">Escriba de la Marca</h1></div>
+        <p class="lp-promise">Escanea tus libros de la Marca del Este y sabrás al momento <em>si ya lo tienes</em> y <em>qué te falta</em>.</p>
+        <p class="lp-sub">Tu colección física, ordenada por series y con sus portadas. Para no volver a comprar un módulo repetido
+          y saber cuáles te faltan… antes de que se descataloguen.</p>
+        <div class="lp-cta">${loginBtn}<small>Gratis · sin anuncios · se instala en el móvil como una app</small></div>
       </div>
-
-      <img src="assets/icons/seal.svg" alt="" class="cover-emblem" width="64" height="64">
-    </article>
-
-    <section class="features">
-      <article>
-        <span class="feature-icon" aria-hidden="true">${raw(icon('books'))}</span>
-        <h2>Toda la Marca, ordenada</h2>
-        <p>Casi 100 publicaciones catalogadas por serie y categoría, con sus portadas: módulos B, X, C, Gazetteer, Xorandor…
-          Con el recuento de lo que tienes y lo que te falta.</p>
-      </article>
-      <article>
-        <span class="feature-icon" aria-hidden="true">${raw(icon('camera'))}</span>
-        <h2>Escanea y listo</h2>
-        <p>Enfoca el código de barras: si ya lo tienes te dice desde cuándo; si no, lo añades con un toque.
-          ¿Un módulo antiguo sin código? Escribe el de la portada (B1, X2…).</p>
-      </article>
-      <article>
-        <span class="feature-icon" aria-hidden="true">${raw(icon('cloud'))}</span>
-        <h2>En todos tus dispositivos</h2>
-        <p>Tu colección se guarda en tu cuenta y se sincroniza entre el móvil y el ordenador.
-          Instálala en la pantalla de inicio como una app más.</p>
-      </article>
-      <article>
-        <span class="feature-icon" aria-hidden="true">${raw(icon('people'))}</span>
-        <h2>Catálogo de la comunidad</h2>
-        <p>¿Falta un libro o un código? Proponlo desde la app y, tras revisarlo, lo tendrán todos.</p>
-      </article>
+      <div class="lp-fan" aria-hidden="true"></div>
     </section>
-    <p class="landing-thanks" hidden></p>
 
-    ${settings.donations_enabled ? raw(html`<section class="landing-panel coffee">
-      <h2>Gratis, y con extras para Mecenas</h2>
-      <p>Escriba de la Marca es gratuita. Si te resulta útil, invítame a un café (${SUPPORTER_MIN_AMOUNT} €) y
-        desbloqueas el diario de partidas, repetidos e intercambio, préstamos, estadísticas y los temas Pergamino y Retro EGA.</p>
-      <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
-    </section>`) : ''}
+    <div class="lp-stats" hidden></div>
 
-    <section class="landing-cta">
+    <h2 class="lp-sec">Cómo funciona</h2>
+    <p class="lp-sec-sub">Tres pasos. El primero lo haces en la tienda, delante de la estantería.</p>
+    <div class="lp-steps">
+      <article class="lp-step">
+        <h3><i>1</i>Escanea</h3>
+        <div class="lp-demo"><div class="lp-scanline"></div><div class="lp-scanres" data-demo-scan></div></div>
+        <p>Enfoca el código de barras y te dice al momento si ya lo tienes, y desde cuándo. ¿Un módulo antiguo sin código?
+          Escribe el de la portada (B1, X2…).</p>
+      </article>
+      <article class="lp-step">
+        <h3><i>2</i>Mira qué te falta</h3>
+        <div class="lp-demo">
+          <div class="lp-series-h">Serie B <span>13 / 18</span></div>
+          <div class="lp-tiles">${Array.from({ length: 18 }, (_, i) => raw(html`<span class="lp-tile ${[6, 12, 14, 16, 17].includes(i) ? 'miss' : 'own'}">B${i + 1}</span>`))}</div>
+          <p class="lp-faltan">Te faltan: <b>B7, B13, B15, B17, B18</b></p>
+        </div>
+        <p>Cada serie con sus huecos a la vista, y aviso cuando sale un módulo nuevo en las series que coleccionas.</p>
+      </article>
+      <article class="lp-step">
+        <h3><i>3</i>Complétala</h3>
+        <div class="lp-demo"><ul class="lp-wl" data-demo-wish></ul><span class="lp-share">Compartir mi lista</span></div>
+        <p>Apunta lo que te falta en tu lista de deseos y compártela con tu grupo o tu familia: la ven sin registrarse.
+          Ideal para regalos.</p>
+      </article>
+    </div>
+
+    <h2 class="lp-sec">Y además</h2>
+    <p class="lp-sec-sub">Pensada por y para jugadores de la Marca.</p>
+    <div class="lp-features">
+      ${[['compass', 'Buscador de aventuras', '¿Qué preparo para la próxima partida? Filtra por nivel del grupo, jugadores y duración.'],
+        ['dice', 'Leída, jugada y dirigida', 'Marca cada libro y encuentra las aventuras que tu grupo aún no ha jugado.'],
+        ['warning', 'Descatalogados', 'Sabrás qué módulos ya no se venden nuevos para buscarlos de segunda mano a tiempo.'],
+        ['quill', 'Niveles de escriba', 'Sube de nivel ayudando al catálogo, consigue logros y elige tu emblema.'],
+        ['people', 'Catálogo de la comunidad', '¿Falta un libro o un código? Proponlo y, tras revisarlo, lo tendrán todos.'],
+        ['cloud', 'En todos tus dispositivos', 'Tu colección se sincroniza entre el móvil y el ordenador. Sin instalar nada de ninguna tienda.'],
+      ].map(([ic, t, d]) => raw(html`<div class="lp-feat"><span class="lp-ic" aria-hidden="true">${raw(icon(ic))}</span><div><h3>${t}</h3><p>${d}</p></div></div>`))}
+    </div>
+
+    <h2 class="lp-sec">Una comunidad de escribas</h2>
+    <section class="lp-community">
+      <p>Cada código escaneado y cada corrección mejora el catálogo para todos.</p>
+      <div class="lp-coins" aria-hidden="true">${LANDING_EMBLEMS.map((k, i) => raw(emblemBadge(k, { size: 'md', gold: i % 3 === 0 })))}</div>
+      <p class="lp-thanks-line">Gracias a los <strong>escribas</strong> que mejoran el catálogo y a los <strong>mecenas</strong> que la sostienen.</p>
+      <p class="lp-thanks">Portadas © de sus autores, mostradas con permiso de La Marca del Este. ¡Gracias!</p>
+    </section>
+
+    <h2 class="lp-sec">Preguntas frecuentes</h2>
+    <div class="lp-faq">
+      <details><summary>¿Es una app oficial?</summary><p>No. Es un proyecto de fans, gratuito y
+        <a href="${G}" target="_blank" rel="noopener">de código abierto</a>. <em>Aventuras en la Marca del Este</em> pertenece a sus
+        autores; las portadas se muestran con permiso de La Marca del Este.</p></details>
+      <details><summary>¿Cuesta algo?</summary><p>No, y no tiene anuncios. Si te resulta útil, puedes invitarme a un café y hacerte
+        Mecenas, con algunos extras.</p></details>
+      <details><summary>¿Qué hacéis con mis datos?</summary><p>Solo lo necesario para guardar tu colección: tu cuenta de Google y tus
+        libros. No se venden ni se comparten, y puedes descargarlos o borrar tu cuenta cuando quieras. Y como
+        <a href="${G}" target="_blank" rel="noopener">el código es público</a>, cualquiera puede comprobar qué se guarda.
+        <a href="privacidad.html">Privacidad</a>.</p></details>
+      <details><summary>¿Funciona en iPhone y Android?</summary><p>Sí: se abre en el navegador y se añade a la pantalla de inicio como
+        una app más. También en el ordenador.</p></details>
+    </div>
+
+    <div class="lp-row2">
+      ${settings.donations_enabled ? raw(html`<section class="lp-mecenas">
+        <h3>Gratis, y con extras para Mecenas</h3>
+        <p>Con un café (${SUPPORTER_MIN_AMOUNT} €) desbloqueas el diario de partidas, repetidos e intercambio, préstamos, estadísticas,
+          los temas Pergamino y Retro EGA… y el marco de moneda antigua para tu emblema.</p>
+        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
+      </section>`) : ''}
+      <aside class="lp-osr" aria-label="OSR Manager">
+        <b>OSR MANAGER</b>
+        <p>Del mismo autor: ayuda de mesa para directores de juego OSR (exploración, hexcrawl, encuentros y combate).</p>
+        <a href="https://favashi.github.io/osr-manager/app/" rel="noopener">Abrir OSR Manager →</a>
+      </aside>
+    </div>
+
+    <section class="lp-final">
       <h2>Empieza tu biblioteca</h2>
       ${loginBtn}
     </section>
-
-    ${raw(OSR_BANNER)}
 
     <footer class="landing-footer">
       <p class="small">
@@ -140,9 +191,10 @@ function renderLanding() {
         Proyecto de fans, no oficial. <em>Aventuras en la Marca del Este</em> pertenece a sus autores.<br>
         Portadas © de sus autores, usadas con permiso de La Marca del Este.<br>
         <a href="privacidad.html">Privacidad</a> ·
-        <a href="https://github.com/Favashi/escribadelamarca" rel="noopener">Código (AGPL-3.0)</a>
+        <a href="${G}" rel="noopener">Código en GitHub (AGPL-3.0)</a>
       </p>
     </footer>`;
+  fillShowcase(null);
   try {
     if (sessionStorage.getItem('edm.deleted')) {
       sessionStorage.removeItem('edm.deleted');
@@ -150,15 +202,7 @@ function renderLanding() {
     }
   } catch { /* sin storage */ }
   showCoffeeWidget();
-  // «Gracias a N escribas y M mecenas» (solo recuentos; si falla o no hay nadie, no se muestra)
-  communityCounts().then((c) => {
-    const el = $('.landing-thanks', view);
-    const parts = [c.scribes && `${c.scribes} ${c.scribes === 1 ? 'escriba que ha mejorado' : 'escribas que han mejorado'} el catálogo`,
-      c.supporters && `${c.supporters} ${c.supporters === 1 ? 'mecenas que la sostiene' : 'mecenas que la sostienen'}`].filter(Boolean);
-    if (!el || !parts.length) return;
-    el.textContent = `Gracias a ${parts.join(' y a ')}.`;
-    el.hidden = false;
-  }).catch(() => {});
+  landingShowcase().then(fillShowcase).catch(() => {});
   trackLandingVisit();
   view.querySelectorAll('[data-login]').forEach((btn) => (btn.onclick = async () => {
     view.querySelectorAll('[data-login]').forEach((b) => (b.disabled = true));
@@ -183,28 +227,6 @@ function showCoffeeWidget() {
   s.onload = () => window.dispatchEvent(new Event('DOMContentLoaded'));
   document.body.append(s);
 }
-
-// Banner de OSR Manager con el estilo de su web (tema Fósforo Verde, franja y marco doble).
-const OSR_BANNER = `
-  <aside class="osr-banner" aria-label="OSR Manager">
-    <div class="osr-hero">
-      <div class="osr-code" aria-hidden="true">OSR-01</div>
-      <div class="osr-ribbon" aria-hidden="true">PORTABLE<br>SIN INSTALAR</div>
-      <pre class="osr-logo" aria-hidden="true"> ██████╗ ███████╗██████╗
-██╔═══██╗██╔════╝██╔══██╗
-██║   ██║███████╗██████╔╝
-██║   ██║╚════██║██╔══██╗
-╚██████╔╝███████║██║  ██║
- ╚═════╝ ╚══════╝╚═╝  ╚═╝</pre>
-      <h2 class="osr-title">OSR MANAGER</h2>
-      <p class="osr-tag">Herramienta para directores de juego</p>
-      <p class="osr-tagline">Una ayuda de mesa para dirigir partidas OSR: exploración, hexcrawl, encuentros y combate.</p>
-      <div class="osr-cta">
-        <a class="osr-btn" href="https://favashi.github.io/osr-manager/app/" rel="noopener">Abrir OSR Manager →</a>
-      </div>
-      <p class="osr-secondary"><a href="https://favashi.github.io/osr-manager/" rel="noopener">Ver la web del proyecto</a></p>
-    </div>
-  </aside>`;
 
 function renderSetup() {
   nav.hidden = true;

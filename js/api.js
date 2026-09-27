@@ -9,6 +9,20 @@ export const getProfile = async (uid) =>
 export const getCategories = async () =>
   ok(await supabase.from('categories').select('*').order('sort_order'));
 
+/** Admin: alta, cambio (nombre, orden) y borrado de categorías. */
+export const createCategory = async (fields) =>
+  ok(await supabase.from('categories').insert(fields).select().single());
+
+export const updateCategory = async (id, fields) =>
+  ok(await supabase.from('categories').update(fields).eq('id', id));
+
+export const deleteCategory = async (id) =>
+  ok(await supabase.from('categories').delete().eq('id', id));
+
+/** Admin: pasa todos los libros de una categoría a otra (antes de borrarla). */
+export const moveCategoryBooks = async (fromId, toId) =>
+  ok(await supabase.from('catalog').update({ category_id: toId }).eq('category_id', fromId));
+
 export const getCatalog = async () =>
   ok(await supabase.from('catalog').select('*').order('title'));
 

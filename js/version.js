@@ -3,9 +3,19 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.10.3';
+export const APP_VERSION = '1.10.4';
 
 export const RELEASES = [
+  {
+    version: '1.10.4',
+    date: '2026-09-27',
+    notes: [
+      'Al proponer un libro, la app te avisa si ya hay uno con el mismo código, el mismo código de barras o un título parecido, y puedes ir directamente a él.',
+      'Las etiquetas se eligen de entre las que ya se usan en el catálogo (con buscador), o se crea una nueva.',
+      'En tu perfil, Logros, Apariencia y Acerca de se pueden plegar, y la app recuerda cómo los dejaste.',
+      'Corregido: al editar un libro, lo que escribías nada más abrir el formulario podía acabar en el título.',
+    ],
+  },
   {
     version: '1.10.3',
     date: '2026-09-25',

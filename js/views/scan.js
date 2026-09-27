@@ -309,18 +309,21 @@ const VERIFY_KEY = 'edm.verifyMode';
     $('.pick-search', result).addEventListener('input', (e) => drawPicks(e.target.value.trim()));
     $('[data-again]', result).onclick = again;
 
+    /** El código escaneado es de este libro: se asigna (admin) o se propone y se añade a la biblioteca. */
+    const assign = async (book) => {
+      if (!barcodesOf(book.id).some((b) => b.code === code)) await api.addBarcode(user().id, code, book.id, { admin });
+      if (!admin && !state.library.has(book.id)) await api.addToLibrary(user().id, book.id);
+      await Promise.all([refreshCatalog(), refreshLibrary()]);
+      toast(admin ? 'Código asignado' : 'Gracias: código propuesto y libro añadido', 'ok');
+      showBook(book, code);
+    };
+
     list.addEventListener('click', async (e) => {
       const btn = e.target.closest('.pick');
       if (!btn) return;
       const book = state.catalog.find((b) => b.id === btn.dataset.id);
       btn.disabled = true;
-      try {
-        await api.addBarcode(user().id, code, book.id, { admin });
-        if (!admin && !state.library.has(book.id)) await api.addToLibrary(user().id, book.id);
-        await Promise.all([refreshCatalog(), refreshLibrary()]);
-        toast(admin ? 'Código asignado' : 'Gracias: código propuesto y libro añadido', 'ok');
-        showBook(book, code);
-      } catch (err) { toast(errMsg(err), 'error'); btn.disabled = false; }
+      try { await assign(book); } catch (err) { toast(errMsg(err), 'error'); btn.disabled = false; }
     });
 
     $('[data-new]', result).onclick = async () => {
@@ -330,6 +333,10 @@ const VERIFY_KEY = 'edm.verifyMode';
         withBarcode: true, barcode: code,
       });
       if (!res) return;
+      if (res.existing) {   // en el formulario ha reconocido un libro que ya estaba en el catálogo
+        try { await assign(res.existing); } catch (err) { toast(errMsg(err), 'error'); }
+        return;
+      }
       try {
         const book = await api.createBook(user().id, res.fields, { admin });
         if (res.barcode) await api.addBarcode(user().id, res.barcode, book.id, { admin });

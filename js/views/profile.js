@@ -1,7 +1,7 @@
 import { html, raw, $, toast, fmtShort } from '../util.js';
 import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
-import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog, bindFolds } from '../ui.js';
 import { sendFeedback, updateProfile } from '../api.js';
 
 const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
@@ -50,21 +50,21 @@ export function renderProfile(root) {
 
     ${raw(rankCard())}
 
-    <section class="panel achievements">
-      <h2>Logros</h2>
+    <details class="panel fold achievements" data-fold="perfil.logros" open>
+      <summary><h2>Logros</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <div class="ach-grid"><p class="muted small">Cargando…</p></div>
-    </section>
+    </details>
 
     ${supporter ? raw(html`
-    <section class="panel perk mecenas-hub">${raw(ribbon('perk'))}
-      <h2>Tus extras de Mecenas</h2>
+    <details class="panel fold perk mecenas-hub" data-fold="perfil.mecenas" open>${raw(ribbon('perk'))}
+      <summary><h2>Tus extras de Mecenas</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <div class="hub-grid">
         ${HUB.map(([sec, icon, title, sub]) => raw(html`<a class="hub-tile" href="#/mecenas/${sec}">
           <span class="hub-icon" aria-hidden="true">${icon}</span><span class="hub-title">${title}</span><span class="hub-sub">${sub}</span>
         </a>`))}
       </div>
       ${settings.donations_enabled ? raw(html`<div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a otro café</a></div>`) : ''}
-    </section>`) : !settings.donations_enabled ? '' : raw(html`
+    </details>`) : !settings.donations_enabled ? '' : raw(html`
     <section class="panel coffee">
       <h2>¿Te es útil la app?</h2>
       <p>Escriba de la Marca es gratuita y se mantiene con aportaciones. Con un café (${SUPPORTER_MIN_AMOUNT} €) te haces Mecenas y
@@ -75,8 +75,8 @@ export function renderProfile(root) {
       </div>
     </section>`)}
 
-    <section class="panel">
-      <h2>Apariencia</h2>
+    <details class="panel fold" data-fold="perfil.apariencia">
+      <summary><h2>Apariencia</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <div class="theme-row" role="radiogroup" aria-label="Tema">
         ${THEMES.filter((t) => !t.supporter).map((t) => raw(themeOption(t, theme, false)))}
       </div>
@@ -89,7 +89,7 @@ export function renderProfile(root) {
         ${TEXT_SIZES.map((t) => raw(html`<label><input type="radio" name="text-size" value="${t.id}" ${getTextSize() === t.id ? 'checked' : ''}>
           <span><b style="font-size:${t.scale * 1.15}rem" aria-hidden="true">Aa</b>${t.label}</span></label>`))}
       </div>
-    </section>
+    </details>
 
     <details class="panel danger-zone">
       <summary><h2>${raw(icon('warning'))} Zona de peligro</h2><span class="muted small">Vaciar la biblioteca o eliminar la cuenta</span>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
@@ -116,8 +116,8 @@ export function renderProfile(root) {
       </div>
     </details>
 
-    <section class="panel about">
-      <h2>Acerca de</h2>
+    <details class="panel fold about" data-fold="perfil.acerca">
+      <summary><h2>Acerca de</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <p class="about-version"><strong>Escriba de la Marca</strong> <span class="badge">v${APP_VERSION}</span></p>
       <div class="actions">
         <a class="btn btn-ghost" href="#/ayuda">${raw(icon('help'))} Ayuda</a>
@@ -128,7 +128,7 @@ export function renderProfile(root) {
         ? raw(`<button class="btn btn-primary btn-feedback" data-feedback>${icon('chat')} Enviar comentario o informar de un fallo</button>`)
         : raw(html`<a class="btn btn-ghost btn-feedback" href="${ISSUES_URL}" target="_blank" rel="noopener">${raw(icon('bug'))} Informar de un fallo o proponer una idea en GitHub</a>
           <p class="muted small center">Los comentarios se gestionan en GitHub: así puedes ver si alguien ya ha informado del mismo fallo.</p>`)}
-    </section>
+    </details>
 
     <p class="muted small center pad">
       Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
@@ -137,6 +137,7 @@ export function renderProfile(root) {
       <a href="privacidad.html">Privacidad</a> ·
       <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
     <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
+  bindFolds(root);
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
   root.querySelectorAll('input[name=text-size]').forEach((r) => r.addEventListener('change', () => applyTextSize(r.value, true)));

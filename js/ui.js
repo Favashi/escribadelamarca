@@ -1,6 +1,6 @@
 // Componentes compartidos: diálogos, formulario de libro, cabecera de vista.
 import { html, raw, esc, $ } from './util.js';
-import { state } from './store.js';
+import { state, booksForBarcode, booksForPubCode } from './store.js';
 import { normalizeCode } from './isbn.js';
 import { APP_VERSION, RELEASES } from './version.js';
 import { icon } from './icons.js';
@@ -35,10 +35,148 @@ export function confirmDialog(message, { ok = 'Aceptar', cancel = 'Cancelar', da
   });
 }
 
+// ---------- Etiquetas: chips con las ya usadas en el catálogo ----------
+
+const fold = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+/** Etiquetas del catálogo aprobado, de más a menos usada (con la grafía más común). */
+function catalogTags() {
+  const count = new Map();
+  for (const b of state.catalog) if (b.status === 'approved') for (const t of b.tags || []) {
+    const k = fold(t);
+    const e = count.get(k) || { tag: t, n: 0 };
+    e.n += 1;
+    count.set(k, e);
+  }
+  return [...count.values()].sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag, 'es'));
+}
+
+/** Campo de etiquetas: chips quitables, sugerencias de las existentes y alta de nuevas. Envía «a, b, c» en name. */
+function tagField(name, tags) {
+  return html`<div class="tag-field" data-tag-field>
+    <span class="tag-field-label" id="${name}-label">Etiquetas</span>
+    <input type="hidden" name="${name}" value="${tags.join(', ')}">
+    <ul class="tag-chips" aria-labelledby="${name}-label"></ul>
+    <input type="text" class="tag-entry" placeholder="Busca o escribe una etiqueta…" autocomplete="off" enterkeyhint="done"
+      aria-labelledby="${name}-label" maxlength="40">
+    <div class="tag-suggest" role="group" aria-label="Etiquetas sugeridas"></div>
+  </div>`;
+}
+
+function bindTagField(root) {
+  const box = $('[data-tag-field]', root);
+  if (!box) return;
+  const hidden = $('input[type=hidden]', box);
+  const entry = $('.tag-entry', box);
+  const chips = $('.tag-chips', box);
+  const suggest = $('.tag-suggest', box);
+  const all = catalogTags();
+  let tags = hidden.value.split(',').map((t) => t.trim()).filter(Boolean);
+
+  const draw = () => {
+    hidden.value = tags.join(', ');
+    chips.innerHTML = tags.map((t) => html`<li><span>${t}</span><button type="button" data-rm="${t}" aria-label="Quitar ${t}">×</button></li>`).join('');
+    const q = fold(entry.value);
+    const chosen = new Set(tags.map(fold));
+    const pool = all.filter((t) => !chosen.has(fold(t.tag)) && (!q || fold(t.tag).includes(q))).slice(0, 10);
+    const exact = q && all.some((t) => fold(t.tag) === q);
+    suggest.innerHTML = pool.map((t) => html`<button type="button" class="chip" data-add="${t.tag}">${t.tag} <b>${t.n}</b></button>`).join('')
+      + (q && !exact && !chosen.has(q) ? html`<button type="button" class="chip chip-new" data-add="${entry.value.trim()}">+ Nueva: «${entry.value.trim()}»</button>` : '');
+  };
+  const add = (text) => {
+    const t = text.trim().replace(/,/g, '');
+    if (!t) return;
+    const known = all.find((x) => fold(x.tag) === fold(t));   // misma etiqueta con otra grafía → la existente
+    if (!tags.some((x) => fold(x) === fold(t))) tags.push(known ? known.tag : t);
+    entry.value = '';
+    draw();
+  };
+  entry.addEventListener('input', () => { if (entry.value.includes(',')) add(entry.value); else draw(); });
+  entry.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); add(entry.value); }
+    else if (e.key === 'Backspace' && !entry.value && tags.length) { tags.pop(); draw(); }
+  });
+  // pointerdown sin foco: el teclado del móvil no se cierra al tocar una sugerencia
+  suggest.addEventListener('pointerdown', (e) => { if (e.target.closest('[data-add]')) e.preventDefault(); });
+  suggest.addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { add(b.dataset.add); entry.focus(); } });
+  chips.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-rm]');
+    if (b) { tags = tags.filter((t) => t !== b.dataset.rm); draw(); }
+  });
+  // Lo escrito sin confirmar también cuenta al guardar (captura: antes que el onsubmit del formulario)
+  box.closest('form').addEventListener('submit', () => { if (entry.value.trim()) add(entry.value); }, true);
+  draw();
+}
+
+// ---------- Libros parecidos (evitar duplicados al proponer o crear) ----------
+
+const STOP = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'a', 'un', 'una', 'al', 'con', 'por', 'para']);
+const words = (s) => fold(s).replace(/[^a-z0-9ñ ]+/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w));
+
+/** ¿Títulos parecidos? Igual, uno contiene al otro, o comparten la mayoría de palabras significativas. */
+function similarTitle(a, b) {
+  const fa = fold(a).replace(/[^a-z0-9ñ]+/g, ' ').trim(), fb = fold(b).replace(/[^a-z0-9ñ]+/g, ' ').trim();
+  if (fa.length < 4 || !fb) return false;
+  if (fa === fb || (fa.length >= 6 && fb.includes(fa)) || (fb.length >= 6 && fa.includes(fb))) return true;
+  const wa = words(a), wb = new Set(words(b));
+  if (wa.length < 2) return false;
+  return wa.filter((w) => wb.has(w)).length / Math.max(wa.length, wb.size) >= 0.6;
+}
+
+/** Libros del catálogo (aprobados o pendientes) que coinciden en código, código de barras o título. */
+export function findSimilarBooks({ title = '', code = '', barcode = '' }, excludeId = null) {
+  const hits = new Map();
+  const add = (b, why) => {
+    if (!b || b.id === excludeId || b.status === 'rejected') return;
+    const h = hits.get(b.id) || { book: b, why: [] };
+    if (!h.why.includes(why)) h.why.push(why);
+    hits.set(b.id, h);
+  };
+  const raw = String(barcode).replace(/[\s-]/g, '').toUpperCase();
+  if (raw) for (const c of new Set([raw, normalizeCode(raw)].filter(Boolean))) booksForBarcode(c).forEach((b) => add(b, 'mismo código de barras'));
+  if (code.trim()) booksForPubCode(code).forEach((b) => add(b, 'mismo código'));
+  if (title.trim().length >= 4) state.catalog.filter((b) => similarTitle(title, b.title)).forEach((b) => add(b, 'título parecido'));
+  return [...hits.values()].slice(0, 5);
+}
+
+/** Diálogo con un desplegable. Resuelve con el valor elegido o null. options: [[valor, texto]] */
+export function selectDialog(message, options, { ok = 'Aceptar', cancel = 'Cancelar', label = '', danger = false } = {}) {
+  return openDialog(html`
+    <form class="sheet form">
+      <p class="sheet-msg">${message}</p>
+      <label>${label}<select name="v">${options.map(([v, t]) => raw(html`<option value="${v}">${t}</option>`))}</select></label>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-cancel>${cancel}</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}">${ok}</button>
+      </div>
+    </form>`, (d, close) => {
+    $('[data-cancel]', d).onclick = () => close(null);
+    $('form', d).onsubmit = (e) => { e.preventDefault(); close($('select', d).value); };
+  });
+}
+
+// ---------- Paneles plegables (Perfil, Admin → Ajustes y Portadas) ----------
+// <details class="panel fold" data-fold="clave" [open]>: «open» en el HTML es el estado inicial; después, cada panel
+// recuerda en este dispositivo si se dejó abierto o cerrado.
+const FOLD_KEY = 'edm.folds';
+const readFolds = () => { try { return JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch { return {}; } };
+
+export function bindFolds(root) {
+  const saved = readFolds();
+  root.querySelectorAll('details[data-fold]').forEach((d) => {
+    const key = d.dataset.fold;
+    if (key in saved) d.open = !!saved[key];
+    d.addEventListener('toggle', () => {
+      try { localStorage.setItem(FOLD_KEY, JSON.stringify({ ...readFolds(), [key]: d.open })); } catch { /* sin storage */ }
+    });
+  });
+}
+
 export const CONDITIONS = ['Precintado', 'Como nuevo', 'Muy bueno', 'Bueno', 'Usado', 'Deteriorado'];
 
 /**
- * Formulario de alta/edición de libro. Resuelve con { fields, barcode } o null.
+ * Formulario de alta/edición de libro. Resuelve con { fields, barcode }, { existing: libro } (si en un alta el usuario
+ * reconoce que el libro ya estaba en el catálogo) o null.
  * withBarcode: muestra el campo de código de barras (solo en altas).
  */
 export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit = 'Guardar', note = '', withBarcode = false, barcode = '' } = {}) {
@@ -62,6 +200,7 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
       ${withBarcode ? raw(html`<label>Código de barras
         <input name="barcode" inputmode="numeric" value="${barcode}" placeholder="978…" autocomplete="off">
       </label>`) : ''}
+      <div class="dup-hint" role="status" aria-live="polite" hidden></div>
       <div class="row2">
         <label>Autor <input name="author" maxlength="200" value="${initial.author ?? ''}"></label>
         <label>Páginas <input name="pages" maxlength="80" value="${initial.pages ?? ''}"></label>
@@ -78,8 +217,8 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
         </div>
         <div class="row2">
           <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${initial.sessions ?? ''}"></label>
-          <label>Etiquetas <input name="tags" value="${(initial.tags || []).join(', ')}" placeholder="Dungeon, Exploración"></label>
         </div>
+        ${raw(tagField('tags', initial.tags || []))}
       </fieldset>
       <fieldset class="game-fields">
         <legend>Ficha editorial</legend>
@@ -106,11 +245,54 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
     const form = $('form', d);
     const err = $('.form-error', d);
     $('[data-cancel]', d).onclick = () => close(null);
+    bindTagField(d);
+
+    // Altas: avisa al momento si ya hay un libro con ese código, código de barras o un título parecido
+    const isNew = !initial.id;
+    const hint = $('.dup-hint', d);
+    const submitBtn = $('button[type=submit]', d);
+    let similar = [], dupConfirmed = false, timer;
+    const checkDup = () => {
+      const f = new FormData(form);
+      similar = findSimilarBooks({ title: f.get('title'), code: f.get('code'), barcode: f.get('barcode') || '' });
+      const ids = similar.map((h) => h.book.id).join();
+      if (ids !== hint.dataset.ids) { dupConfirmed = false; submitBtn.textContent = submit; err.hidden = true; }
+      hint.dataset.ids = ids;
+      hint.hidden = !similar.length;
+      hint.innerHTML = similar.length ? html`<p><strong>¿Es alguno de estos?</strong> Ya ${similar.length === 1 ? 'está' : 'están'} en el catálogo:</p>
+        <ul>${similar.map(({ book: b, why }) => raw(html`<li>
+          <span>${b.code ? raw(html`<span class="code">${b.code}</span> `) : ''}${b.title}
+            <small>${why.join(' · ')}${b.status === 'pending' ? ' · propuesta pendiente de revisar' : ''}</small></span>
+          <button type="button" class="btn btn-ghost btn-sm" data-existing="${b.id}">Es este</button></li>`))}</ul>` : '';
+    };
+    if (isNew) {
+      form.addEventListener('input', (e) => {
+        if (!['title', 'code', 'barcode'].includes(e.target.name)) return;
+        clearTimeout(timer);
+        timer = setTimeout(checkDup, 250);
+      });
+      hint.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-existing]');
+        if (b) close({ existing: similar.find((h) => h.book.id === b.dataset.existing)?.book });
+      });
+      if (barcode) checkDup();
+    }
+
     form.onsubmit = (e) => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(form));
       const title = f.title.trim();
       if (!title) return showErr('El título es obligatorio.');
+      if (isNew) {
+        clearTimeout(timer);
+        checkDup();
+        if (similar.length && !dupConfirmed) {
+          dupConfirmed = true;
+          submitBtn.textContent = `${submit} igualmente`;
+          hint.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          return showErr('Hay libros parecidos en el catálogo. Si es uno de ellos, pulsa «Es este»; si no, vuelve a pulsar el botón.');
+        }
+      }
       let code = null;
       if (f.barcode?.trim()) {
         code = normalizeCode(f.barcode);
@@ -145,7 +327,8 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
     };
     function showErr(msg) { err.textContent = msg; err.hidden = false; }
     function int(v) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; }
-    setTimeout(() => $('input[name=title]', d).focus(), 50);
+    // Foco inicial en el título, salvo que ya se esté escribiendo en otro campo (le robaría lo que se teclea)
+    setTimeout(() => { if (!form.contains(document.activeElement)) $('input[name=title]', d).focus(); }, 50);
   });
 }
 
@@ -254,8 +437,8 @@ export function suggestDialog(book) {
         </div>
         <div class="row2">
           <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${v('sessions')}"></label>
-          <label>Etiquetas <input name="tags" value="${v('tags')}" placeholder="Dungeon, Exploración"></label>
         </div>
+        ${raw(tagField('tags', book.tags || []))}
         <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${v('summary')}</textarea></label>
       </fieldset>
       <label>¿De dónde sale el dato? (opcional) <input name="note" maxlength="500" placeholder="Lo pone en la contraportada, en la web de la editorial…"></label>
@@ -268,6 +451,7 @@ export function suggestDialog(book) {
     const form = $('form', d);
     const err = $('.form-error', d);
     $('[data-cancel]', d).onclick = () => close(null);
+    bindTagField(d);
     form.onsubmit = (e) => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(form));

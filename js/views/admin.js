@@ -4,7 +4,7 @@ import { uploadCover, matchFiles, deleteAllCovers } from '../covers.js';
 import { renderStats } from './admin-stats.js';
 import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
-import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog, selectDialog, bindFolds } from '../ui.js';
 import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
 import { SUPABASE_URL } from '../config.js';
@@ -253,13 +253,13 @@ function renderCovers(body) {
         <p class="small">${missing.map((b) => b.code || b.title).join(', ')}</p></details>`) : ''}
     </section>
 
-    <section class="panel">
-      <h2>Subir varias</h2>
+    <details class="panel fold" data-fold="portadas.subir">
+      <summary><h2>Subir varias</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <p class="muted small">Nombra cada fichero con el código del libro: <code>B12.jpg</code>, <code>X2.png</code>,
         <code>CR - Caja Roja.webp</code>… Revisa la lista y pulsa «Subir». Si el libro ya tenía portada, se sustituye.</p>
       <label class="btn btn-primary">Elegir imágenes<input type="file" accept="image/*" multiple data-bulk hidden></label>
       <div class="bulk-list"></div>
-    </section>
+    </details>
 
     <details class="panel danger-zone">
       <summary><h2>${raw(icon('warning'))} Borrar todas las portadas</h2><span class="muted small">Por si se retira el permiso</span>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
@@ -270,6 +270,7 @@ function renderCovers(body) {
       </div>
     </details>`;
 
+  bindFolds(body);
   const list = $('.bulk-list', body);
   const draw = () => {
     const ok = rows.filter((r) => r.book && !r.done);
@@ -336,17 +337,17 @@ function renderSettings(body) {
   const a = settings.announcement || { enabled: false, text: '', level: 'info' };
   body.innerHTML = html`
     <p class="muted small">Los cambios se aplican al momento para quien abra o recargue la app.</p>
-    <section class="panel">
-      <h2>Funciones</h2>
+    <details class="panel fold" data-fold="ajustes.funciones">
+      <summary><h2>Funciones</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <ul class="flag-list">${FLAGS.map(([key, title, desc]) => raw(html`<li class="flag-row">
         <div><strong>${title}</strong><small>${desc}</small></div>
         <label class="flag-switch"><input type="checkbox" data-flag="${key}" ${settings[key] ? 'checked' : ''}>
           <span aria-hidden="true"></span><span class="sr-only">${title}</span></label>
       </li>`))}</ul>
-    </section>
+    </details>
 
-    <section class="panel">
-      <h2>Aviso general</h2>
+    <details class="panel fold" data-fold="ajustes.aviso">
+      <summary><h2>Aviso general</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <p class="muted small">Una franja arriba de la app para todos (también en la portada). Cada usuario puede cerrarla;
         vuelve a salir si cambias el texto.</p>
       <form class="form announcement-form">
@@ -361,7 +362,36 @@ function renderSettings(body) {
         </label>
         <div class="actions"><button class="btn btn-primary">Guardar aviso</button></div>
       </form>
-    </section>`;
+    </details>
+
+    <details class="panel fold" data-fold="ajustes.categorias">
+      <summary><h2>Categorías</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
+      <p class="muted small">Agrupan el catálogo y «Mi biblioteca» en este orden. El nombre se guarda al salir del campo.</p>
+      <ul class="cat-list"></ul>
+      <form class="cat-new">
+        <input name="name" maxlength="60" placeholder="Nueva categoría" aria-label="Nombre de la nueva categoría" autocomplete="off">
+        <button class="btn btn-primary btn-sm">Añadir</button>
+      </form>
+    </details>`;
+  bindFolds(body);
+  renderCategories($('.cat-list', body));
+  $('.cat-new', body).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = e.target.elements.name;
+    const name = input.value.trim();
+    if (!name) return;
+    if (state.categories.some((c) => c.name.toLowerCase() === name.toLowerCase())) { toast('Ya hay una categoría con ese nombre', 'error'); return; }
+    const base = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'categoria';
+    let slug = base;
+    for (let i = 2; state.categories.some((c) => c.slug === slug); i++) slug = `${base}-${i}`;
+    const last = state.categories.at(-1)?.sort_order ?? 0;
+    try {
+      await api.createCategory({ name, slug, sort_order: last + 10 });
+      input.value = '';
+      await reloadCategories($('.cat-list', body));
+      toast('Categoría añadida', 'ok');
+    } catch (err) { toast(errMsg(err), 'error'); }
+  });
 
   body.querySelectorAll('[data-flag]').forEach((input) => input.addEventListener('change', async () => {
     const key = input.dataset.flag;
@@ -384,6 +414,72 @@ function renderSettings(body) {
       toast(value.enabled ? 'Aviso publicado' : 'Aviso retirado', 'ok');
     } catch (err) { toast(errMsg(err), 'error'); }
   });
+}
+
+async function reloadCategories(list) {
+  state.categories = await api.getCategories();
+  renderCategories(list);
+}
+
+/** Lista de categorías: renombrar, subir/bajar y borrar (moviendo antes sus libros a otra). */
+function renderCategories(list) {
+  const cats = state.categories;
+  const count = (id) => state.catalog.filter((b) => b.category_id === id).length;
+  list.innerHTML = cats.map((c, i) => html`<li data-id="${c.id}">
+    <span class="cat-main"><input class="cat-name" value="${c.name}" maxlength="60" aria-label="Nombre de la categoría">
+      <small class="muted">${count(c.id)} ${count(c.id) === 1 ? 'libro' : 'libros'}</small></span>
+    <span class="cat-btns">
+      <button type="button" class="icon-btn" data-move="-1" aria-label="Subir ${c.name}" ${i === 0 ? 'disabled' : ''}>${raw(icon('chevron', { cls: 'up' }))}</button>
+      <button type="button" class="icon-btn" data-move="1" aria-label="Bajar ${c.name}" ${i === cats.length - 1 ? 'disabled' : ''}>${raw(icon('chevron', { cls: 'down' }))}</button>
+      <button type="button" class="icon-btn danger" data-del aria-label="Borrar ${c.name}">${raw(icon('trash'))}</button>
+    </span></li>`).join('');
+
+  list.onchange = async (e) => {
+    const input = e.target.closest('.cat-name');
+    if (!input) return;
+    const cat = cats.find((c) => String(c.id) === input.closest('li').dataset.id);
+    const name = input.value.trim();
+    if (!name || name === cat.name) { input.value = cat.name; return; }
+    try {
+      await api.updateCategory(cat.id, { name });
+      cat.name = name;
+      renderCategories(list);   // etiquetas de los botones con el nombre nuevo
+      toast('Categoría renombrada', 'ok');
+    } catch (err) { input.value = cat.name; toast(errMsg(err), 'error'); }
+  };
+
+  list.onclick = async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const i = cats.findIndex((c) => String(c.id) === btn.closest('li').dataset.id);
+    const cat = cats[i];
+    try {
+      if (btn.dataset.move) {
+        // Intercambia con la vecina y renumera 10, 20, 30… (solo se guardan las que cambian)
+        const order = [...cats];
+        const j = i + Number(btn.dataset.move);
+        [order[i], order[j]] = [order[j], order[i]];
+        list.querySelectorAll('button').forEach((b) => (b.disabled = true));
+        await Promise.all(order.map((c, k) => ((k + 1) * 10 !== c.sort_order ? api.updateCategory(c.id, { sort_order: (k + 1) * 10 }) : null)));
+        await reloadCategories(list);
+        list.querySelector(`[data-id="${cat.id}"] [data-move="${btn.dataset.move}"]:not(:disabled)`)?.focus();
+      } else if (btn.hasAttribute('data-del')) {
+        const n = count(cat.id);
+        if (n) {
+          const others = cats.filter((c) => c.id !== cat.id);
+          if (!others.length) { toast('Es la única categoría: crea otra antes de borrarla', 'error'); return; }
+          const to = await selectDialog(`«${cat.name}» tiene ${n} ${n === 1 ? 'libro' : 'libros'}. ¿A qué categoría los paso antes de borrarla?`,
+            others.map((c) => [c.id, c.name]), { ok: 'Mover y borrar', label: 'Mover a', danger: true });
+          if (!to) return;
+          await api.moveCategoryBooks(cat.id, Number(to));
+          await refreshCatalog();
+        } else if (!(await confirmDialog(`¿Borrar la categoría «${cat.name}»? No tiene libros.`, { ok: 'Borrar', danger: true }))) return;
+        await api.deleteCategory(cat.id);
+        await reloadCategories(list);
+        toast('Categoría borrada', 'ok');
+      }
+    } catch (err) { toast(errMsg(err), 'error'); await reloadCategories(list); }
+  };
 }
 
 const KIND = { fallo: `${icon('bug')} Fallo`, idea: `${icon('bulb')} Idea`, otro: `${icon('chat')} Otro` };

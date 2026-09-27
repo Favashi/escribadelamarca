@@ -116,6 +116,7 @@ export function renderCatalog(root, params = {}) {
       withBarcode: true,
     });
     if (!res) return;
+    if (res.existing) { location.hash = `#/libro/${res.existing.id}`; return; }   // ya estaba en el catálogo
     try {
       const book = await api.createBook(user().id, res.fields, { admin });
       if (res.barcode) await api.addBarcode(user().id, res.barcode, book.id, { admin });

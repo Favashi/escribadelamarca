@@ -94,23 +94,23 @@ test.describe('admin', () => {
   test.use({ admin: true });
 
   test('edita la ficha editorial de un libro (fecha de publicación y PVP)', async ({ page, account }) => {
-    const id = await bookId('ref=eq.test:T1');
-    // Pase lo que pase, el libro de prueba vuelve a su estado (otros tests lo usan)
-    test.info().annotations.push({ type: 'cleanup', description: 'T1 restaurado' });
-    const restore = () => api(`/rest/v1/catalog?id=eq.${id}`, { method: 'PATCH',
-      body: { title: '[Prueba] Aventura de test', catalog_date: null, price_eur: null, binding: null } });
+    // Libro propio de cada ejecución: escritorio y móvil corren a la vez y no deben pisarse
+    const [{ id }] = await api('/rest/v1/catalog?select=id', { method: 'POST',
+      body: { title: `[Prueba] ficha editorial ${test.info().project.name}`, status: 'approved', source: 'app' } });
     try {
-    await page.goto(`/#/libro/${id}`);
-    await page.getByRole('button', { name: 'Editar', exact: true }).click();
-    const form = page.locator('#dialog form');
-    await form.getByLabel('Fecha de publicación').fill('2026-09-01');
-    await form.getByLabel('PVP (€)').fill('12,95');
-    await form.getByLabel('Formato').fill('Grapado');
-    await form.getByRole('button', { name: 'Guardar' }).click();
-    await expect(page.getByText('Libro actualizado')).toBeVisible();
-    const [book] = await api(`/rest/v1/catalog?id=eq.${id}&select=catalog_date,price_eur,binding`);
-    expect(book).toEqual({ catalog_date: '2026-09-01', price_eur: 12.95, binding: 'Grapado' });
-    } finally { await restore(); }
+      await page.goto(`/#/libro/${id}`);
+      await page.getByRole('button', { name: 'Editar', exact: true }).click();
+      const form = page.locator('#dialog form');
+      await form.getByLabel('Fecha de publicación').fill('2026-09-01');
+      await form.getByLabel('PVP (€)').fill('12,95');
+      await form.getByLabel('Formato').fill('Grapado');
+      await form.getByRole('button', { name: 'Guardar' }).click();
+      await expect(page.getByText('Libro actualizado')).toBeVisible();
+      const [book] = await api(`/rest/v1/catalog?id=eq.${id}&select=catalog_date,price_eur,binding`);
+      expect(book).toEqual({ catalog_date: '2026-09-01', price_eur: 12.95, binding: 'Grapado' });
+    } finally {
+      await api(`/rest/v1/catalog?id=eq.${id}`, { method: 'DELETE' });
+    }
   });
 });
 
@@ -213,6 +213,7 @@ test.describe('portadas (admin)', () => {
     const id = await bookId('ref=eq.test:T1');
     const png = await fakeCover(page, '#b02a1f');
     await page.goto('/#/admin/portadas');
+    await page.getByText('Subir varias', { exact: true }).click();          // panel plegable
     await page.locator('[data-bulk]').setInputFiles([
       { name: 'T1 - prueba.png', mimeType: 'image/png', buffer: png },
       { name: 'ZZZ9.png', mimeType: 'image/png', buffer: png },
@@ -318,4 +319,68 @@ test('buscador: «Más filtros» plegado, con burbuja de filtros activos', async
   await expect(page.locator('.finder-row .filter-count')).toHaveText('2');
   await page.getByRole('button', { name: 'Limpiar filtros' }).click();
   await expect(page.locator('.finder-row .filter-count')).toBeHidden();
+});
+
+test('proponer libro: avisa de libros parecidos y sugiere etiquetas existentes', async ({ page, account }) => {
+  const id = await bookId('ref=eq.test:T1');
+  const [tagged] = await api('/rest/v1/catalog?status=eq.approved&tags=neq.{}&select=tags&limit=1');
+  await page.goto('/#/catalogo');
+  await page.getByRole('button', { name: '+ Proponer' }).click();
+  const dialog = page.locator('#dialog');
+  await dialog.getByLabel('Título').fill('aventura de test');
+  const hint = dialog.locator('.dup-hint');
+  await expect(hint).toContainText(TEST_TITLE);
+  await expect(hint).toContainText('título parecido');
+  await dialog.getByLabel('Código de barras').fill(TEST_EAN);
+  await expect(hint).toContainText('mismo código de barras');
+
+  // Etiquetas: sugiere las del catálogo y añade una existente sin duplicarla
+  const tag = tagged.tags[0];
+  const entry = dialog.getByRole('textbox', { name: 'Etiquetas' });
+  await entry.fill(tag.slice(0, 3).toLowerCase());
+  await dialog.locator('.tag-suggest [data-add]').filter({ hasText: tag }).first().click();
+  await expect(dialog.locator('.tag-chips li')).toHaveText([`${tag}×`]);
+  await entry.fill(tag.toUpperCase());
+  await entry.press('Enter');
+  await expect(dialog.locator('.tag-chips li')).toHaveCount(1);
+
+  // Al enviar pide confirmación; «Es este» lleva a la ficha del libro que ya existe
+  await dialog.getByRole('button', { name: 'Proponer', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: 'Proponer igualmente' })).toBeVisible();
+  await expect(dialog.locator('.form-error')).toContainText('libros parecidos');
+  await hint.locator('li').filter({ hasText: TEST_TITLE }).getByRole('button', { name: 'Es este' }).click();
+  await expect(page).toHaveURL(new RegExp(`#/libro/${id}$`));
+});
+
+test.describe('categorías (admin)', () => {
+  test.use({ admin: true });
+  test('Admin → Ajustes: crear, reordenar, renombrar y borrar categorías', async ({ page, account }) => {
+    await page.goto('/#/admin/ajustes');
+    const list = page.locator('.cat-list');
+    // Panel plegado al entrar; se abre y recuerda el estado al volver
+    await expect(list).toBeHidden();
+    await page.getByText('Categorías', { exact: true }).click();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('edm.folds'))).toContain('"ajustes.categorias":true');
+    await page.reload();
+    await expect(list).toBeVisible();
+    const names = () => list.locator('.cat-name').evaluateAll((els) => els.map((e) => e.value));
+    try {
+      await page.getByRole('textbox', { name: 'Nombre de la nueva categoría' }).fill('Prueba E2E');
+      await page.getByRole('button', { name: 'Añadir' }).click();
+      await expect(list.locator('li').last().locator('.cat-name')).toHaveValue('Prueba E2E');
+      const before = await names();
+      await page.getByRole('button', { name: 'Subir Prueba E2E' }).click();
+      await expect.poll(names).toEqual([...before.slice(0, -2), 'Prueba E2E', before.at(-2)]);
+      const input = list.locator('li').filter({ has: page.getByRole('button', { name: 'Borrar Prueba E2E' }) }).locator('.cat-name');
+      await input.fill('Prueba E2E 2');
+      await input.blur();
+      await expect.poll(async () => (await api('/rest/v1/categories?slug=eq.prueba-e2e&select=name'))[0]?.name).toBe('Prueba E2E 2');
+      await page.getByRole('button', { name: 'Borrar Prueba E2E 2' }).click();
+      await page.locator('#dialog').getByRole('button', { name: 'Borrar' }).click();
+      await expect(list.locator('.cat-name')).toHaveCount(before.length - 1);
+      expect(await api('/rest/v1/categories?slug=eq.prueba-e2e&select=id')).toEqual([]);
+    } finally {
+      await api('/rest/v1/categories?slug=like.prueba-e2e*', { method: 'DELETE' });
+    }
+  });
 });

@@ -7,6 +7,7 @@ const DEFAULTS = {
   donations_enabled: true,
   feedback_enabled: true,
   announcement: { enabled: false, text: '', level: 'info' },
+  quests: {},            // textos de las misiones (Admin → Ajustes → Misiones); vacío = los de js/quests.js
 };
 
 export const settings = { ...DEFAULTS };

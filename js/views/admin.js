@@ -9,6 +9,7 @@ import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
 import { SUPABASE_URL } from '../config.js';
 import { renderAnnouncement } from '../announcement.js';
+import { QUEST_TYPES, questTexts } from '../quests.js';
 
 const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -376,8 +377,28 @@ function renderSettings(body) {
         <input name="name" maxlength="60" placeholder="Nueva categoría" aria-label="Nombre de la nueva categoría" autocomplete="off">
         <button class="btn btn-primary btn-sm">Añadir</button>
       </form>
+    </details>
+
+    <details class="panel fold" data-fold="ajustes.misiones">
+      <summary><h2>Misiones</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
+      <p class="muted small">Las misiones de la pestaña Aportaciones se generan solas con lo que falta en el catálogo. Aquí cambias
+        sus textos: varias variantes de título (una por línea; cambia cada semana) y el texto. Huecos: <code>{n}</code>
+        cuántos, <code>{serie}</code>, <code>{titulo}</code> y <code>{codigo}</code> del libro destacado.</p>
+      <a class="btn btn-primary quest-preview" href="#/aportaciones">${raw(icon('quill'))} Ver la pestaña Aportaciones</a>
+      <form class="form quest-form">
+        <label>Tipo de misión
+          <select name="type">${Object.entries(QUEST_TYPES).map(([k, t]) => raw(html`<option value="${k}">${t.label} · +${t.px} PX</option>`))}</select>
+        </label>
+        <label>Variantes del título (una por línea)<textarea name="titles" rows="5"></textarea></label>
+        <label>Texto de la misión<textarea name="text" rows="3"></textarea></label>
+        <div class="actions">
+          <button type="button" class="btn btn-ghost" data-quest-reset>Volver a los de por defecto</button>
+          <button class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
     </details>`;
   bindFolds(body);
+  bindQuestForm($('.quest-form', body));
   renderCategories($('.cat-list', body));
   $('.cat-new', body).addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -418,6 +439,35 @@ function renderSettings(body) {
       toast(value.enabled ? 'Aviso publicado' : 'Aviso retirado', 'ok');
     } catch (err) { toast(errMsg(err), 'error'); }
   });
+}
+
+/** Editor de textos de misiones: se guardan en app_settings.quests por tipo. */
+function bindQuestForm(form) {
+  const load = () => {
+    const t = questTexts(form.elements.type.value);
+    form.elements.titles.value = t.titles.join('\n');
+    form.elements.text.value = t.text;
+  };
+  const save = async (value, msg) => {
+    try {
+      await saveSetting('quests', value);
+      load();
+      toast(msg, 'ok');
+    } catch (err) { toast(errMsg(err), 'error'); }
+  };
+  form.elements.type.addEventListener('change', load);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const titles = form.elements.titles.value.split('\n').map((t) => t.trim()).filter(Boolean);
+    const text = form.elements.text.value.trim();
+    if (!titles.length || !text) { toast('Escribe al menos un título y el texto', 'error'); return; }
+    save({ ...settings.quests, [form.elements.type.value]: { titles, text } }, 'Textos de la misión guardados');
+  });
+  form.querySelector('[data-quest-reset]').onclick = () => {
+    const { [form.elements.type.value]: _, ...rest } = settings.quests || {};
+    save(rest, 'Textos por defecto restaurados');
+  };
+  load();
 }
 
 async function reloadCategories(list) {

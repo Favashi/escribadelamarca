@@ -6,10 +6,19 @@ import { celebrateDialog } from './ui.js';
 import { toast } from './util.js';
 
 // ---------- Nivel y rango de escriba ----------
-// PX (puntos de experiencia): 100 por aportación aceptada al catálogo, 25 por logro (sin contar los de rango, que dependen
-// de los propios PX) y 10 por cada libro marcado como jugado o dirigido. Tener libros no da PX.
-// Misma fórmula en la base de datos: public.user_xp() (migración 20260927000000_community.sql).
-export const XP = { contribution: 100, achievement: 25, mark: 10 };
+// PX (puntos de experiencia): por aportación aceptada según el esfuerzo (CONTRIB_XP), 25 por logro (sin contar los de
+// rango, que dependen de los propios PX) y 10 por cada libro marcado como jugado o dirigido. Tener libros no da PX.
+// Misma fórmula en la base de datos: public.user_xp() y public.suggestion_xp() (migración 20260928000000).
+export const XP = { achievement: 25, mark: 10 };
+export const CONTRIB_XP = { code: 100, fix: 100, game: 150, summary: 200, book: 250 };
+export const GAME_FIELDS = ['min_level', 'max_level', 'min_players', 'max_players', 'sessions'];
+
+/** PX de una corrección aceptada: cuenta la parte de mayor valor (no se suman). */
+export function suggestionXp(changes = {}) {
+  if ('summary' in changes) return CONTRIB_XP.summary;
+  if (GAME_FIELDS.some((f) => f in changes)) return CONTRIB_XP.game;
+  return CONTRIB_XP.fix;
+}
 
 // El título depende de los PX; los umbrales son los antiguos (por aportaciones) × 100, así nadie baja de rango.
 export const RANKS = [
@@ -29,13 +38,15 @@ export function contributions(uid = user()?.id) {
 }
 
 /** PX del usuario actual, con el desglose. */
-export function xpBreakdown() {
-  const c = contributions();
+export function xpBreakdown(uid = user()?.id) {
+  const c = contributions(uid);
+  const contributionXp = state.suggestions.filter((s) => s.created_by === uid && s.status === 'approved')
+    .reduce((t, s) => t + suggestionXp(s.changes), 0) + c.codes * CONTRIB_XP.code + c.books * CONTRIB_XP.book;
   const achievements = state.achievements.filter((a) => !a.key.startsWith('rank:')).length;
   let marks = 0;
   for (const m of state.marks.values()) marks += (m.played_at ? 1 : 0) + (m.directed_at ? 1 : 0);
-  const total = c.total * XP.contribution + achievements * XP.achievement + marks * XP.mark;
-  return { contributions: c, achievements, marks, total };
+  const total = contributionXp + achievements * XP.achievement + marks * XP.mark;
+  return { contributions: c, contributionXp, achievements, marks, total };
 }
 
 /** PX necesarios para llegar a un nivel: 0, 100, 300, 600, 1000… (cada nivel cuesta 100 PX más que el anterior). */

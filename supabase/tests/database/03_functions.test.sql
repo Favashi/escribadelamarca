@@ -2,7 +2,7 @@
 -- las públicas (lista de deseos, Escribas, intercambio) solo exponen lo que deben; borrar la cuenta borra todo.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(60);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -48,7 +48,7 @@ select ok(not has_function_privilege(r, f, 'execute'), format('%s no puede ejecu
 from unnest(array['anon', 'authenticated']) r,
      unnest(array['public.notify_admin(text, jsonb)', 'public.telegram_send(text, jsonb)', 'public.mark_supporter_by_email(text)',
                   'public.weekly_admin_digest()', 'public.retry_admin_notifications()', 'public.tg_who(uuid)',
-                  'public.user_xp(uuid)', 'public.user_contributions(uuid)']) f;
+                  'public.user_xp(uuid)', 'public.user_contributions(uuid)', 'public.user_contribution_xp(uuid)']) f;
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon no puede ejecutar delete_my_account');
 
 -- ---------- Funciones de admin: rechazan a usuarios y visitantes ----------
@@ -137,6 +137,15 @@ select lives_ok($$ select public.admin_apply_suggestion((select max(id) from pub
 reset role;
 select is((select out_of_print from public.catalog where id = 'b0000000-0000-0000-0000-00000000000b'), true,
   'descatalogado: la sugerencia aplicada marca el libro');
+
+-- ---------- PX según el esfuerzo de la aportación ----------
+select is(public.suggestion_xp('{"summary": "x", "sessions": 2}'), 200, 'PX: una corrección con resumen vale 200 (cuenta la de más valor)');
+select is(public.suggestion_xp('{"min_level": 1}'), 150, 'PX: datos de juego valen 150');
+select is(public.suggestion_xp('{"title": "x"}'), 100, 'PX: una corrección sencilla vale 100');
+insert into public.catalog_suggestions (catalog_id, created_by, changes, status)
+values ('b0000000-0000-0000-0000-00000000000a', '22222222-2222-2222-2222-222222222222', '{"sessions": 3}', 'approved');
+select is(public.user_xp('22222222-2222-2222-2222-222222222222'), 350,
+  'PX: un código (100), una corrección sencilla (100, la de «descatalogado») y una de datos de juego (150)');
 
 select * from finish();
 rollback;

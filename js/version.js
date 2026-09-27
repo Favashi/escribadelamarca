@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.12.1';
+export const APP_VERSION = '1.13.0';
 
 export const RELEASES = [
+  {
+    version: '1.13.0',
+    date: '2026-09-28',
+    notes: [
+      'Nueva pestaña «Aportaciones»: misiones para ayudar a completar el catálogo (datos de juego, resúmenes, códigos de barras…) y todo lo que has propuesto, con su estado. Lo pendiente lo puedes retirar.',
+      'Las aportaciones dan experiencia según el esfuerzo: 100 PX un código o una corrección, 150 los datos de juego, 200 un resumen y 250 un libro nuevo.',
+      'Te avisamos en la pestaña cuando revisan una de tus propuestas.',
+    ],
+  },
   {
     version: '1.12.1',
     date: '2026-09-27',

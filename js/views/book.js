@@ -307,6 +307,13 @@ export async function renderBook(root, { id }) {
     toast('Gracias: tu sugerencia se revisará pronto', 'ok');
     rerender();
   }));
+  // Viene de una misión de «Aportaciones»: abre «Sugerir cambios» directamente
+  try {
+    if (sessionStorage.getItem('edm.openSuggest') === book.id) {
+      sessionStorage.removeItem('edm.openSuggest');
+      setTimeout(() => $('[data-suggest]', root)?.click(), 0);
+    }
+  } catch { /* sin storage */ }
   $('[data-suggest-del]', root)?.addEventListener('click', run(async (e) => {
     await api.deleteSuggestion(Number(e.target.dataset.suggestDel));
     await refreshSuggestions();

@@ -22,6 +22,7 @@ import { renderPublicWishlist } from './views/wishlist-public.js';
 import { renderAdmin } from './views/admin.js';
 import { renderHelp } from './views/help.js';
 import { renderCommunity } from './views/community.js';
+import { renderContributions, waxSeal } from './views/contributions.js';
 import { renderWishlist } from './views/wishlist.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
@@ -136,13 +137,31 @@ function renderLanding() {
       ${[['compass', 'Buscador de aventuras', '¿Qué preparo para la próxima partida? Filtra por nivel del grupo, jugadores y duración.'],
         ['dice', 'Leída, jugada y dirigida', 'Marca cada libro y encuentra las aventuras que tu grupo aún no ha jugado.'],
         ['warning', 'Descatalogados', 'Sabrás qué módulos ya no se venden nuevos para buscarlos de segunda mano a tiempo.'],
-        ['quill', 'Niveles de escriba', 'Sube de nivel ayudando al catálogo, consigue logros y elige tu emblema.'],
+        ['quill', 'Misiones y niveles', 'Completa misiones para mejorar el catálogo, gana experiencia, sube de nivel y elige tu emblema.'],
         ['people', 'Catálogo de la comunidad', '¿Falta un libro o un código? Proponlo y, tras revisarlo, lo tendrán todos.'],
         ['cloud', 'En todos tus dispositivos', 'Tu colección se sincroniza entre el móvil y el ordenador. Sin instalar nada de ninguna tienda.'],
       ].map(([ic, t, d]) => raw(html`<div class="lp-feat"><span class="lp-ic" aria-hidden="true">${raw(icon(ic))}</span><div><h3>${t}</h3><p>${d}</p></div></div>`))}
     </div>
 
     <h2 class="lp-sec">Una comunidad de escribas</h2>
+    <p class="lp-sec-sub">Acepta misiones, completa el catálogo de la Marca y gana experiencia: cuanto más esfuerzo, más PX.</p>
+    <div class="lp-quest-demo">
+      <article class="quest">
+        ${raw(waxSeal(150))}
+        <span class="quest-kind">Serie B · Datos de juego</span>
+        <h3>Los pergaminos en blanco de la serie B</h3>
+        <p>13 aventuras esperan a que alguien anote su nivel, sus jugadores y sus sesiones.</p>
+        <div class="progress"><i><b style="width:69%"></b></i><span>29 de 42 completas entre todos</span></div>
+        <span class="quest-cta">Aceptar la misión →</span>
+      </article>
+      <article class="quest">
+        ${raw(waxSeal(200))}
+        <span class="quest-kind">Resúmenes</span>
+        <h3>La crónica inacabada de <em>La Ciudad Olvidada</em></h3>
+        <p>Esta aventura no tiene resumen. Dos o tres frases sin destripar la trama bastan.</p>
+        <span class="quest-cta">Escribir la crónica →</span>
+      </article>
+    </div>
     <section class="lp-community">
       <p>Cada código escaneado y cada corrección mejora el catálogo para todos.</p>
       <div class="lp-coins" aria-hidden="true">${LANDING_EMBLEMS.map((k, i) => raw(emblemBadge(k, { size: 'md', gold: i % 3 === 0 })))}</div>
@@ -328,6 +347,7 @@ route('/buscar', mount(renderFinder));
 route('/admin', mount(renderAdmin));
 route('/admin/:section', mount(renderAdmin));
 route('/ayuda', mount(renderHelp));
+route('/aportaciones', mount(renderContributions));
 route('/comunidad', mount(renderCommunity));
 route('/comunidad/:tab', mount(renderCommunity));
 route('/escribas', () => { location.replace('#/comunidad/escribas'); });   // enlace antiguo

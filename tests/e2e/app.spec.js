@@ -17,6 +17,7 @@ test('portada sin sesión', async ({ page }) => {
   // Cifras reales del catálogo (landing_showcase) y ejemplos de la app
   await expect(page.locator('.lp-stats')).toContainText('publicaciones');
   await expect(page.locator('[data-demo-scan]')).toContainText('Ya lo tienes');
+  await expect(page.locator('.lp-quest-demo .quest .wax')).toHaveCount(2);
   await page.getByText('¿Es una app oficial?').click();
   await expect(page.getByRole('link', { name: 'de código abierto' })).toHaveAttribute('href', /github\.com\/Favashi\/escribadelamarca/);
 });
@@ -30,6 +31,8 @@ test.describe('bienvenida', () => {
     await expect(dialog.getByRole('heading', { name: 'Escanea tus libros' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Siguiente' }).click();
     await dialog.getByRole('button', { name: 'Siguiente' }).click();
+    await dialog.getByRole('button', { name: 'Siguiente' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Acepta misiones' })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Escanear mi primer libro' })).toBeVisible();
     await dialog.getByRole('button', { name: /Consulta la ayuda/ }).click();
     await expect(page).toHaveURL(/#\/ayuda$/);
@@ -492,9 +495,61 @@ test.describe('revisión al día (admin)', () => {
       await expect(page.getByText(title)).toHaveCount(0);
       await page.getByRole('button', { name: 'Actualizar' }).click();
       await expect(page.getByText(title)).toBeVisible();
-      await expect(page.locator('#nav .tab-badge')).toBeVisible();
+      await expect(page.locator('#nav [data-admin-tab] .tab-badge')).toBeVisible();
     } finally {
       await api(`/rest/v1/catalog?id=eq.${b.id}`, { method: 'DELETE' });
+    }
+  });
+});
+
+test('aportaciones: pestaña, misiones que abren «Sugerir cambios» y retirar lo pendiente', async ({ page, account }) => {
+  const uid = account.user.id;
+  const id = await bookId('ref=eq.test:T1');
+  await api('/rest/v1/catalog_suggestions', { method: 'POST', body: { catalog_id: id, created_by: uid, changes: { pages: '99' }, status: 'pending' } });
+  await page.goto('/#/biblioteca');
+  const tab = page.locator('#nav [data-contrib-tab]');
+  await expect(tab).toBeVisible();
+  await expect(page.locator('#nav [data-admin-tab]')).toBeHidden();
+  await tab.click();
+  await expect(page).toHaveURL(/#\/aportaciones$/);
+  await expect(page.locator('.quest').first()).toBeVisible();
+  await expect(page.locator('.quest .wax').first()).toBeVisible();
+
+  // Lo pendiente se puede retirar
+  const row = page.locator('.contribs li').filter({ hasText: TEST_TITLE });
+  await expect(row.locator('.state')).toHaveText('Pendiente');
+  await row.getByRole('button', { name: 'Retirar' }).click();
+  await page.locator('#dialog').getByRole('button', { name: 'Retirar' }).click();
+  await expect(page.getByText('Propuesta retirada')).toBeVisible();
+  expect(await api(`/rest/v1/catalog_suggestions?created_by=eq.${uid}&select=id`)).toEqual([]);
+
+  // Una misión de datos lleva a la ficha con «Sugerir cambios» abierto
+  const quest = page.locator('[data-quest-book]').first();
+  if (await quest.count()) {
+    await quest.click();
+    await expect(page).toHaveURL(/#\/libro\//);
+    await expect(page.locator('#dialog').getByRole('heading', { name: 'Sugerir cambios' })).toBeVisible();
+  }
+});
+
+test.describe('misiones (admin)', () => {
+  test.use({ admin: true });
+  test('Admin → Ajustes → Misiones: cambiar los textos de un tipo y volver a los de por defecto', async ({ page, account }) => {
+    await page.goto('/#/admin/ajustes');
+    await expect(page.locator('#nav [data-contrib-tab]')).toBeHidden();
+    await page.getByText('Misiones', { exact: true }).click();
+    const form = page.locator('.quest-form');
+    await form.getByLabel('Tipo de misión').selectOption('summary');
+    await form.getByLabel(/Variantes del título/).fill('La crónica de prueba de {titulo}');
+    await form.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Textos de la misión guardados')).toBeVisible();
+    try {
+      const [row] = await api('/rest/v1/app_settings?key=eq.quests&select=value');
+      expect(row.value.summary.titles).toEqual(['La crónica de prueba de {titulo}']);
+      await page.goto('/#/aportaciones');
+      await expect(page.locator('.quest h3').filter({ hasText: 'La crónica de prueba de' })).toBeVisible();
+    } finally {
+      await api('/rest/v1/app_settings?key=eq.quests', { method: 'DELETE' });
     }
   });
 });

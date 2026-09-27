@@ -1,7 +1,6 @@
 .DS_Store
 supabase/.temp/
 .env
-MEJORAS.md
 __pycache__/
 
 # Copias de seguridad (nunca al repositorio: contienen datos de usuarios)
@@ -24,3 +23,8 @@ difusion/
 
 # Utilidades y descargas de portadas (fuera del proyecto: nunca al repositorio)
 portadas_marca_del_este_utilidades/
+
+# Documentos internos de estrategia (no se publican)
+*.pdf
+docs/estrategia/
+SEGUIMIENTO.md

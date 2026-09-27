@@ -264,6 +264,7 @@ function rankCard() {
         <span>Aparecer en la lista de Escribas</span></label>
       ${isSupporter() ? raw(html`<label class="switch"><input type="checkbox" data-supporters-opt ${state.profile?.show_in_supporters ? 'checked' : ''}>
         <span>Aparecer en la lista de Mecenas</span></label>`) : ''}
+      <a href="#/aportaciones">Aportaciones y misiones ${raw(icon('chevron'))}</a>
       <a href="#/comunidad">Ver la Comunidad ${raw(icon('chevron'))}</a>
     </div>
   </section>`;

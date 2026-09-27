@@ -2,7 +2,7 @@
 // emblema. El nivel sale de los PX (js/achievements.js); el emblema, de profiles.emblem.
 import { html, raw, $, toast } from './util.js';
 import { state, user, isSupporter } from './store.js';
-import { levelInfo, xpBreakdown, describe, XP } from './achievements.js';
+import { levelInfo, xpBreakdown, describe, XP, CONTRIB_XP } from './achievements.js';
 import { EMBLEMS, emblemKey, emblemSvg } from './emblems.js';
 import { openDialog, errMsg } from './ui.js';
 import { updateProfile } from './api.js';
@@ -59,12 +59,12 @@ export function heroSheet() {
       <p class="small"><strong>${num(info.xp)} PX</strong> · te faltan ${num(info.to - info.xp)} PX para el nivel ${info.level + 1}${info.rank.next
         ? ` y ${num(info.rank.toNext)} para ser ${info.rank.next.name}` : ''}.</p>
       <ul class="xp-list small">
-        <li><span>${b.contributions.total} ${b.contributions.total === 1 ? 'aportación aceptada' : 'aportaciones aceptadas'} al catálogo</span><b>${num(b.contributions.total * XP.contribution)} PX</b></li>
+        <li><span>${b.contributions.total} ${b.contributions.total === 1 ? 'aportación aceptada' : 'aportaciones aceptadas'} al catálogo</span><b>${num(b.contributionXp)} PX</b></li>
         <li><span>${b.achievements} ${b.achievements === 1 ? 'logro' : 'logros'}</span><b>${num(b.achievements * XP.achievement)} PX</b></li>
         <li><span>${b.marks} ${b.marks === 1 ? 'partida' : 'partidas'} (jugadas o dirigidas)</span><b>${num(b.marks * XP.mark)} PX</b></li>
       </ul>
-      <p class="muted small">Lo que más suma: proponer códigos al escanear, corregir datos y añadir libros que falten
-        (${XP.contribution} PX cada aportación aceptada).</p>
+      <p class="muted small">Lo que más suma: ayudar al catálogo. Cada aportación aceptada da de ${CONTRIB_XP.code} a
+        ${CONTRIB_XP.book} PX según el esfuerzo. <a href="#/aportaciones" data-close>Ver misiones</a></p>
       ${last.length ? raw(html`<h3 class="setting-title">Últimos logros</h3><ul class="hero-ach">${last.map((a) => {
         const d = describe(a.key, a);
         return raw(html`<li><strong>${d.title}</strong><small class="muted">${d.text}</small></li>`);
@@ -74,7 +74,7 @@ export function heroSheet() {
         <a class="btn btn-primary" href="#/comunidad" data-close>Ver la Comunidad</a>
       </div>
     </div>`, (d, close) => {
-    $('[data-close]', d).onclick = () => close(true);
+    d.querySelectorAll('[data-close]').forEach((a) => { a.onclick = () => close(true); });
     $('[data-emblem]', d).onclick = async () => { close(true); await emblemDialog(); };
   });
 }

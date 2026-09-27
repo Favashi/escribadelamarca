@@ -4,7 +4,7 @@ import { viewHeader, feedbackDialog, errMsg } from '../ui.js';
 import { icon } from '../icons.js';
 import { settings } from '../settings.js';
 import { SUPPORTER_MIN_AMOUNT } from '../config.js';
-import { RANKS, XP } from '../achievements.js';
+import { RANKS, XP, CONTRIB_XP } from '../achievements.js';
 import { sendFeedback } from '../api.js';
 import { APP_VERSION } from '../version.js';
 
@@ -78,9 +78,12 @@ function sections() {
       ['¿Cómo corrijo un dato mal?',
         '<p>Abre el libro y pulsa <strong>«✎ Sugerir cambios»</strong>. Se revisa antes de publicarse para que todos lo vean.</p>'],
       ['¿Cómo subo de nivel?',
-        `<p>Con puntos de experiencia (PX): <strong>${XP.contribution} PX</strong> por cada aportación <em>aceptada</em> al catálogo
-        (códigos propuestos al escanear, correcciones y libros que faltaban), <strong>${XP.achievement} PX</strong> por logro y
-        <strong>${XP.mark} PX</strong> por cada libro que marcas como jugado o dirigido. Tener libros no da PX.</p>
+        `<p>Con puntos de experiencia (PX). Cada aportación <em>aceptada</em> al catálogo da PX según el esfuerzo:
+        <strong>${CONTRIB_XP.code}</strong> por un código de barras o una corrección sencilla, <strong>${CONTRIB_XP.game}</strong>
+        por los datos de juego (nivel, jugadores, sesiones), <strong>${CONTRIB_XP.summary}</strong> por un resumen y
+        <strong>${CONTRIB_XP.book}</strong> por un libro que faltaba. Además, <strong>${XP.achievement} PX</strong> por logro y
+        <strong>${XP.mark} PX</strong> por cada libro que marcas como jugado o dirigido. Tener libros no da PX.
+        En la pestaña <a href="#/aportaciones">Aportaciones</a> tienes misiones para empezar.</p>
         <p>Cada nivel cuesta 100 PX más que el anterior, y cada varios niveles cambia tu rango de escriba:</p>
         <p class="small">${ranks}</p>
         <p class="small">Tu nivel sale arriba a la derecha en Biblioteca, Catálogo y Buscador; tócalo para ver tu progreso.</p>`],

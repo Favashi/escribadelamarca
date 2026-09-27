@@ -501,14 +501,21 @@ const OB_ART = {
       <path d="M32 17L15 44h34z"/>
       <path d="M32 5v12M9 18.3L32 17l23 1.3M9 18.3L15 44M55 18.3L49 44M9 45.7L15 44M55 45.7L49 44M15 44l17 15 17-15"/></g>
       <text x="32" y="38.5" text-anchor="middle" font-size="11" font-weight="700" fill="${OB_GOLD}" font-family="Cinzel, Georgia, serif">20</text></svg>`,
+  // Pergamino de misión con sello de lacre
+  quill: `<svg viewBox="0 0 64 64"><g fill="none" stroke="${OB_GOLD}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 10h28a4 4 0 0 1 4 4v36a4 4 0 0 1-4 4H14"/><path d="M14 10a4 4 0 0 0-4 4v2h8v-2a4 4 0 0 0-4-4zM14 54a4 4 0 0 1-4-4v-2h8v2"/>
+      <path d="M22 22h16M22 30h16M22 38h10"/></g>
+      <circle cx="46" cy="46" r="10" fill="#b02a1f" stroke="#7c1811" stroke-width="1.5"/>
+      <text x="46" y="50" text-anchor="middle" font-size="9" font-weight="700" fill="${OB_GOLD}" font-family="Cinzel, Georgia, serif">PX</text></svg>`,
 };
 
-/** Bienvenida para usuarios nuevos (3 pasos). Resuelve con 'scan', 'catalog' o null. */
+/** Bienvenida para usuarios nuevos (4 pasos). Resuelve con 'scan', 'catalog' o null. */
 export function onboardingDialog() {
   const steps = [
     [OB_ART.scan, 'Escanea tus libros', 'Apunta la cámara al código de barras de la contraportada y el libro se añade a tu biblioteca. Los módulos antiguos sin código se buscan por el de la portada (B1, X2…).'],
     [OB_ART.series, 'Mira qué te falta', 'En «Mi biblioteca», la vista «Por series» te enseña los huecos de cada serie: «te faltan B7, B13…».'],
     [OB_ART.d20, 'Busca tu próxima aventura', 'La pestaña «Aventuras» filtra por nivel del grupo, jugadores y tipo de partida, entre lo que tienes o en todo el catálogo.'],
+    [OB_ART.quill, 'Acepta misiones', 'En «Aportaciones» tienes misiones para completar el catálogo de la Marca: datos de juego, resúmenes, códigos… Cada una aceptada te da experiencia para subir de nivel.'],
   ];
   let i = 0;
   return openDialog('<div class="sheet onboarding"></div>', (d, close) => {

@@ -35,13 +35,15 @@ BENIGN_FATAL = "event_message not like '%terminating connection due to administr
 # Avisos de los Advisors revisados y aceptados (ver las migraciones): no se repiten cada semana.
 # (título del aviso, nombre del objeto; '' = aviso sin objeto)
 KNOWN_ADVISORS = {
-    # La lista de deseos compartida se ve sin sesión, a propósito
-    ('Public Can Execute SECURITY DEFINER Function', 'public_wishlist'),
+    # Sin sesión, a propósito: la lista de deseos compartida y la portada pública (portadas, recuentos y visitas por canal;
+    # solo números y datos del catálogo, nunca datos de usuarios)
+    *(('Public Can Execute SECURITY DEFINER Function', f) for f in ('public_wishlist', 'landing_showcase', 'track_landing')),
     # Funciones que llaman los usuarios con sesión; las admin_* comprueban assert_admin() por dentro
     *(('Signed-In Users Can Execute SECURITY DEFINER Function', f) for f in (
         'admin_apply_suggestion', 'admin_donations', 'admin_match_donation', 'admin_metrics', 'admin_reject_suggestion',
         'admin_restore_version', 'admin_set_supporter', 'admin_users', 'delete_my_account', 'is_admin', 'is_supporter',
-        'public_wishlist', 'scribes', 'setting_enabled', 'trade_matches')),
+        'public_wishlist', 'scribes', 'setting_enabled', 'trade_matches',
+        'admin_acquisition', 'admin_overview', 'admin_stats', 'supporters', 'landing_showcase', 'track_landing')),
     # Solo se entra con Google: no hay contraseñas que comprobar (y además es de pago)
     ('Leaked Password Protection Disabled', ''),
 }

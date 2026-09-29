@@ -110,7 +110,7 @@ select ok(public.landing_showcase() ?& array['covers', 'publications', 'authors'
 select ok((public.landing_showcase()->>'books_cataloged')::int >= 3 and (public.landing_showcase()->>'publications')::int >= 2,
   'Portada: cuenta libros catalogados y publicaciones (solo números)');
 -- (los datos de ejemplo de seed.sql pueden sumar más usuarios: se comprueba el mínimo de este test)
-select ok((public.community_counts()->>'scribes')::int >= 2 and (public.community_counts()->>'supporters')::int >= 2,
+select ok((public.landing_showcase()->>'scribes')::int >= 2 and (public.landing_showcase()->>'supporters')::int >= 2,
   'Comunidad: la portada ve solo los recuentos (sin sesión)');
 
 -- ---------- Borrar la cuenta ----------

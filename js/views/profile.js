@@ -17,6 +17,12 @@ import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import { settings } from '../settings.js';
 import { applyTheme, getTheme, THEMES, TEXT_SIZES, getTextSize, applyTextSize } from '../theme.js';
 
+/** «Ana García López» → «Ana G.» (igual que public.short_name en la base de datos). */
+const shortName = (full) => {
+  const [first, second] = String(full ?? '').trim().split(/\s+/);
+  return first ? `${first}${second ? ` ${second[0]}.` : ''}` : 'Escriba anónimo';
+};
+
 export function renderProfile(root) {
   const p = state.profile ?? {};
   const email = state.session.user.email;
@@ -29,7 +35,7 @@ export function renderProfile(root) {
       <button type="button" class="emblem-btn" data-emblem aria-label="Cambiar emblema">
         ${raw(emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<span class="emblem-edit" aria-hidden="true">✎</span></button>
       <div class="profile-main">
-        <h2>${p.display_name ?? email}</h2>
+        <h2>${p.public_name || p.display_name || email}</h2>
         <p class="muted small">${email}</p>
         <p>
           ${supporter ? raw(`<span class="badge badge-gold">${icon('star')} Mecenas</span>`) : ''}
@@ -41,6 +47,17 @@ export function renderProfile(root) {
         Cerrar sesión
       </button>
     </section>
+
+    <form class="panel public-name-form">
+      <label for="public-name">Nombre público</label>
+      <p class="muted small">Cómo te ven los demás en la Comunidad y en tu lista de deseos compartida. Si lo dejas vacío,
+        se usa tu nombre de Google abreviado («${shortName(p.display_name)}»). Tu cuenta de Google no cambia.</p>
+      <div class="inline-form">
+        <input id="public-name" name="public_name" maxlength="30" autocomplete="nickname" value="${p.public_name ?? ''}"
+          placeholder="${shortName(p.display_name)}">
+        <button class="btn btn-ghost">Guardar</button>
+      </div>
+    </form>
 
     <a class="panel wish-link" href="#/deseos">
       <span class="rank-icon" aria-hidden="true">${raw(icon('star'))}</span>
@@ -157,6 +174,18 @@ export function renderProfile(root) {
   });
   optIn('[data-scribes-opt]', 'show_in_scribes', 'Escribas');
   optIn('[data-supporters-opt]', 'show_in_supporters', 'Mecenas');
+  $('.public-name-form', root).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = e.target.elements.public_name;
+    const value = input.value.replace(/\s+/g, ' ').trim();
+    if (value && value.length < 2) { toast('El nombre público necesita al menos 2 caracteres', 'error'); return; }
+    try {
+      await updateProfile(user().id, { public_name: value || null });
+      state.profile.public_name = value || null;
+      toast(value ? `Nombre público: ${value}` : 'Usarás tu nombre de Google abreviado', 'ok');
+      renderProfile(root);
+    } catch (err) { toast(errMsg(err), 'error'); }
+  });
   $('[data-emblem]', root).onclick = async () => { if (await emblemDialog()) renderProfile(root); };
   $('[data-hero-open]', root).onclick = () => heroSheet();
   $('[data-reset]', root).onclick = async (e) => {

@@ -263,7 +263,7 @@ const VERIFY_KEY = 'edm.verifyMode';
       <div class="result-body">
         <p class="badge badge-warn">Varios libros</p>
         <h2>${code ? `El código ${formatCode(code)} aparece en ${books.length} libros` : `${books.length} libros con ese código`}</h2>
-        <p class="muted small">Elige el que tienes en la mano.</p>
+        <p class="muted small">${code ? 'La editorial usó el mismo código en varios libros (o hay un error en los datos). ' : ''}Elige el que tienes en la mano.</p>
         <div class="actions"><button class="btn btn-ghost" data-again>Cancelar</button></div>
         <ul class="pick-list">
           ${books.sort(compareBooks).map((b) => raw(html`<li><button class="pick" data-id="${b.id}">

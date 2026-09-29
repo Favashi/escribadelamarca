@@ -23,7 +23,8 @@ export function gameInfo(b) {
   const parts = [];
   if (b.min_level || b.max_level) parts.push(`Niveles ${range(b.min_level, b.max_level)}`);
   if (b.min_players || b.max_players) parts.push(`${range(b.min_players, b.max_players)} PJ`);
-  if (b.sessions) parts.push(b.sessions === 1 ? '1 sesión' : `${b.sessions} sesiones`);
+  if (b.sessions_variable) parts.push('duración variable');
+  else if (b.sessions) parts.push(b.sessions === 1 ? '1 sesión' : `${b.sessions} sesiones`);
   return parts.join(' · ');
 }
 
@@ -99,6 +100,7 @@ export async function renderFinder(root) {
     const pj = Number(f.players) || null;
     const res = state.catalog.filter((b) => {
       if (b.status !== 'approved' && !state.library.has(b.id)) return false;
+    if (b.not_playable) return false;   // suplementos, bestiarios…: no son aventuras
       if (!f.nodata && !hasGameData(b)) return false;
       if (!matches(b, f.text)) return false;
       if (lvl && !((b.min_level ?? b.max_level) <= lvl && lvl <= (b.max_level ?? b.min_level))) return false;

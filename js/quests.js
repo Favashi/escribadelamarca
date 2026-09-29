@@ -64,16 +64,17 @@ export function currentQuests(uid) {
   const pendingFor = new Set(state.suggestions.filter((s) => s.created_by === uid && s.status === 'pending').map((s) => s.catalog_id));
   const open = (b) => !pendingFor.has(b.id);
   const slug = (b) => state.categories.find((c) => c.id === b.category_id)?.slug;
-  const adventures = approved.filter((b) => ADVENTURE_CATS.has(slug(b)));
+  const adventures = approved.filter((b) => ADVENTURE_CATS.has(slug(b)) && !b.not_playable);
   const quests = [];
 
-  // Tu biblioteca: libros sin ningún código de barras
-  const noCode = approved.filter((b) => state.library.has(b.id) && !barcodesOf(b.id).length);
-  if (noCode.length) quests.push(make('barcode', 'barcode', { n: noCode.length }, { href: '#/escanear' }));
+  // Tu biblioteca: libros sin ningún código de barras (salvo los que no lo llevan impreso, o ya avisados)
+  const noCode = approved.filter((b) => state.library.has(b.id) && !barcodesOf(b.id).length && !b.no_barcode && open(b))
+    .sort(compareBooks);
+  if (noCode.length) quests.push(make('barcode', 'barcode', { n: noCode.length }, { href: '#/escanear', books: noCode }));
 
   if (settings.suggestions_enabled) {
     // Datos de juego, por serie: las series con más huecos
-    const noGame = (b) => !GAME_FIELDS.some((f) => b[f] != null);
+    const noGame = (b) => !b.sessions_variable && !GAME_FIELDS.some((f) => b[f] != null);
     const bySeries = new Map();
     for (const b of adventures) if (b.series) (bySeries.get(b.series) ?? bySeries.set(b.series, []).get(b.series)).push(b);
     [...bySeries.entries()]

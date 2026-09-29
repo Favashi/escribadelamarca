@@ -339,7 +339,7 @@ test('proponer libro: avisa de libros parecidos y sugiere etiquetas existentes',
   const hint = dialog.locator('.dup-hint');
   await expect(hint).toContainText(TEST_TITLE);
   await expect(hint).toContainText('título parecido');
-  await dialog.getByLabel('Código de barras').fill(TEST_EAN);
+  await dialog.getByLabel('Código de barras', { exact: true }).fill(TEST_EAN);
   await expect(hint).toContainText('mismo código de barras');
 
   // Etiquetas: sugiere las del catálogo y añade una existente sin duplicarla
@@ -552,4 +552,27 @@ test.describe('misiones (admin)', () => {
       await api('/rest/v1/app_settings?key=eq.quests', { method: 'DELETE' });
     }
   });
+});
+
+test('misión de códigos: lista de libros y «No tiene código»; nombre público en el perfil', async ({ page, account }) => {
+  const uid = account.user.id;
+  const [b] = await api('/rest/v1/catalog?select=id&status=eq.approved&code=eq.B1');
+  await api('/rest/v1/library', { method: 'POST', body: { user_id: uid, catalog_id: b.id } });
+  await page.goto('/#/aportaciones');
+  const quest = page.locator('.quest').filter({ has: page.locator('.quest-books') });
+  await quest.locator('.quest-books summary').click();
+  const row = quest.locator(`[data-book="${b.id}"]`);
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'No tiene código' }).click();
+  await page.locator('#dialog').getByRole('button', { name: 'Enviar' }).click();
+  await expect(page.getByText('Gracias: se revisará pronto')).toBeVisible();
+  const [sg] = await api(`/rest/v1/catalog_suggestions?created_by=eq.${uid}&select=changes`);
+  expect(sg.changes).toEqual({ no_barcode: true });
+
+  await page.goto('/#/perfil');
+  await page.getByLabel('Nombre público').fill('Escriba Errante');
+  await page.locator('.public-name-form').getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Nombre público: Escriba Errante')).toBeVisible();
+  const [p] = await api(`/rest/v1/profiles?id=eq.${uid}&select=public_name`);
+  expect(p.public_name).toBe('Escriba Errante');
 });

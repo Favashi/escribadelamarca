@@ -94,6 +94,12 @@ export function renderContributions(root) {
       <p>${q.text}</p>
       ${q.total ? raw(html`<div class="progress"><i><b style="width:${Math.round((q.done / q.total) * 100)}%"></b></i>
         <span>${q.done} de ${q.total} ${q.progressLabel}</span></div>`) : ''}
+      ${q.books ? raw(html`<details class="quest-books"><summary>Ver ${q.books.length === 1 ? 'el libro' : `los ${q.books.length} libros`}</summary>
+        <ul>${q.books.map((b) => raw(html`<li data-book="${b.id}">${raw(cover(b, 'cover-xs'))}
+          <a href="#/libro/${b.id}">${b.code ? `${b.code} · ` : ''}${b.title}</a>
+          <button type="button" class="link-btn" data-no-barcode>No tiene código</button></li>`))}</ul>
+        <p class="small">Si el libro no lleva código de barras impreso (los módulos antiguos), pulsa «No tiene código»: tras
+          revisarlo, deja de salir en esta misión para todos.</p></details>`) : ''}
       ${q.href ? raw(html`<a class="quest-cta" href="${q.href}">${q.cta} →</a>`)
         : raw(html`<button type="button" class="quest-cta" data-quest-book="${q.book}">${q.cta} →</button>`)}
       <span class="sr-only">Recompensa: ${q.px} PX por cada aportación aceptada</span>
@@ -119,6 +125,20 @@ export function renderContributions(root) {
       // Abre la ficha con «Sugerir cambios» ya desplegado
       try { sessionStorage.setItem('edm.openSuggest', quest.dataset.questBook); } catch { /* sin storage */ }
       location.hash = `#/libro/${quest.dataset.questBook}`;
+      return;
+    }
+    const noCode = e.target.closest('[data-no-barcode]');
+    if (noCode) {
+      const b = bookById(noCode.closest('[data-book]').dataset.book);
+      if (!(await confirmDialog(`¿«${b.title}» no lleva código de barras impreso? Se enviará para revisar.`, { ok: 'Enviar' }))) return;
+      noCode.disabled = true;
+      try {
+        await api.createSuggestion(b.id, { no_barcode: true }, 'Desde la misión de códigos de barras');
+        await refreshSuggestions();
+        toast('Gracias: se revisará pronto', 'ok');
+        root.removeEventListener('click', onClick);
+        renderContributions(root);
+      } catch (err) { toast(errMsg(err), 'error'); noCode.disabled = false; }
       return;
     }
     const btn = e.target.closest('[data-withdraw]');

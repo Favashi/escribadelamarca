@@ -2,7 +2,7 @@
 -- las públicas (lista de deseos, Escribas, intercambio) solo exponen lo que deben; borrar la cuenta borra todo.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(60);
+select plan(64);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -96,8 +96,11 @@ select is_empty($$ select 1 from public.trade_matches() $$, 'intercambio: un usu
 select results_eq($$ select name, total, is_me, xp, level, supporter from public.scribes() $$,
   $$ values ('Ana G.'::text, 1, true, 110, 2, false) $$,
   'Escribas: solo quien lo activa, con el nombre abreviado y su nivel (100 PX por aportación + 10 por partida)');
-select results_eq($$ select name, emblem, is_me from public.supporters() $$, $$ values ('Mecenas U.'::text, 'dragon-head'::text, false) $$,
-  'Mecenas: solo quien lo activa, con nombre abreviado y emblema');
+reset role;
+update public.profiles set public_name = 'Mecenas Dragón' where id = '33333333-3333-3333-3333-333333333333';
+select public._test_login('11111111-1111-1111-1111-111111111111');
+select results_eq($$ select name, emblem, is_me from public.supporters() $$, $$ values ('Mecenas Dragón'::text, 'dragon-head'::text, false) $$,
+  'Mecenas: solo quien lo activa, con su nombre público (apodo) y emblema');
 select lives_ok($$ update public.profiles set emblem = 'owl' where id = '11111111-1111-1111-1111-111111111111' $$,
   'el usuario elige su emblema');
 select throws_ok($$ update public.profiles set emblem = '<script>' where id = '11111111-1111-1111-1111-111111111111' $$,
@@ -146,6 +149,22 @@ insert into public.catalog_suggestions (catalog_id, created_by, changes, status)
 values ('b0000000-0000-0000-0000-00000000000a', '22222222-2222-2222-2222-222222222222', '{"sessions": 3}', 'approved');
 select is(public.user_xp('22222222-2222-2222-2222-222222222222'), 350,
   'PX: un código (100), una corrección sencilla (100, la de «descatalogado») y una de datos de juego (150)');
+
+-- ---------- Sugerencias de la ficha editorial y datos nuevos ----------
+reset role;
+insert into public.catalog_suggestions (catalog_id, created_by, changes)
+values ('b0000000-0000-0000-0000-00000000000a', '22222222-2222-2222-2222-222222222222',
+        '{"catalog_date": "2019-05-01", "binding": "Grapado", "no_barcode": true, "not_playable": true}');
+select public._test_login('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+select lives_ok($$ select public.admin_apply_suggestion((select max(id) from public.catalog_suggestions)) $$,
+  'admin aplica una sugerencia con fecha, formato y datos nuevos');
+reset role;
+select results_eq($$ select catalog_date, binding, no_barcode, not_playable from public.catalog where id = 'b0000000-0000-0000-0000-00000000000a' $$,
+  $$ values ('2019-05-01'::date, 'Grapado'::text, true, true) $$, 'la sugerencia aplica fecha, formato, sin código y no jugable');
+select throws_ok($$ update public.profiles set public_name = ' x' where id = '44444444-4444-4444-4444-444444444444' $$,
+  '23514', null, 'nombre público: sin espacios sobrantes y de 2 a 30 caracteres');
+select is((select owner_name from public.public_wishlist('cccccccc-cccc-cccc-cccc-cccccccccccc') limit 1), 'Mecenas Dragón',
+  'lista compartida: se ve el nombre público');
 
 select * from finish();
 rollback;

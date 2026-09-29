@@ -48,7 +48,7 @@ export function heroSheet() {
   const info = levelInfo();
   const b = xpBreakdown();
   const last = [...state.achievements].sort((x, y) => String(y.earned_at).localeCompare(String(x.earned_at))).slice(0, 3);
-  const name = state.profile?.display_name || user().email;
+  const name = state.profile?.public_name || state.profile?.display_name || user().email;
   return openDialog(html`
     <div class="sheet hero-sheet">
       <div class="hero-sheet-head">

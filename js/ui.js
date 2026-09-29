@@ -173,6 +173,19 @@ export function bindFolds(root) {
   });
 }
 
+/** Casillas de datos de juego y del ejemplar (formulario de libro y «Sugerir cambios»). */
+const flagBoxes = (b, keys) => keys.map((k) => ({
+  sessions_variable: `<label class="switch"><input type="checkbox" name="sessions_variable" ${b.sessions_variable ? 'checked' : ''}>
+    <span>Duración variable (sandbox o campaña abierta)</span></label>`,
+  not_playable: `<label class="switch"><input type="checkbox" name="not_playable" ${b.not_playable ? 'checked' : ''}>
+    <span>No es una aventura jugable (suplemento, bestiario, ambientación…)</span></label>`,
+  no_barcode: `<label class="switch"><input type="checkbox" name="no_barcode" ${b.no_barcode ? 'checked' : ''}>
+    <span>No tiene código de barras impreso</span></label>`,
+  out_of_print: `<label class="switch"><input type="checkbox" name="out_of_print" ${b.out_of_print ? 'checked' : ''}>
+    <span>Descatalogado: ya no se puede comprar nuevo (sin reimpresión)</span></label>`,
+}[k])).join('');
+const BOOL_FIELDS = new Set(['out_of_print', 'no_barcode', 'not_playable', 'sessions_variable']);
+
 export const CONDITIONS = ['Precintado', 'Como nuevo', 'Muy bueno', 'Bueno', 'Usado', 'Deteriorado'];
 
 /**
@@ -219,6 +232,7 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
         <div class="row2">
           <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${initial.sessions ?? ''}"></label>
         </div>
+        ${raw(flagBoxes(initial, ['sessions_variable', 'not_playable']))}
         ${raw(tagField('tags', initial.tags || []))}
       </fieldset>
       <fieldset class="game-fields">
@@ -228,8 +242,7 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           <label>PVP (€) <input name="price_eur" inputmode="decimal" value="${initial.price_eur != null ? String(initial.price_eur).replace('.', ',') : ''}" placeholder="12,95"></label>
         </div>
         <label>Formato <input name="binding" maxlength="80" value="${initial.binding ?? ''}" placeholder="Grapado, tapa blanda, PDF…"></label>
-        <label class="switch"><input type="checkbox" name="out_of_print" ${initial.out_of_print ? 'checked' : ''}>
-          <span>Descatalogado: ya no se puede comprar nuevo (sin reimpresión)</span></label>
+        ${raw(flagBoxes(initial, ['out_of_print', 'no_barcode']))}
         <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${initial.summary ?? ''}</textarea></label>
         <p class="muted small">La fecha de publicación decide cuándo sale como «Nuevo» (45 días).</p>
       </fieldset>
@@ -324,6 +337,9 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
           price_eur: price,
           binding: f.binding.trim() || null,
           out_of_print: f.out_of_print === 'on',
+          no_barcode: f.no_barcode === 'on',
+          not_playable: f.not_playable === 'on',
+          sessions_variable: f.sessions_variable === 'on',
           summary: f.summary.trim() || null,
         },
         barcode: code,
@@ -395,9 +411,11 @@ export const FIELD_LABELS = {
   min_level: 'Nivel mínimo', max_level: 'Nivel máximo', min_players: 'Jugadores mín.', max_players: 'Jugadores máx.',
   sessions: 'Sesiones', tags: 'Etiquetas', summary: 'Resumen', description: 'Descripción', cover_url: 'Portada',
   status: 'Estado', verified: 'Verificado', price_eur: 'PVP', kind: 'Tipo', binding: 'Formato',
-  catalog_date: 'Fecha de publicación', out_of_print: 'Descatalogado',
+  catalog_date: 'Fecha de publicación', out_of_print: 'Descatalogado', no_barcode: 'Sin código de barras',
+  not_playable: 'No jugable', sessions_variable: 'Duración variable',
 };
-const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary', 'out_of_print'];
+const SUGGESTABLE = ['title', 'code', 'author', 'pages', 'min_level', 'max_level', 'min_players', 'max_players', 'sessions', 'tags', 'summary',
+  'catalog_date', 'binding', 'out_of_print', 'no_barcode', 'not_playable', 'sessions_variable'];
 const INT_FIELDS = new Set(['min_level', 'max_level', 'min_players', 'max_players', 'sessions']);
 
 /** Texto legible de un valor de campo. */
@@ -405,7 +423,7 @@ export function fieldText(field, value) {
   if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return '—';
   if (Array.isArray(value)) return value.join(', ');
   if (field === 'category_id') return state.categories.find((c) => c.id === value)?.name ?? String(value);
-  if (field === 'verified' || field === 'out_of_print') return value ? 'sí' : 'no';
+  if (field === 'verified' || BOOL_FIELDS.has(field)) return value ? 'sí' : 'no';
   return String(value);
 }
 
@@ -444,11 +462,18 @@ export function suggestDialog(book) {
         <div class="row2">
           <label>Sesiones <input name="sessions" type="number" inputmode="numeric" min="1" max="99" value="${v('sessions')}"></label>
         </div>
+        ${raw(flagBoxes(book, ['sessions_variable', 'not_playable']))}
         ${raw(tagField('tags', book.tags || []))}
         <label>Resumen <textarea name="summary" rows="3" maxlength="1000">${v('summary')}</textarea></label>
       </fieldset>
-      <label class="switch"><input type="checkbox" name="out_of_print" ${book.out_of_print ? 'checked' : ''}>
-        <span>Descatalogado: ya no se puede comprar nuevo</span></label>
+      <fieldset class="game-fields">
+        <legend>Ficha editorial</legend>
+        <div class="row2">
+          <label>Fecha de publicación <input name="catalog_date" type="date" value="${v('catalog_date')}"></label>
+          <label>Formato <input name="binding" maxlength="80" value="${v('binding')}" placeholder="Grapado, tapa blanda…"></label>
+        </div>
+        ${raw(flagBoxes(book, ['out_of_print', 'no_barcode']))}
+      </fieldset>
       <label>¿De dónde sale el dato? (opcional) <input name="note" maxlength="500" placeholder="Lo pone en la contraportada, en la web de la editorial…"></label>
       <p class="form-error" hidden></p>
       <div class="actions">
@@ -467,11 +492,11 @@ export function suggestDialog(book) {
       for (const field of SUGGESTABLE) {
         let val = (f[field] ?? '').trim();
         if (field === 'code') val = val.toUpperCase();
-        if (field === 'out_of_print') val = f.out_of_print === 'on';
+        if (BOOL_FIELDS.has(field)) val = f[field] === 'on';
         else if (INT_FIELDS.has(field)) val = val === '' ? null : parseInt(val, 10);
         else if (field === 'tags') val = [...new Set(val.split(',').map((t) => t.trim()).filter(Boolean))];
         else val = val || null;
-        const current = book[field] ?? (field === 'tags' ? [] : field === 'out_of_print' ? false : null);
+        const current = book[field] ?? (field === 'tags' ? [] : BOOL_FIELDS.has(field) ? false : null);
         if (!same(val, current)) changes[field] = val;
       }
       if (!Object.keys(changes).length) { err.textContent = 'No has cambiado ningún dato.'; err.hidden = false; return; }

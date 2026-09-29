@@ -773,3 +773,15 @@ details.history summary { cursor: pointer; font: 600 .88rem var(--font-ui); colo
 @media (min-width: 720px) { .lp-quest-demo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .lp-quest-demo .quest-cta { cursor: default; }
 .quest-preview { display: flex; width: fit-content; margin: 16px auto 24px; }
+
+.quest-books { font: .86rem var(--font-ui); color: #4a3a30; }
+.quest-books summary { cursor: pointer; font-weight: 600; color: #5e2c72; padding: 2px 0; }
+.quest-books ul { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.quest-books li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.quest-books .cover-xs { width: 28px; }
+.quest-books a { color: #3a1646; text-decoration: none; min-width: 0; }
+.quest-books p { margin: 4px 0 0; color: #6b5642; }
+.link-btn { border: 0; background: none; padding: 4px 2px; color: #8a2a18; font: 600 .78rem var(--font-ui); cursor: pointer; text-decoration: underline; white-space: nowrap; }
+.public-name-form { display: grid; gap: 6px; }
+.public-name-form label { font: 700 .95rem var(--font-ui); }
+.public-name-form p { margin: 0 0 4px; }

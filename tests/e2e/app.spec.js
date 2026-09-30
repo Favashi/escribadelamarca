@@ -576,3 +576,25 @@ test('misión de códigos: lista de libros y «No tiene código»; nombre públi
   const [p] = await api(`/rest/v1/profiles?id=eq.${uid}&select=public_name`);
   expect(p.public_name).toBe('Escriba Errante');
 });
+
+test('código compartido: primero el libro que falta y atajo por código de portada', async ({ page, account }) => {
+  const ean = '9780131103627';
+  const tag = test.info().project.name === 'móvil' ? 'M' : 'D';
+  const books = await api('/rest/v1/catalog?select=id,code', { method: 'POST', body: [
+    { title: `[Prueba] compartido A ${tag}`, code: `ZA${tag}`, status: 'approved', source: 'app' },
+    { title: `[Prueba] compartido B ${tag}`, code: `ZB${tag}`, status: 'approved', source: 'app' }] });
+  const [a, b] = books.sort((x, y) => x.code.localeCompare(y.code));
+  try {
+    await api('/rest/v1/catalog_barcodes', { method: 'POST', body: books.map((x) => ({ code: ean, catalog_id: x.id, source: 'admin', status: 'approved', verified: true })) });
+    await api('/rest/v1/library', { method: 'POST', body: { user_id: account.user.id, catalog_id: a.id } });
+    await page.goto('/#/escanear');
+    await page.getByRole('textbox', { name: 'Código de barras o de publicación' }).fill(ean);
+    await page.getByRole('button', { name: 'Buscar' }).click();
+    const picks = page.locator('.scan-result .pick');
+    await expect(picks).toHaveCount(2);
+    await expect(picks.first()).toContainText(`compartido B ${tag}`);      // el que aún no tiene, primero
+    await expect(page.locator('.scan-result')).toContainText(`Atajo: escribe el código de la portada (ZB${tag}, ZA${tag})`);
+  } finally {
+    await api(`/rest/v1/catalog?id=in.(${a.id},${b.id})`, { method: 'DELETE' });
+  }
+});

@@ -263,13 +263,15 @@ const VERIFY_KEY = 'edm.verifyMode';
       <div class="result-body">
         <p class="badge badge-warn">Varios libros</p>
         <h2>${code ? `El código ${formatCode(code)} aparece en ${books.length} libros` : `${books.length} libros con ese código`}</h2>
-        <p class="muted small">${code ? 'La editorial usó el mismo código en varios libros (o hay un error en los datos). ' : ''}Elige el que tienes en la mano.</p>
+        <p class="muted small">${code ? 'La editorial usó el mismo código en varios libros (o hay un error en los datos). ' : ''}Elige el que tienes en la mano${books.some((b) => state.library.has(b.id)) ? ': primero van los que aún no tienes' : ''}.</p>
         <div class="actions"><button class="btn btn-ghost" data-again>Cancelar</button></div>
         <ul class="pick-list">
-          ${books.sort(compareBooks).map((b) => raw(html`<li><button class="pick" data-id="${b.id}">
+          ${books.sort((a, z) => state.library.has(a.id) - state.library.has(z.id) || compareBooks(a, z)).map((b) => raw(html`<li><button class="pick" data-id="${b.id}">
             ${raw(cover(b, 'cover-xs'))}<span>${codeLabel(b)}${b.title}
             ${state.library.has(b.id) ? raw('<small>✓ En tu biblioteca</small>') : ''}</span></button></li>`))}
         </ul>
+        ${code && books.every((b) => b.code) ? raw(html`<p class="muted small">Atajo: escribe el código de la portada
+          (${books.map((b) => b.code).join(', ')}) en «Código de barras o de publicación» y te lleva directo al libro.</p>`) : ''}
       </div>
     </div>`;
     $('[data-again]', result).onclick = again;

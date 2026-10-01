@@ -55,17 +55,26 @@ const DEMO_BOOKS = [
 const MIN_SCRIBES = 50, MIN_SUPPORTERS = 20;
 const fmtN = (n) => Number(n || 0).toLocaleString('es-ES');
 
+/**
+ * Muro de portadas de la cabecera: columnas inclinadas que suben y bajan despacio. Cada columna repite sus portadas
+ * para que el bucle no tenga corte. Sin portadas (desactivadas o sin datos), queda el fondo morado.
+ */
+function fillWall(wall, urls) {
+  if (urls.length < 8) { wall.innerHTML = ''; return; }
+  const cols = Math.max(4, Math.min(9, Math.round(window.innerWidth / 140)));
+  const per = Math.max(4, Math.floor(urls.length / cols));
+  wall.innerHTML = Array.from({ length: cols }, (_, c) => {
+    const col = Array.from({ length: per }, (__, k) => urls[(c * per + k) % urls.length]);
+    return `<div class="lp-col">${[...col, ...col].map((u) => `<img src="${u}" alt="" decoding="async">`).join('')}</div>`;
+  }).join('');
+  wall.closest('.lp-hero').classList.add('has-wall');
+}
+
 function fillShowcase(data) {
   const books = data?.covers?.length ? data.covers : DEMO_BOOKS;
-  const fan = $('.lp-fan', view);
-  const hero = $('.lp-hero', view);
-  if (!fan) return;
-  const fanBooks = (data?.covers || []).slice(0, 5);
-  fan.innerHTML = fanBooks.length
-    ? fanBooks.map((b) => `<div class="lp-bk"><img src="${b.cover_url}" alt="" loading="lazy"></div>`).join('')
-      + '<span class="lp-stamp">✓ Ya lo tienes desde 2019</span>'
-    : '';
-  hero.classList.toggle('no-fan', !fanBooks.length);
+  const wall = $('.lp-wall', view);
+  if (!wall) return;
+  fillWall(wall, (data?.covers || []).map((b) => b.cover_url));
 
   const [scan, ...rest] = books;
   $('[data-demo-scan]', view).innerHTML = html`${raw(cover(scan, 'lp-demo-cover'))}
@@ -92,15 +101,15 @@ function renderLanding() {
   const G = 'https://github.com/Favashi/escribadelamarca';
   view.innerHTML = html`
     <section class="lp-hero">
+      <div class="lp-wall" aria-hidden="true"></div>
+      <div class="lp-veil" aria-hidden="true"></div>
       <div class="lp-ribbon" aria-hidden="true"><span>Para coleccionistas de<br>Aventuras en la Marca del Este</span></div>
-      <p class="lp-code" aria-hidden="true">E1</p>
       <div class="lp-hero-text">
-        <div class="lp-brand"><img src="assets/icons/seal.svg" alt="" width="76" height="76"><h1 class="lp-title">Escriba de la Marca</h1></div>
+        <img class="lp-seal" src="assets/icons/seal.svg" alt="" width="96" height="96">
+        <h1 class="lp-title">Escriba de la Marca</h1>
         <p class="lp-promise">Escanea tus libros y sabrás al momento <em>si ya lo tienes</em> y <em>qué te falta</em>.</p>
-        <p class="lp-sub">Tu colección física, ordenada por series y con sus portadas.</p>
         <div class="lp-cta">${loginBtn}<small>Gratis · sin anuncios · se instala en el móvil como una app</small></div>
       </div>
-      <div class="lp-fan" aria-hidden="true"></div>
     </section>
 
     <div class="lp-stats" hidden></div>

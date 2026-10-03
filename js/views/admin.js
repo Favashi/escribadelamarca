@@ -4,13 +4,15 @@ import { uploadCover, matchFiles, deleteAllCovers } from '../covers.js';
 import { renderStats } from './admin-stats.js';
 import { state, isAdmin, pendingCount, loadAll, personName, compareBooks, bookById, refreshCatalog, refreshShared } from '../store.js';
 import { updateAdminBadge } from '../nav.js';
-import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog, selectDialog, bindFolds } from '../ui.js';
+import { viewHeader, confirmDialog, errMsg, typeToConfirmDialog, selectDialog, bindFolds, FIELD_LABELS } from '../ui.js';
+import { emblemBadge } from '../hero.js';
 import * as api from '../api.js';
 import { settings, saveSetting } from '../settings.js';
 import { SUPABASE_URL } from '../config.js';
 import { renderAnnouncement } from '../announcement.js';
 import { QUEST_TYPES, questTexts } from '../quests.js';
 
+const num = (n) => Number(n || 0).toLocaleString('es-ES');
 const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
@@ -51,18 +53,20 @@ const kpi = (value, label, sub = '') => html`<div class="kpi"><span>${value}</sp
 export async function renderAdmin(root, params = {}) {
   if (!isAdmin()) return denied(root);
   const section = params.section || 'resumen';
-  root.innerHTML = html`${raw(viewHeader('Administración'))}${raw(adminTabs(section))}<div class="admin-body"><div class="loading" aria-busy="true">Cargando…</div></div>`;
+  const tab = section === 'usuario' ? 'usuarios' : section;
+  root.innerHTML = html`${raw(viewHeader('Administración'))}${raw(adminTabs(tab))}<div class="admin-body"><div class="loading" aria-busy="true">Cargando…</div></div>`;
   const body = $('.admin-body', root);
   try {
     // Datos al día al entrar (la app instalada no se puede recargar a mano)
     await refreshShared({ force: true }).catch(() => {});
     updateAdminBadge();
-    root.querySelector('.admin-tabs')?.replaceWith(Object.assign(document.createElement('div'), { innerHTML: adminTabs(section) }).firstElementChild);
+    root.querySelector('.admin-tabs')?.replaceWith(Object.assign(document.createElement('div'), { innerHTML: adminTabs(tab) }).firstElementChild);
     if (section === 'ajustes') renderSettings(body);
     else if (section === 'estadisticas') await renderStats(body);
     else if (section === 'portadas') renderCovers(body);
     else if (section === 'comentarios') await renderFeedback(body);
     else if (section === 'usuarios') await renderUsers(body);
+    else if (section === 'usuario') await renderUserDetail(body, params.id);
     else if (section === 'donaciones') await renderDonations(body);
     else await renderSummary(body);
   } catch (e) {
@@ -152,7 +156,8 @@ async function renderUsers(body) {
     const rows = users.filter((u) => !n || `${u.display_name ?? ''} ${u.email ?? ''}`.toLowerCase().includes(n));
     list.innerHTML = rows.map((u) => html`<li class="user-row" data-user="${u.id}">
       <div class="user-info">
-        <strong>${u.display_name || maskEmail(u.email)}</strong>
+        <a class="user-name" href="#/admin/usuario/${u.id}"><strong>${u.display_name || maskEmail(u.email)}</strong></a>
+        ${u.suspended_at ? raw('<span class="badge badge-warn">Suspendido</span>') : ''}
         ${u.is_supporter ? raw('<span class="badge badge-gold">★ Mecenas</span>') : ''}
         ${u.is_admin ? raw('<span class="badge">Admin</span>') : ''}
         <small><button class="link email-mask" data-reveal="${u.email}" aria-label="Mostrar email">${maskEmail(u.email)}</button></small>
@@ -185,6 +190,88 @@ async function renderUsers(body) {
     } catch (err) { toast(errMsg(err), 'error'); }
   });
   draw();
+}
+
+const SUGGEST_KIND = { suggestion: 'Corrección', code: 'Código de barras', book: 'Libro nuevo' };
+const STATUS_TXT = { approved: 'Aceptada', pending: 'Pendiente', rejected: 'Rechazada' };
+
+/** Ficha de un usuario: actividad, colección, aportaciones, nivel y Mecenas; suspender o reactivar. */
+async function renderUserDetail(body, id) {
+  const u = await api.adminUserDetail(id);
+  const name = u.public_name || u.display_name || maskEmail(u.email);
+  const c = u.contributions;
+  const fact = (label, value) => html`<div><dt>${label}</dt><dd>${value}</dd></div>`;
+  body.innerHTML = html`
+    <p><a href="#/admin/usuarios" class="back-link">← Usuarios</a></p>
+    <section class="panel user-head">
+      ${raw(emblemBadge(u.emblem, { size: 'lg', gold: u.is_supporter }))}
+      <div>
+        <h2>${name}</h2>
+        ${u.public_name && u.display_name ? raw(html`<p class="muted small">Google: ${u.display_name}</p>`) : ''}
+        <p class="muted small"><button class="link email-mask" data-reveal="${u.email}">${maskEmail(u.email)}</button></p>
+        <p>${u.is_admin ? raw('<span class="badge">Admin</span>') : ''}
+          ${u.is_supporter ? raw(html`<span class="badge badge-gold">★ Mecenas${u.supporter_since ? ` desde ${fmtShort(u.supporter_since)}` : ''}</span>`) : ''}
+          ${u.suspended_at ? raw(html`<span class="badge badge-warn">Suspendido el ${fmtShort(u.suspended_at)}</span>`) : ''}</p>
+        ${u.suspended_reason ? raw(html`<p class="small">Motivo: ${u.suspended_reason}</p>`) : ''}
+      </div>
+    </section>
+
+    <div class="admin-cols">
+      <section class="panel"><h2>Actividad</h2><dl class="facts">
+        ${raw(fact('Alta', fmtDate(u.created_at)))}
+        ${raw(fact('Última vez en la app', u.last_open ? fmtDate(u.last_open) : '—'))}
+        ${raw(fact('Días que ha entrado', u.active_days))}
+        ${raw(fact('Llegó por', u.signup_ref || 'directo'))}
+        ${raw(fact('Escaneos', u.scans))}
+        ${raw(fact('Búsquedas de aventuras', u.searches))}
+      </dl></section>
+      <section class="panel"><h2>Colección</h2><dl class="facts">
+        ${raw(fact('Libros', u.books))}
+        ${raw(fact('Deseos', u.wishes))}
+        ${raw(fact('Leídos · jugados · dirigidos', `${u.read} · ${u.played} · ${u.directed}`))}
+        ${raw(fact('Series que más colecciona', u.top_series.map((s) => `${s.series} (${s.n})`).join(', ') || '—'))}
+      </dl></section>
+      <section class="panel"><h2>Nivel y aportaciones</h2><dl class="facts">
+        ${raw(fact('Nivel', `${u.level} · ${num(u.xp)} PX`))}
+        ${raw(fact('Logros', u.achievements))}
+        ${raw(fact('Aportaciones', `${c.approved} aceptadas · ${c.pending} pendientes · ${c.rejected} rechazadas`))}
+        ${Number(u.donated) ? raw(fact('Donado', eur(u.donated))) : ''}
+      </dl></section>
+    </div>
+
+    <section class="panel">
+      <h2>Últimas aportaciones</h2>
+      ${u.recent.length ? raw(html`<ul class="rows">${u.recent.map((r) => raw(html`<li class="row">
+        <a class="row-title" href="#/libro/${r.catalog_id}">${r.code ? raw(html`<span class="code">${r.code}</span> `) : ''}${r.title}
+          <small>${SUGGEST_KIND[r.kind]}${r.kind === 'suggestion' ? ` · ${Object.keys(r.changes || {}).map((k) => FIELD_LABELS[k] || k).join(', ')}` : ''}${r.kind === 'code' ? ` · ${r.changes?.code}` : ''} · ${fmtShort(r.at)}</small></a>
+        <span class="state ${r.status}">${STATUS_TXT[r.status] || r.status}</span></li>`))}</ul>`)
+        : raw('<p class="muted small">Todavía no ha propuesto nada.</p>')}
+    </section>
+
+    ${u.is_admin ? '' : raw(html`<section class="panel danger-zone">
+      <h2>${u.suspended_at ? 'Reactivar la cuenta' : 'Suspender la cuenta'}</h2>
+      <p class="muted small">${u.suspended_at
+        ? 'Volverá a poder entrar y usar la app con todos sus datos.'
+        : 'No podrá entrar ni escribir nada (biblioteca, propuestas…) y dejará de salir en la Comunidad. Sus datos y aportaciones aceptadas se conservan, y se puede reactivar cuando quieras. Para borrar una cuenta de prueba, hazlo desde Supabase → Authentication → Users.'}</p>
+      ${u.suspended_at ? '' : raw('<label>Motivo (opcional, lo verá el usuario) <input name="reason" maxlength="300" class="suspend-reason" placeholder="Propuestas falsas repetidas…"></label>')}
+      <div class="actions"><button class="btn ${u.suspended_at ? 'btn-primary' : 'btn-danger-outline'}" data-suspend>${u.suspended_at ? 'Reactivar' : 'Suspender'}</button></div>
+    </section>`)}`;
+
+  body.addEventListener('click', async (e) => {
+    const reveal = e.target.closest('[data-reveal]');
+    if (reveal) { reveal.textContent = reveal.dataset.reveal; reveal.removeAttribute('data-reveal'); return; }
+    const btn = e.target.closest('[data-suspend]');
+    if (!btn) return;
+    const suspend = !u.suspended_at;
+    if (!(await confirmDialog(suspend ? `¿Suspender a ${name}?` : `¿Reactivar a ${name}?`,
+      { ok: suspend ? 'Suspender' : 'Reactivar', danger: suspend }))) return;
+    btn.disabled = true;
+    try {
+      await api.adminSetSuspended(u.id, suspend, $('.suspend-reason', body)?.value.trim() || null);
+      toast(suspend ? 'Cuenta suspendida' : 'Cuenta reactivada', 'ok');
+      renderUserDetail(body, id);
+    } catch (err) { toast(errMsg(err), 'error'); btn.disabled = false; }
+  }, { once: false });
 }
 
 async function renderDonations(body) {

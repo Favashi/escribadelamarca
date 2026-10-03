@@ -765,3 +765,16 @@ details.history summary { cursor: pointer; font: 600 .88rem var(--font-ui); colo
 .public-name-form { display: grid; gap: 6px; }
 .public-name-form label { font: 700 .95rem var(--font-ui); }
 .public-name-form p { margin: 0 0 4px; }
+
+/* Admin → ficha de usuario */
+.back-link { font: 600 .9rem var(--font-ui); text-decoration: none; }
+.user-head { display: flex; gap: 16px; align-items: center; }
+.user-head h2 { margin: 0; }
+.user-head p { margin: 4px 0 0; }
+.facts { display: grid; gap: 8px; margin: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.facts dt { color: var(--muted); font: .85rem var(--font-ui); }
+.facts dd { margin: 0; font: 600 .9rem var(--font-ui); text-align: right; font-variant-numeric: tabular-nums; }
+.user-name { color: inherit; text-decoration: none; }
+.user-name:hover strong { text-decoration: underline; }
+.suspended { max-width: 32rem; margin: 20vh auto 0; }

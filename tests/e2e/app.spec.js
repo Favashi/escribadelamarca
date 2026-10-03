@@ -1,6 +1,6 @@
 // Flujo principal: portada, bienvenida, escanear con la entrada manual, añadir, quitar y deshacer, modo marcar.
 // Usa el libro de prueba de supabase/seed.sql (T1, EAN 9780306406157) y el catálogo real de las migraciones (serie B).
-import { test, expect, api, useLocalSupabase } from './fixtures.js';
+import { test, expect, api, useLocalSupabase, newUserSession } from './fixtures.js';
 
 const TEST_EAN = '9780306406157';
 const TEST_TITLE = '[Prueba] Aventura de test';
@@ -614,4 +614,30 @@ test('orden por código: B10* junto a B10 y B1-LME al final de la serie', async 
   } finally {
     await api(`/rest/v1/catalog?id=in.(${made.map((b) => b.id).join(',')})`, { method: 'DELETE' });
   }
+});
+
+test.describe('usuarios (admin)', () => {
+  test.use({ admin: true });
+  test('ficha de usuario y suspender / reactivar', async ({ page, account }) => {
+    const { user: other } = await newUserSession('Usuario Ficha');
+    try {
+      await page.goto('/#/admin/usuarios');
+      await page.getByRole('searchbox', { name: 'Buscar usuario' }).fill('Usuario Ficha');
+      await page.locator('.user-row .user-name').first().click();
+      await expect(page).toHaveURL(new RegExp(`#/admin/usuario/${other.id}$`));
+      await expect(page.getByRole('heading', { name: 'Actividad' })).toBeVisible();
+      await page.locator('.suspend-reason').fill('Cuenta de prueba');
+      await page.getByRole('button', { name: 'Suspender', exact: true }).click();
+      await page.locator('#dialog').getByRole('button', { name: 'Suspender' }).click();
+      await expect(page.getByText('Cuenta suspendida')).toBeVisible();
+      const [p] = await api(`/rest/v1/profiles?id=eq.${other.id}&select=suspended_at,suspended_reason`);
+      expect(p.suspended_at).not.toBeNull();
+      expect(p.suspended_reason).toBe('Cuenta de prueba');
+      await page.getByRole('button', { name: 'Reactivar', exact: true }).click();
+      await page.locator('#dialog').getByRole('button', { name: 'Reactivar' }).click();
+      await expect(page.getByText('Cuenta reactivada')).toBeVisible();
+    } finally {
+      await api(`/auth/v1/admin/users/${other.id}`, { method: 'DELETE' });
+    }
+  });
 });

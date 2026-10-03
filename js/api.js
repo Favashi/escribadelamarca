@@ -124,6 +124,9 @@ export const adminMetrics = async () => ok(await supabase.rpc('admin_metrics'));
 export const adminAcquisition = async () => ok(await supabase.rpc('admin_acquisition'));
 export const adminOverview = async () => ok(await supabase.rpc('admin_overview'));
 export const adminUsers = async () => ok(await supabase.rpc('admin_users'));
+export const adminUserDetail = async (id) => ok(await supabase.rpc('admin_user_detail', { p_user: id }));
+export const adminSetSuspended = async (id, suspend, reason = null) =>
+  ok(await supabase.rpc('admin_set_suspended', { p_user: id, p_reason: reason, p_suspend: suspend }));
 export const adminDonations = async () => ok(await supabase.rpc('admin_donations'));
 export const adminSetSupporter = async (userId, value) =>
   ok(await supabase.rpc('admin_set_supporter', { p_user: userId, p_value: value }));

@@ -80,4 +80,4 @@ export const test = base.extend({
   },
 });
 
-export { expect, SB, api };
+export { expect, SB, api, newUserSession };

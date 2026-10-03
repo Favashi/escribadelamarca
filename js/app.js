@@ -304,6 +304,17 @@ async function enterApp(session) {
       <button class="btn btn-primary" onclick="location.reload()">Reintentar</button></div>`;
     return;
   }
+  // Cuenta suspendida por el admin: aviso y salir (la base de datos ya bloquea cualquier escritura)
+  if (state.profile?.suspended_at) {
+    nav.hidden = true;
+    view.innerHTML = html`<div class="empty suspended">
+      <h2>Tu cuenta está suspendida</h2>
+      ${state.profile.suspended_reason ? raw(html`<p>${state.profile.suspended_reason}</p>`) : ''}
+      <p class="muted">Si crees que es un error, escribe a <strong>info@toniruiz.es</strong>.</p>
+      <button class="btn btn-ghost" data-logout>Cerrar sesión</button></div>`;
+    $('[data-logout]', view).onclick = async () => { const { signOut } = await import('./auth.js'); await signOut(); location.reload(); };
+    return;
+  }
   restoreTheme(isSupporter());
   saveSignupRef(state.profile);
   nav.hidden = false;
@@ -354,6 +365,7 @@ route('/mecenas/:section', mount(renderSupporter));
 route('/revision', mount(renderReview));
 route('/buscar', mount(renderFinder));
 route('/admin', mount(renderAdmin));
+route('/admin/usuario/:id', mount((root, { id }) => renderAdmin(root, { section: 'usuario', id })));
 route('/admin/:section', mount(renderAdmin));
 route('/ayuda', mount(renderHelp));
 route('/aportaciones', mount(renderContributions));

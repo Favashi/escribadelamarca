@@ -871,11 +871,14 @@ body:has(.pp) { background: var(--pbg, #0f0813); }
 .pp-visitor p { margin: 0; color: #eadff0; }
 
 /* Perfil → ajustes del perfil público */
-.pp-settings { display: grid; gap: 14px; }
+.pp-settings { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.pp-settings > * { min-width: 0; }   /* sin esto, la fila de portadas ensancha todo el panel */
+details.fold > .pp-settings { max-width: 100%; }
 .pp-settings .pp-url { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font: .85rem var(--font-ui); }
 .pp-settings .pp-url input { flex: 1 1 140px; min-width: 0; }
 .pp-covers { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
-.pp-covers label { flex: none; cursor: pointer; }
+.pp-covers { position: relative; }
+.pp-covers label { position: relative; flex: none; cursor: pointer; }   /* los radios ocultos (absolute) se quedan dentro */
 .pp-covers input { position: absolute; opacity: 0; pointer-events: none; }
 .pp-covers img { width: 54px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; border: 2px solid transparent; display: block; }
 .pp-covers input:checked + img { border-color: var(--accent); }

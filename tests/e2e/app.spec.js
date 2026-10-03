@@ -644,12 +644,18 @@ test.describe('usuarios (admin)', () => {
 
 test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ page, account, browser }) => {
   const slug = `e2e-${test.info().project.name === 'móvil' ? 'm' : 'd'}-${Date.now().toString(36)}`;
+  const books = await api('/rest/v1/catalog?status=eq.approved&select=id&limit=12');
+  await api('/rest/v1/library', { method: 'POST', body: books.map((b) => ({ user_id: account.user.id, catalog_id: b.id })) });
+  const covers = await api('/rest/v1/catalog?id=in.(' + books.map((b) => b.id).join(',') + ')&cover_url=is.null&select=id');
+  if (covers.length) await api('/rest/v1/catalog?id=in.(' + covers.map((b) => b.id).join(',') + ')', { method: 'PATCH', body: { cover_url: '/assets/icons/icon-512.png' } });
   await page.goto('/#/perfil');
   await page.getByText('Perfil público', { exact: true }).click();
   const form = page.locator('[data-pp-form]');
   await form.getByLabel('Perfil público activado').check();
   await form.getByLabel('Dirección del perfil').fill(slug);
   await form.getByLabel('Lema').fill('Ningún módulo queda sin leer');
+  // La fila de portadas no puede ensanchar la página (los radios ocultos se salían del scroll)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await form.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Perfil público guardado')).toBeVisible();
 
@@ -664,4 +670,5 @@ test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ pag
   await p2.reload();
   await expect(p2.getByRole('heading', { name: 'Perfil no disponible' })).toBeVisible();
   await anon.close();
+  if (covers.length) await api('/rest/v1/catalog?id=in.(' + covers.map((b) => b.id).join(',') + ')', { method: 'PATCH', body: { cover_url: null } });
 });

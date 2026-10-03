@@ -1,324 +1,93 @@
-import { html, raw, $, toast, fmtShort } from '../util.js';
-import { state, user, isSupporter, isAdmin, loadAll } from '../store.js';
-import { signOut } from '../auth.js';
-import { viewHeader, confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog, bindFolds } from '../ui.js';
-import { sendFeedback, updateProfile } from '../api.js';
-
-const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
-import { icon, ribbon } from '../icons.js';
-import { downloadAllJson } from '../export.js';
-import { levelInfo, xpBreakdown, describe } from '../achievements.js';
+// Perfil: tu ficha de escriba (emblema, nombre, nivel, perfil público), atajos y logros. Todo lo configurable está en
+// Ajustes (#/ajustes, la rueda dentada).
+import { html, raw, $ } from '../util.js';
+import { state, isSupporter, isAdmin } from '../store.js';
+import { icon } from '../icons.js';
+import { emblemSvg } from '../emblems.js';
+import { levelInfo } from '../achievements.js';
 import { emblemBadge, emblemDialog, heroSheet } from '../hero.js';
-import { profileSettingsHtml, bindProfileSettings } from './profile-public.js';
+import { medalHtml } from './profile-public.js';
+import { myContributions } from './contributions.js';
 import { getAchievements } from '../api.js';
-import { APP_VERSION } from '../version.js';
-import { checkForUpdate, reloadApp } from '../update.js';
-import { resetLibrary, deleteMyAccount } from '../api.js';
-import { DONATION_URL, SUPPORTER_MIN_AMOUNT } from '../config.js';
 import { settings } from '../settings.js';
-import { applyTheme, getTheme, THEMES, TEXT_SIZES, getTextSize, applyTextSize } from '../theme.js';
+import { APP_VERSION } from '../version.js';
 
-/** «Ana García López» → «Ana G.» (igual que public.short_name en la base de datos). */
-const shortName = (full) => {
-  const [first, second] = String(full ?? '').trim().split(/\s+/);
-  return first ? `${first}${second ? ` ${second[0]}.` : ''}` : 'Escriba anónimo';
-};
+const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></g></svg>';
+const SHOWCASE = ['first_book', 'books:10', 'books:25', 'books:50', 'books:100', 'explorer', 'rank:1', 'rank:2', 'rank:3', 'rank:4'];
+
+const tile = (href, iconName, title, sub, cls = '') => html`<a class="prof-tile ${cls}" href="${href}">
+  <span class="prof-ic" aria-hidden="true">${raw(emblemSvg(iconName))}</span><span><b>${title}</b><small>${sub}</small></span></a>`;
 
 export function renderProfile(root) {
   const p = state.profile ?? {};
-  const email = state.session.user.email;
   const supporter = isSupporter();
-  const theme = getTheme();
+  const info = levelInfo();
+  const name = p.public_name || p.display_name || state.session.user.email;
+  const pending = myContributions().filter((c) => c.status === 'pending').length;
+  const wishes = state.wishlist.size;
+  const base = `${location.origin}${location.pathname}#/escriba/`;
 
   root.innerHTML = html`
-    ${raw(viewHeader('Perfil'))}
-    <section class="panel profile">
-      <button type="button" class="emblem-btn" data-emblem aria-label="Cambiar emblema">
-        ${raw(emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<span class="emblem-edit" aria-hidden="true">✎</span></button>
-      <div class="profile-main">
-        <h2>${p.public_name || p.display_name || email}</h2>
-        <p class="muted small">${email}</p>
-        <p>
-          ${supporter ? raw(`<span class="badge badge-gold">${icon('star')} Mecenas</span>`) : ''}
-          ${isAdmin() ? raw(`<span class="badge badge-admin">${icon('shield')} Admin</span>`) : ''}
-        </p>
+    <header class="prof-top"><h1>Perfil</h1>
+      <a class="prof-gear" href="#/ajustes" aria-label="Ajustes">${raw(GEAR)}</a></header>
+
+    <section class="prof-card">
+      <div class="prof-id">
+        <button type="button" class="prof-emb" data-emblem aria-label="Cambiar emblema">
+          ${raw(emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<b class="prof-lvl" aria-hidden="true">${info.level}</b></button>
+        <div class="prof-name">
+          <a href="#/ajustes/nombre" class="prof-h" aria-label="Cambiar el nombre público"><h2>${name}</h2><span aria-hidden="true">✎</span></a>
+          <p class="prof-rank">${info.rank.name}${p.profile_motto ? ` · «${p.profile_motto}»` : ''}</p>
+          ${supporter || isAdmin() ? raw(html`<p class="prof-badges">${supporter ? raw(`<span>${icon('star')} Mecenas</span>`) : ''}${isAdmin() ? raw('<span>Admin</span>') : ''}</p>`) : ''}
+        </div>
       </div>
-      <button class="btn btn-sm btn-logout" data-logout>
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Cerrar sesión
+      <button type="button" class="prof-xp" data-hero-open aria-label="Nivel ${info.level}: ver tu progreso">
+        <i><b style="width:${info.pct}%"></b></i>
+        <span>Nivel ${info.level} · ${info.xp.toLocaleString('es-ES')} / ${info.to.toLocaleString('es-ES')} PX · te faltan ${(info.to - info.xp).toLocaleString('es-ES')} para el nivel ${info.level + 1}</span>
       </button>
+      ${p.public_profile && p.public_slug
+        ? raw(html`<a class="prof-pub" href="${base}${p.public_slug}"><span>Ver mi perfil público<small>…/#/escriba/${p.public_slug}</small></span>${raw(icon('chevron'))}</a>`)
+        : raw(html`<a class="prof-pub" href="#/ajustes/perfil-publico"><span>Crear mi perfil público<small>Una página para compartir tu nivel, logros y series</small></span>${raw(icon('chevron'))}</a>`)}
     </section>
 
-    <form class="panel public-name-form">
-      <label for="public-name">Nombre público</label>
-      <p class="muted small">Cómo te ven los demás en la Comunidad y en tu lista de deseos compartida. Si lo dejas vacío,
-        se usa tu nombre de Google abreviado («${shortName(p.display_name)}»). Tu cuenta de Google no cambia.</p>
-      <div class="inline-form">
-        <input id="public-name" name="public_name" maxlength="30" autocomplete="nickname" value="${p.public_name ?? ''}"
-          placeholder="${shortName(p.display_name)}">
-        <button class="btn btn-ghost">Guardar</button>
-      </div>
-    </form>
+    <div class="prof-tiles">
+      ${raw(tile('#/deseos', 'treasure-map', 'Lista de deseos', wishes ? `${wishes} ${wishes === 1 ? 'libro' : 'libros'}` : 'Apunta lo que te falta'))}
+      ${raw(tile('#/aportaciones', 'quill-ink', 'Aportaciones', pending ? `${pending} ${pending === 1 ? 'pendiente' : 'pendientes'}` : 'Misiones y propuestas'))}
+      ${raw(tile('#/comunidad', 'crown', 'Comunidad', 'Escribas y Mecenas'))}
+      ${supporter ? raw(tile('#/mecenas', 'beer-stein', 'Extras de Mecenas', 'Diario, préstamos…', 'gold'))
+        : settings.donations_enabled ? raw(tile('#/mecenas', 'beer-stein', 'Hazte Mecenas', 'Con un café', 'gold'))
+        : raw(tile('#/ayuda', 'compass', 'Ayuda', 'Preguntas frecuentes'))}
+    </div>
 
-    <a class="panel wish-link" href="#/deseos">
-      <span class="rank-icon" aria-hidden="true">${raw(icon('star'))}</span>
-      <span><strong>Lista de deseos</strong><small>${state.wishlist.size
-        ? `${state.wishlist.size} ${state.wishlist.size === 1 ? 'libro' : 'libros'} · compártela con tu grupo`
-        : 'Apunta lo que te falta y compártela con tu grupo'}</small></span>
-      ${raw(icon('chevron'))}
-    </a>
+    <div class="prof-sec"><h2>Logros</h2><button type="button" class="link" data-all-ach hidden>Ver todos</button></div>
+    <div class="prof-medals"><p class="muted small">Cargando…</p></div>
+    <p class="muted small center pad">Escriba de la Marca v${APP_VERSION}</p>`;
 
-    ${raw(rankCard())}
-
-    <details class="panel fold achievements" data-fold="perfil.logros" open>
-      <summary><h2>Logros</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-      <div class="ach-grid"><p class="muted small">Cargando…</p></div>
-    </details>
-
-    ${supporter ? raw(html`
-    <details class="panel fold perk mecenas-hub" data-fold="perfil.mecenas" open>${raw(ribbon('perk'))}
-      <summary><h2>Tus extras de Mecenas</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-      <div class="hub-grid">
-        ${HUB.map(([sec, icon, title, sub]) => raw(html`<a class="hub-tile" href="#/mecenas/${sec}">
-          <span class="hub-icon" aria-hidden="true">${icon}</span><span class="hub-title">${title}</span><span class="hub-sub">${sub}</span>
-        </a>`))}
-      </div>
-      ${settings.donations_enabled ? raw(html`<div class="actions"><a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a otro café</a></div>`) : ''}
-    </details>`) : !settings.donations_enabled ? '' : raw(html`
-    <section class="panel coffee">
-      <h2>¿Te es útil la app?</h2>
-      <p>Escriba de la Marca es gratuita y se mantiene con aportaciones. Con un café (${SUPPORTER_MIN_AMOUNT} €) te haces Mecenas y
-        desbloqueas diario de partidas, repetidos e intercambio, préstamos, estadísticas y temas extra.</p>
-      <div class="actions">
-        <a class="btn btn-perk-cta" href="#/mecenas">★ Ver ventajas de Mecenas</a>
-        <a class="btn btn-coffee" href="${DONATION_URL}" target="_blank" rel="noopener">${raw(icon('coffee'))} Invítame a un café</a>
-      </div>
-    </section>`)}
-
-    <details class="panel fold" data-fold="perfil.publico">
-      <summary><h2>Perfil público</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-      ${raw(profileSettingsHtml())}
-    </details>
-
-    <details class="panel fold" data-fold="perfil.apariencia">
-      <summary><h2>Apariencia</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-      <div class="theme-row" role="radiogroup" aria-label="Tema">
-        ${THEMES.filter((t) => !t.supporter).map((t) => raw(themeOption(t, theme, false)))}
-      </div>
-      <p class="theme-sub">Temas de Mecenas ${supporter ? '' : raw('<a href="#/mecenas">¿Cómo desbloquearlos?</a>')}</p>
-      <div class="theme-row two" role="radiogroup" aria-label="Temas de Mecenas">
-        ${THEMES.filter((t) => t.supporter).map((t) => raw(themeOption(t, theme, !supporter)))}
-      </div>
-      <h3 class="setting-title">${raw(icon('text'))} Tamaño de letra</h3>
-      <div class="seg text-seg" role="radiogroup" aria-label="Tamaño de letra">
-        ${TEXT_SIZES.map((t) => raw(html`<label><input type="radio" name="text-size" value="${t.id}" ${getTextSize() === t.id ? 'checked' : ''}>
-          <span><b style="font-size:${t.scale * 1.15}rem" aria-hidden="true">Aa</b>${t.label}</span></label>`))}
-      </div>
-    </details>
-
-    <details class="panel danger-zone">
-      <summary><h2>${raw(icon('warning'))} Zona de peligro</h2><span class="muted small">Vaciar la biblioteca o eliminar la cuenta</span>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-
-      <div class="dz-item">
-        <p class="small">Antes de borrar nada, puedes <strong>descargar una copia de todos tus datos</strong>.</p>
-        <button class="btn btn-ghost btn-sm" data-export-all>${raw(icon('download'))} Descargar mis datos (JSON)</button>
-      </div>
-
-      <div class="dz-item">
-        <h3>Empezar de cero</h3>
-        <p class="muted small">Quita todos los libros de tu biblioteca y tu lista de deseos${isSupporter() ? ' y tus préstamos' : ''}.
-          El catálogo general no se toca.</p>
-        <button class="btn btn-danger-outline" data-reset ${state.library.size ? '' : 'disabled'}>${raw(icon('trash'))}
-          Vaciar mi biblioteca (${state.library.size} ${state.library.size === 1 ? 'libro' : 'libros'})</button>
-      </div>
-
-      <div class="dz-item">
-        <h3>Eliminar mi cuenta</h3>
-        <p class="muted small">Borra tu cuenta y todos tus datos: biblioteca, lista de deseos, préstamos, diario de partidas y
-          estadísticas de uso. Los libros o códigos que hayas propuesto se quedan en el catálogo común, sin tu nombre.
-          <strong>No se puede deshacer.</strong></p>
-        <button class="btn btn-danger-outline" data-delete-account>${raw(icon('userX'))} Eliminar mi cuenta</button>
-      </div>
-    </details>
-
-    <details class="panel fold about" data-fold="perfil.acerca">
-      <summary><h2>Acerca de</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
-      <p class="about-version"><strong>Escriba de la Marca</strong> <span class="badge">v${APP_VERSION}</span></p>
-      <div class="actions">
-        <a class="btn btn-ghost" href="#/ayuda">${raw(icon('help'))} Ayuda</a>
-        <button class="btn btn-ghost" data-changelog>Novedades</button>
-        <button class="btn btn-ghost" data-update>Buscar actualizaciones</button>
-      </div>
-      ${settings.feedback_enabled
-        ? raw(`<button class="btn btn-primary btn-feedback" data-feedback>${icon('chat')} Enviar comentario o informar de un fallo</button>`)
-        : raw(html`<a class="btn btn-ghost btn-feedback" href="${ISSUES_URL}" target="_blank" rel="noopener">${raw(icon('bug'))} Informar de un fallo o proponer una idea en GitHub</a>
-          <p class="muted small center">Los comentarios se gestionan en GitHub: así puedes ver si alguien ya ha informado del mismo fallo.</p>`)}
-    </details>
-
-    <p class="muted small center pad">
-      Hecho por <a href="https://github.com/Favashi" target="_blank" rel="noopener">Toni Ruiz (Favashi)</a> ·
-      <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
-      Proyecto de fans, no oficial · Portadas © de sus autores, con permiso de La Marca del Este<br>
-      Emblemas de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (Lorc y Delapouite, CC BY 3.0)<br>
-      <a href="privacidad.html">Privacidad</a> ·
-      <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
-    <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
-  bindFolds(root);
-  bindProfileSettings(root, () => renderProfile(root));
-
-  root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
-  root.querySelectorAll('input[name=text-size]').forEach((r) => r.addEventListener('change', () => applyTextSize(r.value, true)));
-  // Casillas de la Comunidad (voluntarias): lista de Escribas y lista de Mecenas
-  const optIn = (sel, field, list) => $(sel, root)?.addEventListener('change', async (e) => {
-    const on = e.target.checked;
-    e.target.disabled = true;
-    try {
-      await updateProfile(user().id, { [field]: on });
-      state.profile[field] = on;
-      toast(on ? `Tu nombre aparecerá en la lista de ${list}` : `Ya no apareces en la lista de ${list}`, 'ok');
-    } catch (err) { e.target.checked = !on; toast(errMsg(err), 'error'); }
-    e.target.disabled = false;
-  });
-  optIn('[data-scribes-opt]', 'show_in_scribes', 'Escribas');
-  optIn('[data-supporters-opt]', 'show_in_supporters', 'Mecenas');
-  $('.public-name-form', root).addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const input = e.target.elements.public_name;
-    const value = input.value.replace(/\s+/g, ' ').trim();
-    if (value && value.length < 2) { toast('El nombre público necesita al menos 2 caracteres', 'error'); return; }
-    try {
-      await updateProfile(user().id, { public_name: value || null });
-      state.profile.public_name = value || null;
-      toast(value ? `Nombre público: ${value}` : 'Usarás tu nombre de Google abreviado', 'ok');
-      renderProfile(root);
-    } catch (err) { toast(errMsg(err), 'error'); }
-  });
   $('[data-emblem]', root).onclick = async () => { if (await emblemDialog()) renderProfile(root); };
   $('[data-hero-open]', root).onclick = () => heroSheet();
-  $('[data-reset]', root).onclick = async (e) => {
-    const n = state.library.size;
-    const ok = await confirmDialog(
-      `¿Vaciar tu biblioteca? Se quitarán ${n} ${n === 1 ? 'libro' : 'libros'} con sus fechas de registro y notas. No se puede deshacer.`,
-      { ok: 'Vaciar biblioteca', danger: true });
-    if (!ok) return;
-    e.target.disabled = true;
-    try {
-      await resetLibrary(user().id);
-      await loadAll();
-      toast('Biblioteca vaciada', 'ok');
-      renderProfile(root);
-    } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
-  };
-
-  $('[data-delete-account]', root).onclick = async (e) => {
-    const ok = await typeToConfirmDialog(
-      `Se eliminarán la cuenta ${email}, los ${state.library.size} libros de tu biblioteca y todos tus datos. No se puede deshacer.`,
-      { word: 'ELIMINAR', ok: 'Eliminar mi cuenta' });
-    if (!ok) return;
-    e.target.disabled = true;
-    try {
-      await deleteMyAccount();
-      // La cuenta ya no existe en el servidor: cerrar solo la sesión local y recargar en la portada
-      await signOut('local').catch(() => {});
-      try { localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('edm.deleted', '1'); } catch { /* sin storage */ }
-      location.replace(location.pathname);
-    } catch (err) { toast(errMsg(err), 'error'); e.target.disabled = false; }
-  };
-
-  fillAchievements($('.ach-grid', root));
-
-  $('[data-export-all]', root).onclick = () => downloadAllJson().catch((err) => toast(errMsg(err), 'error'));
-  $('[data-changelog]', root).onclick = () => releaseNotesDialog();
-  $('[data-feedback]', root)?.addEventListener('click', async () => {
-    const res = await feedbackDialog();
-    if (!res) return;
-    try {
-      await sendFeedback({ ...res, page: 'perfil', app_version: APP_VERSION, user_agent: navigator.userAgent.slice(0, 300) });
-      toast('¡Gracias! Tu comentario ha llegado', 'ok');
-    } catch (err) { toast(errMsg(err), 'error'); }
-  });
-  $('[data-onboarding]', root).onclick = async () => {
-    const choice = await onboardingDialog();
-    if (choice === 'scan') location.hash = '#/escanear';
-    if (choice === 'catalog') location.hash = '#/catalogo';
-    if (choice === 'help') location.hash = '#/ayuda';
-  };
-  $('[data-update]', root).onclick = async (e) => {
-    e.target.disabled = true;
-    const v = await checkForUpdate({ force: true });
-    if (v) { toast(`Actualizando a la v${v}…`); setTimeout(reloadApp, 600); }
-    else { toast('Ya tienes la última versión', 'ok'); e.target.disabled = false; }
-  };
-
-  $('[data-logout]', root).onclick = async () => { await signOut(); toast('Sesión cerrada'); };
+  fillMedals(root);
 }
 
-const THEME_ICONS = {
-  auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
-  light: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-  dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor"/></svg>',
-  parchment: '<span class="tp-glyph tp-uncial">Aa</span>',
-  retro: '<span class="tp-glyph tp-mono">&gt;_</span>',
-};
-
-/** Opción de tema con miniatura (al estilo de Ajustes → Pantalla de iOS). */
-function themeOption(t, current, locked) {
-  return html`<label class="theme-opt ${locked ? 'locked' : ''}">
-    <input type="radio" name="theme" value="${t.id}" ${current === t.id ? 'checked' : ''} ${locked ? 'disabled' : ''}>
-    <span class="theme-preview tp-${t.id}">${raw(THEME_ICONS[t.id] || '')}</span>
-    <span class="theme-name">${locked ? raw(icon('lock', { label: 'Bloqueado' })) : ''}${t.label}</span>
-  </label>`;
-}
-
-// Accesos directos a los extras de Mecenas (sección de #/mecenas/<sec>)
-const HUB = [
-  ['coleccion', '▤', 'Estadísticas', 'Progreso y valor'],
-  ['diario', '✎', 'Diario de partidas', 'Lo dirigido y jugado'],
-  ['intercambio', '⇄', 'Intercambio', 'Repetidos entre Mecenas'],
-  ['prestamos', '↔', 'Préstamos', 'Qué tienes prestado'],
-  ['exportar', '⤓', 'Exportar', 'CSV o JSON'],
-];
-
-/** Tarjeta de nivel: nivel, título, PX y casillas para aparecer en la Comunidad. */
-function rankCard() {
-  const info = levelInfo();
-  const b = xpBreakdown();
-  const c = b.contributions;
-  return html`<section class="panel rank-card">
-    <button type="button" class="rank-head" data-hero-open>
-      <span class="rank-icon rank-level" aria-hidden="true">${info.level}</span>
-      <div><p class="eyebrow">Nivel ${info.level} · ${info.xp.toLocaleString('es-ES')} PX</p><h2>${info.rank.name}</h2></div>
-      ${raw(icon('chevron', { cls: 'rank-go' }))}
-    </button>
-    <span class="bar" role="img" aria-label="${info.xp} PX de ${info.to} para el nivel ${info.level + 1}"><span style="width:${info.pct}%"></span></span>
-    <p class="small muted">${(info.to - info.xp).toLocaleString('es-ES')} PX para el nivel ${info.level + 1}${info.rank.next
-      ? ` · ${info.rank.toNext.toLocaleString('es-ES')} para ser ${info.rank.next.name}` : ''}.
-      Suman las aportaciones aceptadas al catálogo (lo que más), los logros y las partidas jugadas o dirigidas.</p>
-    ${c.total ? raw(html`<p class="small rank-detail">${c.suggestions} sugerencias · ${c.codes} códigos · ${c.books} libros aceptados</p>`) : ''}
-    <div class="scribes-opt">
-      <label class="switch"><input type="checkbox" data-scribes-opt ${state.profile?.show_in_scribes ? 'checked' : ''}>
-        <span>Aparecer en la lista de Escribas</span></label>
-      ${isSupporter() ? raw(html`<label class="switch"><input type="checkbox" data-supporters-opt ${state.profile?.show_in_supporters ? 'checked' : ''}>
-        <span>Aparecer en la lista de Mecenas</span></label>`) : ''}
-      <a href="#/aportaciones">Aportaciones y misiones ${raw(icon('chevron'))}</a>
-      <a href="#/comunidad">Ver la Comunidad ${raw(icon('chevron'))}</a>
-    </div>
-  </section>`;
-}
-
-/** Vitrina de logros conseguidos (se cargan de la base de datos). */
-async function fillAchievements(box) {
-  if (!box) return;
+/** Logros: fila de medallas (los conseguidos, de los más recientes); «Ver todos» enseña también los que faltan. */
+async function fillMedals(root) {
+  const box = $('.prof-medals', root);
   let rows = state.achievements;
   if (!rows.length) { try { rows = await getAchievements(); state.achievements = rows; } catch { rows = []; } }
-  const order = (k) => (k.startsWith('series:') ? 0 : k.startsWith('rank:') ? 1 : k.startsWith('books:') ? 2 : 3);
-  rows = [...rows].sort((a, b) => order(a.key) - order(b.key) || String(b.earned_at).localeCompare(String(a.earned_at)));
-  box.innerHTML = rows.length ? rows.map((r) => {
-    const d = describe(r.key, r);
-    return html`<div class="ach">
-      <span class="ach-icon" aria-hidden="true">${raw(icon(d.icon))}</span>
-      <div><strong>${d.title}${r.level > 1 ? raw(html` <span class="ach-level">×${r.level}</span>`) : ''}</strong>
-        <small>${d.text}</small><small class="muted">${fmtShort(r.earned_at)}</small></div>
-    </div>`;
-  }).join('') : html`<p class="muted small">Aún no tienes logros. Escanea tus primeros libros o completa una serie. ✦</p>`;
+  if (!box.isConnected) return;
+  const earned = new Map(rows.map((r) => [r.key, r]));
+  const recent = [...rows].sort((a, b) => String(b.earned_at).localeCompare(String(a.earned_at)));
+  if (!rows.length) {
+    box.innerHTML = html`<p class="muted small">Aún no tienes logros. Escanea tus primeros libros o completa una serie. ✦</p>`;
+    return;
+  }
+  box.innerHTML = recent.map((r) => medalHtml(r.key, { meta: r.meta })).join('');
+  const all = $('[data-all-ach]', root);
+  all.hidden = false;
+  all.textContent = `Ver todos (${rows.length})`;
+  all.onclick = () => {
+    const keys = [...recent.map((r) => r.key), ...SHOWCASE.filter((k) => !earned.has(k))];
+    box.classList.add('all');
+    box.innerHTML = keys.map((k) => medalHtml(k, { earned: earned.has(k), meta: earned.get(k)?.meta })).join('');
+    all.hidden = true;
+  };
 }

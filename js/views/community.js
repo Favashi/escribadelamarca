@@ -21,10 +21,10 @@ export async function renderCommunity(root, params = {}) {
     <section class="panel community-intro">${tab === 'escribas'
       ? raw(html`<p class="small">Cada código propuesto al escanear, cada corrección y cada libro que faltaba, una vez revisados, es una
           aportación al catálogo de todos. Aquí, quienes más han aportado.</p>
-        ${p.show_in_scribes ? '' : raw('<p class="small"><a href="#/perfil">Actívalo en tu perfil</a> para aparecer (es voluntario).</p>')}`)
+        ${p.show_in_scribes ? '' : raw('<p class="small"><a href="#/ajustes">Actívalo en Ajustes → Privacidad</a> para aparecer (es voluntario).</p>')}`)
       : raw(html`<p class="small">Escriba de la Marca es gratuita y se mantiene con cafés. Estos Mecenas la sostienen: sin cantidades,
           por orden de llegada.</p>
-        ${isSupporter() && !p.show_in_supporters ? raw('<p class="small"><a href="#/perfil">Actívalo en tu perfil</a> para aparecer (es voluntario).</p>') : ''}
+        ${isSupporter() && !p.show_in_supporters ? raw('<p class="small"><a href="#/ajustes">Actívalo en Ajustes → Privacidad</a> para aparecer (es voluntario).</p>') : ''}
         ${isSupporter() ? '' : raw('<p class="small"><a href="#/mecenas">¿Cómo hacerse Mecenas?</a></p>')}`)}
     </section>
     <ol class="community-list panel"><li class="muted small">Cargando…</li></ol>`;

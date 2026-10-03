@@ -24,6 +24,7 @@ import { renderHelp } from './views/help.js';
 import { renderCommunity } from './views/community.js';
 import { renderContributions, waxSeal } from './views/contributions.js';
 import { renderPublicProfile } from './views/profile-public.js';
+import { renderSettings } from './views/settings.js';
 import { renderWishlist } from './views/wishlist.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
@@ -38,7 +39,7 @@ const nav = $('#nav');
 function setActiveNav() {
   const path = location.hash.slice(1) || '/biblioteca';
   const section = path.startsWith('/revision') ? '/admin'
-    : /^\/(ayuda|escribas|deseos)/.test(path) ? '/perfil' : path;
+    : /^\/(ayuda|escribas|deseos|ajustes)/.test(path) ? '/perfil' : path;
   $$('#nav a').forEach((a) => a.classList.toggle('active', section.startsWith(a.getAttribute('href').slice(1))));
   if (state.session) updateAdminBadge();
 }
@@ -361,6 +362,8 @@ route('/catalogo', mount(renderCatalog));
 route('/catalogo/:filtro', mount(renderCatalog));   // admin: con un filtro de calidad ya aplicado
 route('/libro/:id', mount(renderBook));
 route('/perfil', mount(renderProfile));
+route('/ajustes', mount(renderSettings));
+route('/ajustes/:section', mount(renderSettings));
 route('/mecenas', mount(renderSupporter));
 route('/mecenas/:section', mount(renderSupporter));
 route('/revision', mount(renderReview));

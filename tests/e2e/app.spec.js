@@ -424,7 +424,7 @@ test('comunidad: pestañas de Escribas y Mecenas, y casilla voluntaria en el per
   await page.getByRole('link', { name: 'Mecenas', exact: true }).click();
   await expect(page).toHaveURL(/#\/comunidad\/mecenas$/);
   await expect(page.locator('.community-list')).not.toContainText('Cargando');
-  await page.goto('/#/perfil');
+  await page.goto('/#/ajustes');
   await page.getByLabel('Aparecer en la lista de Escribas').check();
   await expect(page.getByText('Tu nombre aparecerá en la lista de Escribas')).toBeVisible();
   const [p] = await api(`/rest/v1/profiles?id=eq.${account.user.id}&select=show_in_scribes`);
@@ -569,7 +569,7 @@ test('misión de códigos: lista de libros y «No tiene código»; nombre públi
   const [sg] = await api(`/rest/v1/catalog_suggestions?created_by=eq.${uid}&select=changes`);
   expect(sg.changes).toEqual({ no_barcode: true });
 
-  await page.goto('/#/perfil');
+  await page.goto('/#/ajustes/nombre');
   await page.getByLabel('Nombre público').fill('Escriba Errante');
   await page.locator('.public-name-form').getByRole('button', { name: 'Guardar' }).click();
   await expect(page.getByText('Nombre público: Escriba Errante')).toBeVisible();
@@ -648,8 +648,7 @@ test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ pag
   await api('/rest/v1/library', { method: 'POST', body: books.map((b) => ({ user_id: account.user.id, catalog_id: b.id })) });
   const covers = await api('/rest/v1/catalog?id=in.(' + books.map((b) => b.id).join(',') + ')&cover_url=is.null&select=id');
   if (covers.length) await api('/rest/v1/catalog?id=in.(' + covers.map((b) => b.id).join(',') + ')', { method: 'PATCH', body: { cover_url: '/assets/icons/icon-512.png' } });
-  await page.goto('/#/perfil');
-  await page.getByText('Perfil público', { exact: true }).click();
+  await page.goto('/#/ajustes/perfil-publico');
   const form = page.locator('[data-pp-form]');
   await form.getByLabel('Perfil público activado').check();
   await form.getByLabel('Dirección del perfil').fill(slug);
@@ -671,4 +670,20 @@ test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ pag
   await expect(p2.getByRole('heading', { name: 'Perfil no disponible' })).toBeVisible();
   await anon.close();
   if (covers.length) await api('/rest/v1/catalog?id=in.(' + covers.map((b) => b.id).join(',') + ')', { method: 'PATCH', body: { cover_url: null } });
+});
+
+test('perfil y ajustes: ficha con atajos, rueda a Ajustes y secciones', async ({ page, account }) => {
+  await page.goto('/#/perfil');
+  await expect(page.locator('.prof-card')).toBeVisible();
+  await expect(page.locator('.prof-tiles .prof-tile')).toHaveCount(4);
+  await expect(page.getByRole('link', { name: /Crear mi perfil público/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Ajustes' }).click();
+  await expect(page).toHaveURL(/#\/ajustes$/);
+  await expect(page.getByRole('heading', { name: 'Ajustes', level: 1 })).toBeVisible();
+  await page.getByRole('link', { name: /Tema y tamaño de letra/ }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Tamaño de letra' })).toBeVisible();
+  await page.getByRole('link', { name: 'Volver a Ajustes' }).click();
+  await page.getByRole('link', { name: /Zona de peligro/ }).click();
+  await expect(page.getByRole('button', { name: 'Eliminar mi cuenta' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });

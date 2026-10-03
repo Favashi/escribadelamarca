@@ -111,9 +111,25 @@ export function matches(book, q) {
 
 /** Orden natural: serie, número, título (B2 antes que B10). */
 export function compareBooks(a, b) {
-  return String(a.series ?? '~').localeCompare(String(b.series ?? '~'), 'es')
-    || (a.number ?? 1e9) - (b.number ?? 1e9)
+  const ka = codeKey(a), kb = codeKey(b);
+  return ka.none - kb.none
+    || ka.prefix.localeCompare(kb.prefix, 'es')
+    || ka.other - kb.other
+    || ka.num - kb.num
+    || ka.suffix.localeCompare(kb.suffix, 'es')
     || a.title.localeCompare(b.title, 'es');
+}
+
+/**
+ * Clave de orden a partir del código de publicación (no de series/number, que pueden faltar):
+ * «B10*» (reedición que sustituye a B10) va justo detrás de B10; «B1-LME» (La Marca Estelar, otra línea) va al final de
+ * su prefijo, después de toda la serie; los libros sin código, al final de todo.
+ */
+function codeKey(book) {
+  const m = String(book.code ?? '').trim().toUpperCase().match(/^([A-Z]+)(\d*)(.*)$/);
+  if (!m) return { none: 1, prefix: '', other: 0, num: 0, suffix: '' };
+  const [, prefix, digits, suffix] = m;
+  return { none: 0, prefix, other: suffix.startsWith('-') ? 1 : 0, num: digits ? Number(digits) : 1e9, suffix };
 }
 
 /** Agrupa libros por categoría respetando sort_order. */

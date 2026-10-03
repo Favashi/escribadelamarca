@@ -317,7 +317,8 @@ export function bookFormDialog({ initial = {}, heading = 'Nuevo libro', submit =
       const price = f.price_eur.trim() ? Number(f.price_eur.trim().replace(',', '.')) : null;
       if (price !== null && !(price >= 0 && price < 10000)) return showErr('El PVP no es válido (ej. 12,95).');
       const pubCode = f.code.trim().toUpperCase();
-      const m = pubCode.match(/^([A-Z]+)(\d*)$/);
+      // «B10*» es de la serie B (nº 10); «B1-LME» es de otra línea (sin serie)
+      const m = pubCode.match(/^([A-Z]+)(\d*)(\*?)$/);
       close({
         fields: {
           title,

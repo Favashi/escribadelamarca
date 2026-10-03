@@ -598,3 +598,20 @@ test('código compartido: primero el libro que falta y atajo por código de port
     await api(`/rest/v1/catalog?id=in.(${a.id},${b.id})`, { method: 'DELETE' });
   }
 });
+
+test('orden por código: B10* junto a B10 y B1-LME al final de la serie', async ({ page, account }) => {
+  const tag = test.info().project.name === 'móvil' ? 'M' : 'D';
+  const made = await api('/rest/v1/catalog?select=id,code', { method: 'POST', body: [
+    { title: `[Prueba] orden QZ1-LME ${tag}`, code: 'QZ1-LME', series: null, number: null, status: 'approved', source: 'app' },
+    { title: `[Prueba] orden QZ10* ${tag}`, code: 'QZ10*', series: 'QZ', number: null, status: 'approved', source: 'app' },
+    { title: `[Prueba] orden QZ10 ${tag}`, code: 'QZ10', series: 'QZ', number: 10, status: 'approved', source: 'app' },
+    { title: `[Prueba] orden QZ2 ${tag}`, code: 'QZ2', series: 'QZ', number: 2, status: 'approved', source: 'app' }] });
+  try {
+    await page.goto('/#/catalogo');
+    await page.getByPlaceholder(/Buscar título/).fill(`[Prueba] orden`);
+    const codes = await page.locator('.rows .row .code').filter({ hasText: /^QZ/ }).allTextContents();
+    expect(codes).toEqual(['QZ2', 'QZ10', 'QZ10*', 'QZ1-LME']);
+  } finally {
+    await api(`/rest/v1/catalog?id=in.(${made.map((b) => b.id).join(',')})`, { method: 'DELETE' });
+  }
+});

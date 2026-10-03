@@ -9,6 +9,7 @@ import { icon, ribbon } from '../icons.js';
 import { downloadAllJson } from '../export.js';
 import { levelInfo, xpBreakdown, describe } from '../achievements.js';
 import { emblemBadge, emblemDialog, heroSheet } from '../hero.js';
+import { profileSettingsHtml, bindProfileSettings } from './profile-public.js';
 import { getAchievements } from '../api.js';
 import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
@@ -94,6 +95,11 @@ export function renderProfile(root) {
       </div>
     </section>`)}
 
+    <details class="panel fold" data-fold="perfil.publico">
+      <summary><h2>Perfil público</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
+      ${raw(profileSettingsHtml())}
+    </details>
+
     <details class="panel fold" data-fold="perfil.apariencia">
       <summary><h2>Apariencia</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
       <div class="theme-row" role="radiogroup" aria-label="Tema">
@@ -158,6 +164,7 @@ export function renderProfile(root) {
       <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>
     <div class="center pad"><button class="btn btn-ghost btn-sm" data-onboarding>${raw(icon('wave'))} Ver la bienvenida otra vez</button></div>`;
   bindFolds(root);
+  bindProfileSettings(root, () => renderProfile(root));
 
   root.querySelectorAll('input[name=theme]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value, true)));
   root.querySelectorAll('input[name=text-size]').forEach((r) => r.addEventListener('change', () => applyTextSize(r.value, true)));

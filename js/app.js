@@ -23,6 +23,7 @@ import { renderAdmin } from './views/admin.js';
 import { renderHelp } from './views/help.js';
 import { renderCommunity } from './views/community.js';
 import { renderContributions, waxSeal } from './views/contributions.js';
+import { renderPublicProfile } from './views/profile-public.js';
 import { renderWishlist } from './views/wishlist.js';
 import { updateAdminBadge } from './nav.js';
 import { showWhatsNewIfUpdated, onboardingDialog } from './ui.js';
@@ -369,6 +370,7 @@ route('/admin/usuario/:id', mount((root, { id }) => renderAdmin(root, { section:
 route('/admin/:section', mount(renderAdmin));
 route('/ayuda', mount(renderHelp));
 route('/aportaciones', mount(renderContributions));
+route('/escriba/:slug', mount((root, { slug }) => renderPublicProfile(root, slug.toLowerCase())));
 route('/comunidad', mount(renderCommunity));
 route('/comunidad/:tab', mount(renderCommunity));
 route('/escribas', () => { location.replace('#/comunidad/escribas'); });   // enlace antiguo
@@ -381,6 +383,16 @@ async function boot() {
   if (!isConfigured) return renderSetup();
   await loadSettings();
   renderAnnouncement();
+
+  // Perfil público de escriba: sin login (con sesión, lo pinta el router)
+  const pub = location.hash.match(/^#\/escriba\/([a-z0-9-]{3,30})$/i);
+  if (pub && !(await getSession())) {
+    document.body.classList.add('landing');
+    nav.hidden = true;
+    rememberRef('perfil-publico');
+    trackLandingVisit();
+    return renderPublicProfile(view, pub[1].toLowerCase());
+  }
 
   // Lista de deseos compartida: pública, sin login
   const shared = location.hash.match(/^#\/deseos\/([0-9a-f-]{36})$/i);

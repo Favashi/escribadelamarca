@@ -641,3 +641,27 @@ test.describe('usuarios (admin)', () => {
     }
   });
 });
+
+test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ page, account, browser }) => {
+  const slug = `e2e-${test.info().project.name === 'móvil' ? 'm' : 'd'}-${Date.now().toString(36)}`;
+  await page.goto('/#/perfil');
+  await page.getByText('Perfil público', { exact: true }).click();
+  const form = page.locator('[data-pp-form]');
+  await form.getByLabel('Perfil público activado').check();
+  await form.getByLabel('Dirección del perfil').fill(slug);
+  await form.getByLabel('Lema').fill('Ningún módulo queda sin leer');
+  await form.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Perfil público guardado')).toBeVisible();
+
+  const anon = await browser.newContext();
+  const p2 = await anon.newPage();
+  await useLocalSupabase(p2);
+  await p2.goto(`/#/escriba/${slug}`);
+  await expect(p2.locator('.pp-id h1')).toBeVisible();
+  await expect(p2.locator('.pp-motto')).toContainText('Ningún módulo queda sin leer');
+  await expect(p2.getByRole('link', { name: 'Crea tu colección gratis' })).toBeVisible();
+  await p2.goto('/#/escriba/no-existe-este-perfil');
+  await p2.reload();
+  await expect(p2.getByRole('heading', { name: 'Perfil no disponible' })).toBeVisible();
+  await anon.close();
+});

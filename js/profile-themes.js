@@ -11,7 +11,7 @@ export const FIXED_THEMES = [
   { id: 'cartografo', name: 'Cartógrafo', group: 'ach', ach: 'explorer', sw: ['#ecd29a', '#9a6a2c', 'linear-gradient(#4a3418,#140d06)'] },
   { id: 'biblioteca', name: 'Gran Biblioteca', group: 'ach', ach: 'books:50', sw: ['#e8b765', '#7a4a1f', 'linear-gradient(#3a2414,#140b06)'] },
   { id: 'dragones', name: 'Señor de Dragones', group: 'ach', ach: 'rank:3', sw: ['#ff9a3d', '#8c1d0f', 'radial-gradient(#3a0d0d,#0a0303)'] },
-  { id: 'caja', name: 'Caja Roja', group: 'supporter', sw: ['#f4c75b', '#c4161c', 'linear-gradient(#a5121a,#4a0508)'] },
+  { id: 'caja', name: 'Caja Roja', group: 'supporter', sw: ['#141414', '#c8102e', '#faf8f3'] },
   { id: 'sangre', name: 'Sangre de dragón', group: 'supporter', sw: ['#ff6b4a', '#9b1c14', 'linear-gradient(#4a1418,#120607)'] },
   { id: 'arcano', name: 'Arcano', group: 'supporter', sw: ['#7fd6ff', '#5b3bd6', 'linear-gradient(#232a63,#080a18)'] },
   { id: 'escarcha', name: 'Escarcha del Norte', group: 'supporter', sw: ['#d6f1ff', '#2b6c9e', 'linear-gradient(#24425a,#071019)'] },
@@ -80,7 +80,7 @@ export function themeOptions() {
     { group: 'free', label: 'Gratis', items: free },
     { group: 'ach', label: 'Por logros', count: `${unlocked} de ${ach.length + done.length + close.length}`, items: [...ach, ...done, ...close] },
     { group: 'supporter', label: '★ Mecenas', items: FIXED_THEMES.filter((t) => t.group === 'supporter')
-      .map((t) => item(t, { ok: supporter, supporterOnly: true, sub: t.id === 'caja' ? 'Exclusivo · guiños a los módulos' : 'Mecenas' })) },
+      .map((t) => item(t, { ok: supporter, supporterOnly: true, sub: t.id === 'caja' ? 'Exclusivo · estilo módulo clásico' : 'Mecenas' })) },
   ];
 }
 

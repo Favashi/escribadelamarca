@@ -102,20 +102,19 @@ export async function renderPublicProfile(root, slug) {
   const xpBar = html`<div class="pp-xp"><i><b style="width:${pct}%"></b></i>
     <span>Nivel ${p.level} · ${rank.name} · ${num(p.xp)} / ${num(to)} PX · escriba desde ${since.format(new Date(p.since))}</span></div>`;
   const motto = p.motto ? html`<p class="pp-motto">«${p.motto}»</p>` : '';
-  // Caja Roja: la cabecera imita la portada de un módulo clásico (código, niveles, sello) con marco de filigrana
+  // Caja Roja: la cabecera imita la portada de un módulo clásico de los 80 (franja con código y niveles, blanco y negro)
   const hero = caja
-    ? html`<section class="pp-hero"><div class="pp-art"></div>
+    ? html`<section class="pp-hero">
         <div class="cr-box">
-          <span class="cr-gem-s l" aria-hidden="true"></span><span class="cr-gem-s r" aria-hidden="true"></span>
-          <div class="cr-dress"><div class="cr-code" aria-hidden="true"><small>NIVEL</small>E${p.level}</div>
-            <div class="cr-lv"><b>Escriba de la Marca</b>Para escribas de niveles ${p.level} a ${p.level + 2}</div>
-            ${p.supporter ? raw('<span class="cr-seal">MECENAS</span>') : ''}</div>
-          <div class="cr-dragon" aria-hidden="true">${raw(emblemSvg('dragon-head'))}</div>
+          <div class="cr-dress"><div class="cr-code" aria-hidden="true"><small>Nivel</small>E${p.level}</div>
+            <div class="cr-lv"><b>Escriba de la Marca</b><span>Para escribas de niveles ${p.level} a ${p.level + 2}</span></div>
+            ${p.supporter ? raw('<span class="cr-seal">Mecenas</span>') : ''}</div>
           <div class="cr-body pp-id">
+            <div class="cr-dragon" aria-hidden="true">${raw(emblemSvg('dragon-head'))}</div>
             <span class="cr-pre">Aventuras en la Marca del Este presenta a</span>
             ${raw(emb)}
             <h1>${p.name}</h1>
-            <div class="cr-ribwrap"><p class="pp-title">${title}</p></div>
+            <p class="pp-title">${title}</p>
             ${raw(motto)}${raw(xpBar)}
           </div></div></section>`
     : html`<section class="pp-hero">

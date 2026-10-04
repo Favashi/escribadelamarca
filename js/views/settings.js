@@ -15,6 +15,7 @@ import { settings } from '../settings.js';
 import { applyTheme, getTheme, THEMES, TEXT_SIZES, getTextSize, applyTextSize } from '../theme.js';
 import { profileSettingsHtml, bindProfileSettings } from './profile-public.js';
 import { themeName } from '../profile-themes.js';
+import { PORTRAITS, portraitDialog } from '../portraits.js';
 
 const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
 
@@ -54,6 +55,7 @@ export function renderSettings(root, params = {}) {
     <div class="set-list">
       ${raw(row('#/ajustes/nombre', 'hood', 'Nombre público', p.public_name || `${shortName(p.display_name)} (de Google)`))}
       ${raw(btnRow('data-emblem', emblemKey(p.emblem), 'Emblema', EMBLEMS[emblemKey(p.emblem)][0]))}
+      ${raw(btnRow('data-portrait', 'hood', 'Retrato', p.portrait ? PORTRAITS[p.portrait]?.[0] ?? 'Retrato' : 'Sin retrato (se usa el emblema)'))}
       ${raw(row('#/ajustes/perfil-publico', 'castle', 'Perfil público', p.public_profile ? `Activado · tema ${ppTheme}` : 'Desactivado'))}
     </div>
 
@@ -92,6 +94,7 @@ export function renderSettings(root, params = {}) {
       <a href="https://favashi.github.io/osr-manager/" target="_blank" rel="noopener">OSR Manager</a><br>
       Proyecto de fans, no oficial · Portadas © de sus autores, con permiso de La Marca del Este<br>
       Emblemas de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (Lorc y Delapouite, CC BY 3.0)<br>
+      Retratos y escenas: dibujos de Gordy Higgins (dominio público)<br>
       <a href="privacidad.html">Privacidad</a> · <a href="https://github.com/Favashi/escribadelamarca" target="_blank" rel="noopener">Código</a></p>`;
 
   root.querySelectorAll('[data-opt]').forEach((el) => el.addEventListener('change', async () => {
@@ -107,6 +110,7 @@ export function renderSettings(root, params = {}) {
     el.disabled = false;
   }));
   $('[data-emblem]', root).onclick = async () => { if (await emblemDialog()) renderSettings(root); };
+  $('[data-portrait]', root).onclick = async () => { if (await portraitDialog()) renderSettings(root); };
   $('[data-export-all]', root).onclick = () => downloadAllJson().catch((err) => toast(errMsg(err), 'error'));
   $('[data-changelog]', root).onclick = () => releaseNotesDialog();
   $('[data-update]', root).onclick = async (e) => {

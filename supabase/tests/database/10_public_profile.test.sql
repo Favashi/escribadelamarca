@@ -2,7 +2,7 @@
 -- con el logro; título solo si tiene el logro.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(17);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'u1@test.local'),
@@ -50,6 +50,16 @@ reset role;
 update public.profiles set profile_theme = 'caja', is_supporter = true where id = '11111111-1111-1111-1111-111111111111';
 select public._test_anon();
 select is(public.public_profile('escriba-test')->>'theme', 'caja', 'Caja Roja para un Mecenas');
+-- Retratos: los de logro solo con el logro
+reset role;
+update public.profiles set portrait = 'liche', portrait_style = 'inv', profile_scene = 'trol' where id = '11111111-1111-1111-1111-111111111111';
+select public._test_anon();
+select is(public.public_profile('escriba-test')->>'portrait', null, 'el liche sin el rango Archivero no se enseña');
+select is(public.public_profile('escriba-test')->>'scene', 'trol', 'la escena de cabecera se enseña');
+reset role;
+update public.profiles set portrait = 'elfa' where id = '11111111-1111-1111-1111-111111111111';
+select public._test_anon();
+select is(public.public_profile('escriba-test')->>'portrait', 'elfa', 'un retrato libre se enseña');
 reset role;
 select throws_ok($$update public.profiles set profile_theme = 'inventado' where id = '11111111-1111-1111-1111-111111111111'$$,
   '23514', null, 'un tema que no existe no se puede guardar');

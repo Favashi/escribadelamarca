@@ -1096,3 +1096,47 @@ details.fold > .pp-settings { max-width: 100%; }
 .st-colors label { display: grid; gap: 4px; font: 600 .8rem var(--font-ui); }
 .st-colors input[type=color] { width: 64px; height: 36px; padding: 2px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
 .st-preview { border-radius: 12px; max-width: 320px; height: 76px; }
+
+/* ---------- Retratos (dibujos de Gordy Higgins como máscara: el acabado es solo CSS) ---------- */
+.emblem.portrait { --pt-bg: #faf8f3; --pt-ink: #141414; background: var(--pt-bg); overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pt-ink) 30%, transparent); }
+.emblem.portrait::after { content: ''; position: absolute; inset: 3%; background: var(--pt-ink);
+  -webkit-mask: var(--pt-img) center / contain no-repeat; mask: var(--pt-img) center / contain no-repeat; }
+.portrait.pt-color.pt-raza { --pt-bg: #b5c46a; } .portrait.pt-color.pt-prof { --pt-bg: #8fb6dd; } .portrait.pt-color.pt-mon { --pt-bg: #e8796f; }
+.portrait.pt-bn { --pt-bg: #faf8f3; --pt-ink: #141414; }
+.portrait.pt-inv { --pt-bg: #141414; --pt-ink: #faf8f3; }
+.prof-emb .emblem.portrait, .pp-emb .emblem.portrait { box-shadow: 0 0 0 3px var(--surface, #fff), 0 0 0 5px currentColor; }
+.pp-emb .emblem.portrait { box-shadow: 0 0 0 4px var(--pbg), 0 0 40px color-mix(in srgb, var(--acc) 45%, transparent); }
+.pp-t-caja .pp-emb .emblem.portrait { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
+
+/* Selector de retrato */
+.portrait-picker .pt-styles { margin: 4px 0 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px 8px; max-height: 52vh; overflow-y: auto; padding: 4px; }
+.pt-cat { grid-column: 1 / -1; margin: 8px 0 0; font: 700 .7rem var(--font-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.pt-opt { position: relative; display: grid; justify-items: center; gap: 6px; cursor: pointer; text-align: center; }
+.pt-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.pt-opt .emblem { --size: 72px; }
+.pt-opt small { font: 600 .72rem/1.2 var(--font-ui); }
+.pt-opt:has(input:checked) .emblem, .pt-opt:has(input:checked) .pt-none-ic { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--accent); }
+.pt-opt:has(input:focus-visible) .emblem { outline: 2px solid var(--accent); outline-offset: 4px; }
+.pt-opt.locked { cursor: not-allowed; }
+.pt-opt.locked .emblem { filter: grayscale(1); opacity: .4; }
+.pt-lock { font: 700 .6rem var(--font-ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pt-none-ic { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; border: 2px dashed var(--line); color: var(--muted); font-size: 1.4rem; }
+
+/* Escena de partida como cabecera del perfil público */
+.pp-art.pp-scene { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--acc2) 35%, var(--pbg)), var(--pbg) 75%); }
+.pp-art.pp-scene::after { content: ''; position: absolute; inset: 4% 6% 18%; background: color-mix(in srgb, var(--acc) 60%, #fff); opacity: .5;
+  -webkit-mask: var(--scene) center / contain no-repeat; mask: var(--scene) center / contain no-repeat; }
+.cr-scene { position: relative; height: clamp(180px, 45vw, 300px); margin: 16px 16px 0; border: 2px solid var(--ink); background: #fff; }
+.cr-scene::before { content: ''; position: absolute; inset: 10px; background: var(--ink);
+  -webkit-mask: var(--scene) center / contain no-repeat; mask: var(--scene) center / contain no-repeat; }
+.pp-scenes { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
+.pp-scenes label { position: relative; flex: none; cursor: pointer; border: 2px solid var(--line); border-radius: 8px; padding: 4px; background: #faf8f3; }
+.pp-scenes label:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pp-scenes label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pp-scenes input { position: absolute; opacity: 0; pointer-events: none; }
+.pp-scenes .sc { display: block; width: 96px; height: 72px; background: #141414;
+  -webkit-mask: var(--scene) center / contain no-repeat; mask: var(--scene) center / contain no-repeat; }
+.pp-scenes .sc-none { display: grid; place-items: center; width: 96px; height: 72px; font: 600 .78rem var(--font-ui); color: #5f5f5f; }
+.pp-art.pp-scene, .pp-art.pp-scene:is(*) { transform: none; animation: none; }

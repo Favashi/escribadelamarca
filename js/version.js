@@ -3,9 +3,18 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.18.1';
+export const APP_VERSION = '1.19.0';
 
 export const RELEASES = [
+  {
+    version: '1.19.0',
+    date: '2026-10-04',
+    notes: [
+      'Retratos para tu perfil: 19 dibujos a plumilla de estilo old school (razas, profesiones y monstruos), en color, blanco y negro o invertido. Tócalo en tu Perfil para elegirlo.',
+      'Algunos retratos se ganan: el Contemplador con el logro de Explorador y el Liche con el rango Archivero.',
+      'Ilustración de cabecera para tu perfil público: 8 escenas de partida (pelea con el trol, ritual, conjuro fallido…). Con la Caja Roja quedan como la portada de un módulo.',
+    ],
+  },
   {
     version: '1.18.1',
     date: '2026-10-04',

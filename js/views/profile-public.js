@@ -10,6 +10,7 @@ import { state, user, isSupporter } from '../store.js';
 import { updateProfile } from '../api.js';
 import { errMsg } from '../ui.js';
 import { themeOptions, themeName, seriesCode, seriesPalette, applyPalette } from '../profile-themes.js';
+import { PORTRAITS, SCENES, portraitHtml, sceneUrl } from '../portraits.js';
 
 // ---------- Medallas: icono de fantasía y rareza de cada logro ----------
 const TIERS = { bronze: 'Bronce', silver: 'Plata', gold: 'Oro', epic: 'Épico' };
@@ -96,9 +97,11 @@ export async function renderPublicProfile(root, slug) {
   const sCode = seriesCode(theme);
   const caja = theme === 'caja';
   const tCovers = sCode ? (p.theme_covers || []) : [];
-  const art = p.banner || tCovers[0];
+  const scene = sceneUrl(p.scene);
+  const art = scene ? null : p.banner || tCovers[0];
   const title = titleText(p.title) || rank.name;
-  const emb = html`<div class="pp-emb">${raw(emblemBadge(p.emblem, { size: 'lg', gold: p.supporter }))}<b class="pp-lvl" aria-label="Nivel ${p.level}">${p.level}</b></div>`;
+  const avatar = p.portrait && PORTRAITS[p.portrait] ? portraitHtml(p.portrait, { style: p.portrait_style || 'color' }) : emblemBadge(p.emblem, { size: 'lg', gold: p.supporter });
+  const emb = html`<div class="pp-emb">${raw(avatar)}<b class="pp-lvl" aria-label="Nivel ${p.level}">${p.level}</b></div>`;
   const xpBar = html`<div class="pp-xp"><i><b style="width:${pct}%"></b></i>
     <span>Nivel ${p.level} · ${rank.name} · ${num(p.xp)} / ${num(to)} PX · escriba desde ${since.format(new Date(p.since))}</span></div>`;
   const motto = p.motto ? html`<p class="pp-motto">«${p.motto}»</p>` : '';
@@ -109,8 +112,9 @@ export async function renderPublicProfile(root, slug) {
           <div class="cr-dress"><div class="cr-code" aria-hidden="true"><small>Nivel</small>E${p.level}</div>
             <div class="cr-lv"><b>Escriba de la Marca</b><span>Para escribas de niveles ${p.level} a ${p.level + 2}</span></div>
             ${p.supporter ? raw('<span class="cr-seal">Mecenas</span>') : ''}</div>
+          ${scene ? raw(html`<div class="cr-scene" role="img" aria-label="${SCENES[p.scene]}" style="--scene:url('${scene}')"></div>`) : ''}
           <div class="cr-body pp-id">
-            <div class="cr-dragon" aria-hidden="true">${raw(emblemSvg('dragon-head'))}</div>
+            ${scene ? '' : raw(html`<div class="cr-dragon" aria-hidden="true">${raw(emblemSvg('dragon-head'))}</div>`)}
             <span class="cr-pre">Aventuras en la Marca del Este presenta a</span>
             ${raw(emb)}
             <h1>${p.name}</h1>
@@ -118,7 +122,7 @@ export async function renderPublicProfile(root, slug) {
             ${raw(motto)}${raw(xpBar)}
           </div></div></section>`
     : html`<section class="pp-hero">
-        <div class="pp-art" ${art ? raw(html`style="background-image:url('${art}')"`) : ''}></div>
+        <div class="pp-art ${scene ? 'pp-scene' : ''}" ${art ? raw(html`style="background-image:url('${art}')"`) : ''}${scene ? raw(html` style="--scene:url('${scene}')"`) : ''}></div>
         <div class="pp-inner">${raw(emb)}
           <div class="pp-id"><h1>${p.name}</h1><p class="pp-title">${title}</p>${raw(motto)}${raw(xpBar)}</div>
         </div>
@@ -227,6 +231,12 @@ export function profileSettingsHtml() {
       <span class="pp-url"><span class="muted">…/#/escriba/</span><input name="public_slug" value="${slug}" maxlength="30"
         autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Dirección del perfil"></span>
     </label>
+    <div><span class="muted small">Ilustración de cabecera (si eliges una, sustituye a la portada)</span>
+      <div class="pp-scenes">
+        <label><input type="radio" name="profile_scene" value="" ${p.profile_scene ? '' : 'checked'}><span class="sc-none">Ninguna</span></label>
+        ${Object.entries(SCENES).map(([k, name]) => raw(html`<label title="${name}"><input type="radio" name="profile_scene" value="${k}" ${p.profile_scene === k ? 'checked' : ''}>
+          <span class="sc" role="img" aria-label="${name}" style="--scene:url('${sceneUrl(k)}')"></span></label>`))}
+      </div></div>
     <div><span class="muted small">Portada de fondo (de tus libros)</span>
       ${covers.length ? raw(html`<div class="pp-covers">${covers.map((b) => raw(html`<label title="${b.title}">
         <input type="radio" name="profile_banner" value="${b.id}" ${p.profile_banner === b.id ? 'checked' : ''}>
@@ -277,6 +287,7 @@ export function bindProfileSettings(root, rerender) {
       public_profile: enabled,
       public_slug: slug.length >= 3 ? slug : null,
       profile_banner: f.get('profile_banner') || null,
+      profile_scene: f.get('profile_scene') || null,
       profile_theme: f.get('profile_theme') || 'oro',
       profile_title: f.get('profile_title') || null,
       profile_motto: String(f.get('profile_motto') || '').trim().replace(/^«|»$/g, '') || null,

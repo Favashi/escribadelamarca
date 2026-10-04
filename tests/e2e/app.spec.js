@@ -707,6 +707,28 @@ test('perfil público: temas bloqueados por logros, Cartógrafo al ganarlo y Caj
   await anon.close();
 });
 
+test('retrato: elegirlo desde el Perfil, acabado y verlo en el perfil público con escena', async ({ page, account, browser }) => {
+  const slug = `e2e-r-${test.info().project.name === 'móvil' ? 'm' : 'd'}-${Date.now().toString(36)}`;
+  await api(`/rest/v1/profiles?id=eq.${account.user.id}`, { method: 'PATCH', body: { public_profile: true, public_slug: slug, profile_scene: 'trol' } });
+  await page.goto('/#/perfil');
+  await page.getByRole('button', { name: 'Cambiar retrato o emblema' }).click();
+  const dialog = page.locator('#dialog');
+  await expect(dialog.getByRole('radio', { name: /Liche/ })).toBeDisabled();
+  await dialog.getByText('Blanco y negro', { exact: true }).click();
+  await dialog.locator('.pt-opt', { hasText: 'Elfa' }).click();
+  await dialog.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Retrato: Elfa')).toBeVisible();
+  await expect(page.locator('.prof-emb .portrait.pt-bn')).toBeVisible();
+
+  const anon = await browser.newContext();
+  const p2 = await anon.newPage();
+  await useLocalSupabase(p2);
+  await p2.goto(`/#/escriba/${slug}`);
+  await expect(p2.locator('.pp-emb .portrait.pt-bn')).toBeVisible();
+  await expect(p2.locator('.pp-art.pp-scene')).toBeAttached();
+  await anon.close();
+});
+
 test('perfil y ajustes: ficha con atajos, rueda a Ajustes y secciones', async ({ page, account }) => {
   await page.goto('/#/perfil');
   await expect(page.locator('.prof-card')).toBeVisible();

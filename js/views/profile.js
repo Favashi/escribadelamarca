@@ -6,6 +6,7 @@ import { icon } from '../icons.js';
 import { emblemSvg } from '../emblems.js';
 import { levelInfo } from '../achievements.js';
 import { emblemBadge, emblemDialog, heroSheet } from '../hero.js';
+import { portraitHtml, portraitDialog } from '../portraits.js';
 import { medalHtml } from './profile-public.js';
 import { myContributions } from './contributions.js';
 import { getAchievements } from '../api.js';
@@ -33,8 +34,8 @@ export function renderProfile(root) {
 
     <section class="prof-card">
       <div class="prof-id">
-        <button type="button" class="prof-emb" data-emblem aria-label="Cambiar emblema">
-          ${raw(emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<b class="prof-lvl" aria-hidden="true">${info.level}</b></button>
+        <button type="button" class="prof-emb" data-emblem aria-label="Cambiar retrato o emblema">
+          ${raw(p.portrait ? portraitHtml(p.portrait, { style: p.portrait_style }) : emblemBadge(p.emblem, { size: 'lg', gold: supporter }))}<b class="prof-lvl" aria-hidden="true">${info.level}</b></button>
         <div class="prof-name">
           <a href="#/ajustes/nombre" class="prof-h" aria-label="Cambiar el nombre público"><h2>${name}</h2><span aria-hidden="true">✎</span></a>
           <p class="prof-rank">${info.rank.name}${p.profile_motto ? ` · «${p.profile_motto}»` : ''}</p>
@@ -63,7 +64,7 @@ export function renderProfile(root) {
     <div class="prof-medals"><p class="muted small">Cargando…</p></div>
     <p class="muted small center pad">Escriba de la Marca v${APP_VERSION}</p>`;
 
-  $('[data-emblem]', root).onclick = async () => { if (await emblemDialog()) renderProfile(root); };
+  $('[data-emblem]', root).onclick = async () => { if (await portraitDialog({ onEmblem: emblemDialog })) renderProfile(root); };
   $('[data-hero-open]', root).onclick = () => heroSheet();
   fillMedals(root);
 }

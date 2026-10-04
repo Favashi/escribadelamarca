@@ -9,15 +9,7 @@ import { supabase } from '../supabase.js';
 import { state, user, isSupporter } from '../store.js';
 import { updateProfile } from '../api.js';
 import { errMsg } from '../ui.js';
-
-// ---------- Temas: dos gratuitos y tres de Mecenas ----------
-export const PROFILE_THEMES = [
-  { id: 'oro', name: 'Oro y púrpura' },
-  { id: 'bosque', name: 'Bosque de Valion' },
-  { id: 'sangre', name: 'Sangre de dragón', supporter: true },
-  { id: 'arcano', name: 'Arcano', supporter: true },
-  { id: 'escarcha', name: 'Escarcha del Norte', supporter: true },
-];
+import { themeOptions, themeName, seriesCode, seriesPalette, applyPalette } from '../profile-themes.js';
 
 // ---------- Medallas: icono de fantasía y rareza de cada logro ----------
 const TIERS = { bronze: 'Bronce', silver: 'Plata', gold: 'Oro', epic: 'Épico' };
@@ -100,27 +92,53 @@ export async function renderPublicProfile(root, slug) {
   const stat = (icon, n, label) => html`<div class="pp-stat"><span class="pp-ic" aria-hidden="true">${raw(emblemSvg(icon))}</span>
     <div><b>${num(n)}</b><span>${label}</span></div></div>`;
   const url = `${location.origin}${location.pathname}#/escriba/${slug}`;
+  const theme = p.theme || 'oro';
+  const sCode = seriesCode(theme);
+  const caja = theme === 'caja';
+  const tCovers = sCode ? (p.theme_covers || []) : [];
+  const art = p.banner || tCovers[0];
+  const title = titleText(p.title) || rank.name;
+  const emb = html`<div class="pp-emb">${raw(emblemBadge(p.emblem, { size: 'lg', gold: p.supporter }))}<b class="pp-lvl" aria-label="Nivel ${p.level}">${p.level}</b></div>`;
+  const xpBar = html`<div class="pp-xp"><i><b style="width:${pct}%"></b></i>
+    <span>Nivel ${p.level} · ${rank.name} · ${num(p.xp)} / ${num(to)} PX · escriba desde ${since.format(new Date(p.since))}</span></div>`;
+  const motto = p.motto ? html`<p class="pp-motto">«${p.motto}»</p>` : '';
+  // Caja Roja: la cabecera imita la portada de un módulo clásico (código, niveles, sello) con marco de filigrana
+  const hero = caja
+    ? html`<section class="pp-hero"><div class="pp-art"></div>
+        <div class="cr-box">
+          <span class="cr-gem-s l" aria-hidden="true"></span><span class="cr-gem-s r" aria-hidden="true"></span>
+          <div class="cr-dress"><div class="cr-code" aria-hidden="true"><small>NIVEL</small>E${p.level}</div>
+            <div class="cr-lv"><b>Escriba de la Marca</b>Para escribas de niveles ${p.level} a ${p.level + 2}</div>
+            ${p.supporter ? raw('<span class="cr-seal">MECENAS</span>') : ''}</div>
+          <div class="cr-dragon" aria-hidden="true">${raw(emblemSvg('dragon-head'))}</div>
+          <div class="cr-body pp-id">
+            <span class="cr-pre">Aventuras en la Marca del Este presenta a</span>
+            ${raw(emb)}
+            <h1>${p.name}</h1>
+            <div class="cr-ribwrap"><p class="pp-title">${title}</p></div>
+            ${raw(motto)}${raw(xpBar)}
+          </div></div></section>`
+    : html`<section class="pp-hero">
+        <div class="pp-art" ${art ? raw(html`style="background-image:url('${art}')"`) : ''}></div>
+        <div class="pp-inner">${raw(emb)}
+          <div class="pp-id"><h1>${p.name}</h1><p class="pp-title">${title}</p>${raw(motto)}${raw(xpBar)}</div>
+        </div>
+      </section>`;
+  const codeChips = (s) => html`<div class="cr-codes">${s.books.map((b) => raw(html`<span class="${b.owned ? '' : 'miss'}" title="${b.owned ? '' : 'Le falta '}${b.code ?? ''}">${b.code ?? '?'}</span>`))}</div>`;
+  const strip = (s) => html`<div class="pp-strip">${s.books.map((b) => raw(b.owned
+    ? (b.cover_url ? html`<span title="${b.code ?? ''}" style="background-image:url('${b.cover_url}')"></span>` : html`<span class="ph" title="${b.code ?? ''}">${b.code ?? ''}</span>`)
+    : html`<span class="miss" title="Le falta ${b.code ?? ''}"></span>`))}</div>`;
 
   root.innerHTML = html`
-    <article class="pp pp-t-${p.theme}">
-      <section class="pp-hero">
-        <div class="pp-art" ${p.banner ? raw(html`style="background-image:url('${p.banner}')"`) : ''}></div>
-        <div class="pp-inner">
-          <div class="pp-emb">${raw(emblemBadge(p.emblem, { size: 'lg', gold: p.supporter }))}<b class="pp-lvl" aria-label="Nivel ${p.level}">${p.level}</b></div>
-          <div class="pp-id">
-            <h1>${p.name}</h1>
-            <p class="pp-title">${titleText(p.title) || rank.name}</p>
-            ${p.motto ? raw(html`<p class="pp-motto">«${p.motto}»</p>`) : ''}
-            <div class="pp-xp"><i><b style="width:${pct}%"></b></i>
-              <span>Nivel ${p.level} · ${rank.name} · ${num(p.xp)} / ${num(to)} PX · escriba desde ${since.format(new Date(p.since))}</span></div>
-          </div>
-        </div>
-      </section>
+    <article class="pp pp-t-${sCode ? 'serie' : theme}">
+      ${raw(hero)}
       <div class="pp-wrap">
+        ${tCovers.length ? raw(html`<div class="pp-band" style="--n:${Math.min(tCovers.length, 6)}">${tCovers.slice(0, 6).map((c) => raw(html`<span style="background-image:url('${c}')"></span>`))}</div>`) : ''}
         <div class="pp-actions">
           <button type="button" class="pp-btn primary" data-copy>Copiar enlace</button>
           ${navigator.share ? raw('<button type="button" class="pp-btn" data-share>Compartir</button>') : ''}
-          ${p.supporter ? raw('<span class="pp-badge">★ Mecenas</span>') : ''}
+          ${p.supporter && !caja ? raw('<span class="pp-badge">★ Mecenas</span>') : ''}
+          ${sCode ? raw(html`<span class="pp-unlock">✦ Tema de serie: completó ${themeName(theme)}</span>`) : ''}
         </div>
 
         ${featured.length ? raw(html`<h2 class="pp-sec">Logros destacados</h2>
@@ -135,12 +153,10 @@ export async function renderPublicProfile(root, slug) {
           ${c ? raw(stat('quill-ink', contribTotal, 'aportaciones')) : ''}
         </div>
 
-        ${series.length ? raw(html`<h2 class="pp-sec">Series <small>completas y en curso</small></h2>
+        ${series.length ? raw(html`<h2 class="pp-sec">${caja ? 'Módulos' : 'Series'} <small>completas y en curso</small></h2>
           <div class="pp-series">${series.map((s) => raw(html`<div class="pp-srow ${s.owned === s.total ? 'done' : ''}">
             <header><b>Serie ${s.series}</b><em>${s.owned} / ${s.total}${s.owned === s.total ? ' ✦' : ''}</em></header>
-            <div class="pp-strip">${s.books.map((b) => raw(b.owned
-              ? (b.cover_url ? html`<span title="${b.code ?? ''}" style="background-image:url('${b.cover_url}')"></span>` : html`<span class="ph" title="${b.code ?? ''}">${b.code ?? ''}</span>`)
-              : html`<span class="miss" title="Le falta ${b.code ?? ''}"></span>`))}</div></div>`))}</div>`) : ''}
+            ${raw(caja ? codeChips(s) : strip(s))}</div>`))}</div>`) : ''}
 
         <h2 class="pp-sec">Vitrina <small>${p.achievements.length} logros</small></h2>
         <div class="pp-all">${vitrina.map((k) => raw(medalHtml(k, { earned: earned.has(k), meta: earned.get(k)?.meta })))}</div>
@@ -156,6 +172,7 @@ export async function renderPublicProfile(root, slug) {
             ? html`<img src="${b.cover_url}" alt="${b.title}" loading="lazy">`
             : html`<span class="ph">${b.code ?? ''}</span>`))}</div>`) : ''}
 
+        ${caja ? raw('<p class="cr-end"><b>FIN</b>Esta hoja de escriba continúa en la mesa de juego.</p>') : ''}
         <section class="pp-visitor">
           <h3>¿Tú también coleccionas la Marca?</h3>
           <p>Crea tu colección, escanea tus libros, mira qué te falta y consigue tus propios logros.</p>
@@ -164,14 +181,28 @@ export async function renderPublicProfile(root, slug) {
       </div>
     </article>`;
 
+  if (sCode) seriesPalette(sCode, tCovers[0]).then((pal) => applyPalette($('.pp', root), pal));
   $('[data-copy]', root).onclick = async () => {
     try { await navigator.clipboard.writeText(url); toast('Enlace copiado', 'ok'); } catch { toast(url); }
   };
   $('[data-share]', root)?.addEventListener('click', () => navigator.share({ title: `${p.name} · Escriba de la Marca`, url }).catch(() => {}));
 }
 
-// ---------- Ajustes en Perfil → Perfil público (solo el dueño) ----------
-const THEME_SWATCH = { oro: '#f3c02f', bosque: '#9be15d', sangre: '#ff6b4a', arcano: '#7fd6ff', escarcha: '#d6f1ff' };
+// ---------- Ajustes → Perfil público (solo el dueño) ----------
+const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>';
+
+/** Tarjeta del selector de temas: vista previa con sus colores (y portada si es de serie), candado y progreso. */
+function themeCard(t, checked) {
+  const [acc, acc2, bg] = t.sw ?? ['#f3c02f', '#7a4a1f', '#0d0906'];
+  const code = seriesCode(t.id);
+  return html`<label class="th ${t.ok ? '' : 'locked'}">
+    <input type="radio" name="profile_theme" value="${t.id}" ${checked && t.ok ? 'checked' : ''} ${t.ok ? '' : 'disabled'}>
+    <span class="th-pv th-pv-${code ? 'serie' : t.id}" style="--pv-bg:${bg};--pv-acc:${acc};--pv-acc2:${acc2}" ${code ? raw(html`data-series="${code}" data-cover="${t.cover ?? ''}"`) : ''}>
+      ${t.cover ? raw(html`<span class="cv" style="background-image:url('${t.cover}')"></span>`) : ''}<b>${t.name}</b><i></i></span>
+    ${t.ok ? '' : raw(`<span class="th-lock" title="${t.supporterOnly ? 'Solo Mecenas' : 'Bloqueado'}">${LOCK}</span>`)}
+    <span class="th-tx"><strong>${t.name}</strong><small class="${t.ok && t.sub.startsWith('✓') ? 'th-ok' : ''}">${t.sub}</small>
+      ${t.pct != null ? raw(html`<span class="th-bar"><b style="width:${Math.round(t.pct)}%"></b></span>`) : ''}</span></label>`;
+}
 const DEFAULT_SHOW = { series: true, contributions: true, plays: true, shelf: false };
 const SHOW_LABELS = [['series', 'Series y lo que me falta'], ['contributions', 'Aportaciones al catálogo'],
   ['plays', 'Jugadas y dirigidas'], ['shelf', 'Mi estantería (últimos libros añadidos)']];
@@ -202,10 +233,11 @@ export function profileSettingsHtml() {
         <input type="radio" name="profile_banner" value="${b.id}" ${p.profile_banner === b.id ? 'checked' : ''}>
         <img src="${b.cover_url}" alt="${b.title}" loading="lazy"></label>`))}</div>`)
         : raw('<p class="muted small">Añade libros a tu biblioteca para elegir una portada.</p>')}</div>
-    <div><span class="muted small">Tema de color${supporter ? '' : ' · los marcados con ★ son de Mecenas'}</span>
-      <div class="pp-themes">${PROFILE_THEMES.map((t) => raw(html`<label>
-        <input type="radio" name="profile_theme" value="${t.id}" ${(p.profile_theme || 'oro') === t.id ? 'checked' : ''} ${t.supporter && !supporter ? 'disabled' : ''}>
-        <span><i style="background:${THEME_SWATCH[t.id]}"></i>${t.supporter ? '★ ' : ''}${t.name}</span></label>`))}</div></div>
+    <fieldset class="th-pick"><legend>Tema</legend>
+      <p class="muted small">Los temas de logros se ganan coleccionando; los de serie, completando la serie, y usan sus portadas.</p>
+      ${themeOptions().map((g) => raw(html`<div class="th-h"><span>${g.label}</span>${g.count ? raw(html`<span>${g.count}</span>`) : ''}</div>
+      <div class="th-grid">${g.items.map((t) => raw(themeCard(t, (p.profile_theme || 'oro') === t.id)))}</div>`))}
+    </fieldset>
     <label>Título <select name="profile_title">
       <option value="">Tu rango de escriba</option>
       ${titles.map((t) => raw(html`<option value="${t.key}" ${p.profile_title === t.key ? 'selected' : ''}>${t.text}</option>`))}
@@ -227,6 +259,11 @@ export function profileSettingsHtml() {
 export function bindProfileSettings(root, rerender) {
   const form = $('[data-pp-form]', root);
   if (!form) return;
+  for (const pv of form.querySelectorAll('[data-series]')) {
+    seriesPalette(pv.dataset.series, pv.dataset.cover || null).then((pal) => {
+      pv.style.setProperty('--pv-bg', pal.bg); pv.style.setProperty('--pv-acc', pal.acc); pv.style.setProperty('--pv-acc2', pal.acc2);
+    });
+  }
   form.addEventListener('change', (e) => {
     if (e.target.name !== 'featured') return;
     if (form.querySelectorAll('input[name=featured]:checked').length > 3) { e.target.checked = false; toast('Elige como mucho 3 logros', 'error'); }

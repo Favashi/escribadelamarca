@@ -11,6 +11,8 @@ import { settings, saveSetting } from '../settings.js';
 import { SUPABASE_URL } from '../config.js';
 import { renderAnnouncement } from '../announcement.js';
 import { QUEST_TYPES, questTexts } from '../quests.js';
+import { seriesMap } from '../achievements.js';
+import { seriesPalette } from '../profile-themes.js';
 
 const num = (n) => Number(n || 0).toLocaleString('es-ES');
 const eur = (n) => Number(n || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
@@ -483,9 +485,31 @@ function renderSettings(body) {
           <button class="btn btn-primary">Guardar</button>
         </div>
       </form>
+    </details>
+
+    <details class="panel fold" data-fold="ajustes.temas">
+      <summary><h2>Temas de serie</h2>${raw(icon('chevron', { cls: 'dz-chevron' }))}</summary>
+      <p class="muted small">Quien completa una serie desbloquea su tema para el perfil público, con las portadas de la serie.
+        Los colores salen solos de la primera portada; aquí puedes ponerle nombre al tema y fijar sus colores.</p>
+      <form class="form series-theme-form">
+        <label>Serie <select name="code">${[...seriesMap().keys()].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+          .map((c) => raw(html`<option value="${c}">Serie ${c}${settings.series_palettes?.[c] ? ' ✎' : ''}</option>`))}</select></label>
+        <label>Nombre del tema <input name="name" maxlength="40" autocomplete="off"></label>
+        <div class="st-colors">
+          <label>Acento <input type="color" name="acc"></label>
+          <label>Secundario <input type="color" name="acc2"></label>
+          <label>Fondo <input type="color" name="bg"></label>
+        </div>
+        <span class="th-pv st-preview" aria-hidden="true"><span class="cv"></span><b></b><i></i></span>
+        <div class="actions">
+          <button type="button" class="btn btn-ghost" data-st-reset>Volver a los de la portada</button>
+          <button class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
     </details>`;
   bindFolds(body);
   bindQuestForm($('.quest-form', body));
+  bindSeriesThemeForm($('.series-theme-form', body));
   renderCategories($('.cat-list', body));
   $('.cat-new', body).addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -553,6 +577,45 @@ function bindQuestForm(form) {
   form.querySelector('[data-quest-reset]').onclick = () => {
     const { [form.elements.type.value]: _, ...rest } = settings.quests || {};
     save(rest, 'Textos por defecto restaurados');
+  };
+  load();
+}
+
+/** Editor de temas de serie: nombre y colores en app_settings.series_palettes; sin entrada = colores de la portada. */
+function bindSeriesThemeForm(form) {
+  if (!form.elements.code.options.length) { form.innerHTML = '<p class="muted small">Aún no hay series con dos o más libros.</p>'; return; }
+  const pv = $('.st-preview', form);
+  const cover = (code) => seriesMap().get(code)?.find((b) => b.cover_url)?.cover_url ?? null;
+  const preview = () => {
+    const f = form.elements;
+    pv.style.setProperty('--pv-acc', f.acc.value); pv.style.setProperty('--pv-acc2', f.acc2.value); pv.style.setProperty('--pv-bg', f.bg.value);
+    $('b', pv).textContent = f.name.value.trim() || `Serie ${f.code.value}`;
+    const c = cover(f.code.value);
+    $('.cv', pv).style.backgroundImage = c ? `url('${c}')` : 'none';
+  };
+  const load = async () => {
+    const code = form.elements.code.value;
+    const fixed = settings.series_palettes?.[code];
+    form.elements.name.value = fixed?.name ?? '';
+    const pal = fixed?.acc ? fixed : await seriesPalette(code, cover(code));
+    if (form.elements.code.value !== code) return;
+    for (const k of ['acc', 'acc2', 'bg']) form.elements[k].value = pal[k];
+    preview();
+  };
+  const save = async (value, msg) => {
+    try { await saveSetting('series_palettes', value); await load(); toast(msg, 'ok'); } catch (err) { toast(errMsg(err), 'error'); }
+  };
+  form.elements.code.addEventListener('change', load);
+  form.addEventListener('input', preview);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = form.elements;
+    const entry = { acc: f.acc.value, acc2: f.acc2.value, bg: f.bg.value, ...(f.name.value.trim() ? { name: f.name.value.trim() } : {}) };
+    save({ ...settings.series_palettes, [f.code.value]: entry }, 'Tema de serie guardado');
+  });
+  form.querySelector('[data-st-reset]').onclick = () => {
+    const { [form.elements.code.value]: _, ...rest } = settings.series_palettes || {};
+    save(rest, 'Colores de la portada restaurados');
   };
   load();
 }

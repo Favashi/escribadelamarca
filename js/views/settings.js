@@ -4,7 +4,7 @@ import { html, raw, $, toast } from '../util.js';
 import { state, user, isSupporter, loadAll } from '../store.js';
 import { signOut } from '../auth.js';
 import { confirmDialog, errMsg, releaseNotesDialog, onboardingDialog, typeToConfirmDialog, feedbackDialog } from '../ui.js';
-import { sendFeedback, updateProfile, resetLibrary, deleteMyAccount } from '../api.js';
+import { sendFeedback, updateProfile, resetLibrary, deleteMyAccount, getAchievements } from '../api.js';
 import { icon } from '../icons.js';
 import { emblemSvg, EMBLEMS, emblemKey } from '../emblems.js';
 import { emblemDialog } from '../hero.js';
@@ -13,7 +13,8 @@ import { APP_VERSION } from '../version.js';
 import { checkForUpdate, reloadApp } from '../update.js';
 import { settings } from '../settings.js';
 import { applyTheme, getTheme, THEMES, TEXT_SIZES, getTextSize, applyTextSize } from '../theme.js';
-import { profileSettingsHtml, bindProfileSettings, PROFILE_THEMES } from './profile-public.js';
+import { profileSettingsHtml, bindProfileSettings } from './profile-public.js';
+import { themeName } from '../profile-themes.js';
 
 const ISSUES_URL = 'https://github.com/Favashi/escribadelamarca/issues/new';
 
@@ -44,7 +45,7 @@ export function renderSettings(root, params = {}) {
   const supporter = isSupporter();
   const theme = THEMES.find((t) => t.id === getTheme())?.label ?? 'Automático';
   const size = TEXT_SIZES.find((t) => t.id === getTextSize())?.label ?? 'Normal';
-  const ppTheme = PROFILE_THEMES.find((t) => t.id === (p.profile_theme || 'oro'))?.name;
+  const ppTheme = themeName(p.profile_theme || 'oro');
 
   root.innerHTML = html`
     <header class="set-top"><a class="set-back" href="#/perfil" aria-label="Volver al perfil">${raw(icon('chevron', { cls: 'flip' }))}</a><h1>Ajustes</h1></header>
@@ -149,7 +150,16 @@ function themeOption(t, current, locked) {
   </label>`;
 }
 
+let achLoaded = false;
+
 function renderSection(root, sec) {
+  // Temas y títulos del perfil público dependen de los logros: si aún no se han cargado (se entra directo aquí), se cargan antes
+  if (sec === 'perfil-publico' && !achLoaded && !state.achievements.length) {
+    root.innerHTML = '<div class="loading" aria-busy="true">Cargando…</div>';
+    getAchievements().then((rows) => { state.achievements = rows; }).catch(() => {})
+      .finally(() => { achLoaded = true; if (root.isConnected) renderSection(root, sec); });
+    return;
+  }
   const p = state.profile ?? {};
   const supporter = isSupporter();
   const rerender = () => renderSection(root, sec);

@@ -3,9 +3,19 @@
 // - el workflow de Pages crea la etiqueta y la GitHub Release cuando cambia APP_VERSION.
 // Al publicar: sube APP_VERSION (semver) y añade una entrada ARRIBA en RELEASES.
 
-export const APP_VERSION = '1.17.0';
+export const APP_VERSION = '1.18.0';
 
 export const RELEASES = [
+  {
+    version: '1.18.0',
+    date: '2026-10-04',
+    notes: [
+      'Temas nuevos para tu perfil público que se ganan coleccionando: Cartógrafo (un libro de cada categoría), Gran Biblioteca (50 libros) y Señor de Dragones (rango Archivero).',
+      'Temas de serie: completa una serie y desbloquea su tema, con sus portadas y sus colores.',
+      'Para Mecenas, el tema Caja Roja: tu perfil como la portada de un módulo clásico, con marcos dorados y tus series como códigos de módulo.',
+      'En Ajustes → Perfil público ves todos los temas, los que tienes bloqueados y cuánto te falta para cada uno.',
+    ],
+  },
   {
     version: '1.17.0',
     date: '2026-10-03',

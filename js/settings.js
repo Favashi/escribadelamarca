@@ -7,7 +7,8 @@ const DEFAULTS = {
   donations_enabled: true,
   feedback_enabled: true,
   announcement: { enabled: false, text: '', level: 'info' },
-  quests: {},            // textos de las misiones (Admin → Ajustes → Misiones); vacío = los de js/quests.js
+  quests: {},
+  series_palettes: {},   // colores de los temas de serie del perfil público: { XR: { name, acc, acc2, bg } }; vacío = de la portada            // textos de las misiones (Admin → Ajustes → Misiones); vacío = los de js/quests.js
 };
 
 export const settings = { ...DEFAULTS };

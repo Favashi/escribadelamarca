@@ -672,6 +672,41 @@ test('perfil público: activarlo en el Perfil y verlo sin sesión', async ({ pag
   if (covers.length) await api('/rest/v1/catalog?id=in.(' + covers.map((b) => b.id).join(',') + ')', { method: 'PATCH', body: { cover_url: null } });
 });
 
+test('perfil público: temas bloqueados por logros, Cartógrafo al ganarlo y Caja Roja de Mecenas', async ({ page, account, browser }) => {
+  const slug = `e2e-t-${test.info().project.name === 'móvil' ? 'm' : 'd'}-${Date.now().toString(36)}`;
+  await api(`/rest/v1/profiles?id=eq.${account.user.id}`, { method: 'PATCH', body: { public_profile: true, public_slug: slug } });
+  await page.goto('/#/ajustes/perfil-publico');
+  const pick = page.locator('.th-pick');
+  await expect(pick.getByRole('radio', { name: /Bosque de Valion/ })).toBeEnabled();
+  await expect(pick.getByRole('radio', { name: /Cartógrafo/ })).toBeDisabled();
+  await expect(pick.getByRole('radio', { name: /Caja Roja/ })).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+
+  // Con el logro de Explorador y siendo Mecenas se desbloquean
+  await api('/rest/v1/user_achievements', { method: 'POST', body: { user_id: account.user.id, key: 'explorer' } });
+  await api(`/rest/v1/profiles?id=eq.${account.user.id}`, { method: 'PATCH', body: { is_supporter: true } });
+  await page.reload();
+  await pick.getByText('Cartógrafo', { exact: true }).first().click();
+  await expect(pick.getByRole('radio', { name: /Cartógrafo/ })).toBeChecked();
+  await page.locator('[data-pp-form]').getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Perfil público guardado')).toBeVisible();
+
+  const anon = await browser.newContext();
+  const p2 = await anon.newPage();
+  await useLocalSupabase(p2);
+  await p2.goto(`/#/escriba/${slug}`);
+  await expect(p2.locator('article.pp-t-cartografo')).toBeVisible();
+
+  await page.locator('.th-pick').getByText('Caja Roja', { exact: true }).first().click();
+  await page.locator('[data-pp-form]').getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Perfil público guardado')).toBeVisible();
+  await p2.reload();
+  await expect(p2.locator('article.pp-t-caja .cr-box')).toBeVisible();
+  await expect(p2.locator('.cr-code')).toContainText('E1');
+  expect(await p2.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await anon.close();
+});
+
 test('perfil y ajustes: ficha con atajos, rueda a Ajustes y secciones', async ({ page, account }) => {
   await page.goto('/#/perfil');
   await expect(page.locator('.prof-card')).toBeVisible();

@@ -699,7 +699,7 @@ test('perfil público: temas bloqueados por logros, Cartógrafo al ganarlo y Caj
 
   await page.locator('.th-pick').getByText('Caja Roja', { exact: true }).first().click();
   await page.locator('[data-pp-form]').getByRole('button', { name: 'Guardar' }).click();
-  await expect(page.getByText('Perfil público guardado')).toBeVisible();
+  await expect(page.getByText('Perfil público guardado').last()).toBeVisible();   // el aviso del primer guardado puede seguir
   await p2.reload();
   await expect(p2.locator('article.pp-t-caja .cr-box')).toBeVisible();
   await expect(p2.locator('.cr-code')).toContainText('E1');
